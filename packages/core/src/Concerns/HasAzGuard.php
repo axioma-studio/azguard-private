@@ -35,20 +35,28 @@ trait HasAzGuard
         return $this->getAzPermissions()->contains($permission);
     }
 
-    /**
-     * Собирает все разрешения из всех ролей пользователя.
-     */
-    public function getAzPermissions(): Collection
+    /*
+    * @return \Illuminate\Support\Collection
+    */
+    public function getAzPermissions(): \Illuminate\Support\Collection
     {
-        // Используем кэширование в рамках одного запроса, чтобы не пересобирать массив
+        // Используем helper once() (доступен в Laravel 11+) или локальный кэш,
+        // чтобы не выполнять тяжелую логику рефлексии и коллекций при каждой проверке @can
         return once(function () {
-            return $this->roles->flatMap(function ($roleModel) {
-                // $roleModel — это модель из БД (AzRole). 
-                // Нам нужно получить объект логики (например, SuperAdminRole)
-                $roleLogic = $roleModel->getRoleLogic();
+            return $this->roles
+                ->map(function ($roleModel) {
+                    // Вызываем метод, который мы добавили в модель Role
+                    return $roleModel->getRoleLogic();
+                })
+                ->filter() // Удаляем null, если класс роли не найден
+                ->flatMap(function ($roleLogic) {
+                    // Вызываем метод permissions() из PHP-класса (например, SuperAdminRole)
+                    $permissions = $roleLogic->permissions();
 
-                return $roleLogic ? $roleLogic->permissions() : [];
-            })->unique()->values();
+                    return is_array($permissions) ? $permissions : [];
+                })
+                ->unique()
+                ->values();
         });
     }
 }

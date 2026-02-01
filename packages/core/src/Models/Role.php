@@ -24,10 +24,10 @@ class Role extends Model
      */
     public function getRoleLogic(): ?object
     {
+        // Без этого метода HasAzGuard не сможет достать permissions() из PHP-классов
         if ($this->class_name && class_exists($this->class_name)) {
             return new $this->class_name();
         }
-
         return null;
     }
 }
