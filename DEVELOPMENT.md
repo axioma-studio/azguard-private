@@ -31,3 +31,5 @@
 | `composer lint` | Pint | Исправляет стиль кода по стандартам Laravel |
 | `composer refactor` | Rector | Автоматический рефакторинг и апгрейд PHP |
 | `composer test` | Pest | Запуск всех тестов проекта |
+
+Для интеграционных тестов (Feature) нужен PHP-драйвер SQLite: установите пакет `php-sqlite3` (или включите расширение в `php.ini`).
