@@ -2,39 +2,63 @@
 
 namespace AzGuard;
 
+use AzGuard\Commands\MakeGuardPanelCommand;
+use AzGuard\Commands\MakeGuardRoleCommand;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-use AzGuard\Guard\PanelManager;
-use AzGuard\Guard\Authorizer;
-use AzGuard\Guard\DiscoveryService;
 
 class AzGuardServiceProvider extends ServiceProvider
 {
+    /**
+     * Регистрация компонентов в контейнере.
+     */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/az-guard.php', 'az-guard');
-
-        $this->app->singleton(DiscoveryService::class, fn() => new DiscoveryService());
-        $this->app->singleton(Authorizer::class, fn() => new Authorizer());
-
-        $this->app->singleton(PanelManager::class, function ($app) {
-            return new PanelManager($app->make(Authorizer::class));
+        // 1. Регистрируем менеджер как синглтон
+        $this->app->singleton(AzGuardManager::class, function ($app) {
+            return new AzGuardManager();
         });
+
+        // 2. Слияние конфигурации
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/az-guard.php',
+            'az-guard'
+        );
+
+        // 3. Регистрация провайдеров панелей из конфига
+        $this->registerPanelProviders();
     }
 
+    /**
+     * Загрузка ресурсов пакета.
+     */
     public function boot(): void
     {
+        // Публикация конфига
         if ($this->app->runningInConsole()) {
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+            $this->publishes([
+                __DIR__ . '/../config/az-guard.php' => config_path('az-guard.php'),
+            ], 'az-guard-config');
+
+            // Регистрация команд
             $this->commands([
-                Commands\CreateRoleCommand::class,
-                Commands\MakeGuardPanelCommand::class,
+                MakeGuardPanelCommand::class,
+                MakeGuardRoleCommand::class,
             ]);
         }
+    }
 
-        // Главный перехватчик всех проверок Gate::allows() / @can
-        Gate::before(function ($user, $ability) {
-            return app(PanelManager::class)->authorize($user, $ability);
-        });
+    /**
+     * Динамическая регистрация провайдеров панелей.
+     */
+    protected function registerPanelProviders(): void
+    {
+        // Получаем список классов панелей из конфига пользователя
+        $providers = config('az-guard.panels', []);
+
+        foreach ($providers as $provider) {
+            if (class_exists($provider)) {
+                $this->app->register($provider);
+            }
+        }
     }
 }

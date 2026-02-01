@@ -2,52 +2,15 @@
 
 namespace {{ namespace }};
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\File;
+use AzGuard\PanelProvider;
+use AzGuard\Support\Panel;
 
-class {{ panel }}GuardPanelProvider extends ServiceProvider
+class {{ panel }}GuardPanelProvider extends PanelProvider
 {
-    /**
-     * Регистрация сервисов панели.
-     */
-    public function register(): void
+    public function panel(Panel $panel): Panel
     {
-        // Здесь можно зарегистрировать специфичные для этой панели синглтоны
-    }
-
-    /**
-     * Загрузка логики авторизации панели.
-     */
-    public function boot(): void
-    {
-        $this->registerPolicies();
-    }
-
-    /**
-     * Автоматическая регистрация политик из папки Policies.
-     */
-    protected function registerPolicies(): void
-    {
-        $policyPath = __DIR__ . '/Policies';
-        $namespace = __NAMESPACE__ . '\\Policies\\';
-
-        if (!is_dir($policyPath)) {
-            return;
-        }
-
-        foreach (File::allFiles($policyPath) as $file) {
-            $class = $namespace . str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
-            
-            // Находим имя модели по названию политики (например, PostPolicy -> Post)
-            // Мы предполагаем, что модели лежат в App\Models
-            $modelName = Str::replaceLast('Policy', '', class_basename($class));
-            $modelClass = "App\\Models\\" . $modelName;
-
-            if (class_exists($modelClass)) {
-                Gate::policy($modelClass, $class);
-            }
-        }
+        return $panel
+            ->id('{{ resLower }}')
+            ->path('{{ resLower }}');
     }
 }

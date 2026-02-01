@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Role extends Model
 {
-    protected $fillable = ['name', 'level'];
+    // Добавляем class_name, чтобы знать, какой файл Roles/*.php за это отвечает
+    protected $fillable = ['name', 'level', 'class_name'];
 
     public function users(): MorphToMany
     {
@@ -16,5 +17,17 @@ class Role extends Model
             'model',
             config('az-guard.table_names.model_has_roles')
         );
+    }
+
+    /**
+     * Инстанцирует класс логики роли (например, SuperAdminRole).
+     */
+    public function getRoleLogic(): ?object
+    {
+        if ($this->class_name && class_exists($this->class_name)) {
+            return new $this->class_name();
+        }
+
+        return null;
     }
 }
