@@ -1,0 +1,34 @@
+# AzGuard — правила для AI
+
+## О проекте
+- **Тип:** Laravel-пакет (монорепо). Не приложение — нет маршрутов, контроллеров приложения, только код пакетов.
+- **Назначение:** Авторизация и роли/скоупы для Laravel (Guard, панели доступа).
+- **Структура:** Корень — монорепо; код пакетов в `packages/core` и `packages/filament`.
+
+## Стек и версии
+- PHP 8.2+
+- `illuminate/support` ^10.0|^11.0
+- Стиль кода: Laravel Pint (конфиг `pint.json`)
+- Рефакторинг: Rector (`rector.php`)
+- Тесты: Pest + Orchestra Testbench
+
+## Структура пакетов
+- **packages/core** — ядро: провайдер, миграции, модели (Role, ModelHasScope), контракты (RoleInterface, ScopeInterface), Guard (Authorizer, PanelManager), Concerns (HasAzGuard, InteractsWithAzScopes), команды (CreateRoleCommand). Namespace: `AzGuard\`.
+- **packages/filament** — интеграция с Filament (пока только composer.json).
+
+Корневой `composer.json` — общий для монорепо: dev-зависимости (Pint, Rector, Pest, Testbench), скрипты, path-репозитории на `packages/*`.
+
+## Команды (из корня репозитория)
+- `composer lint` — Pint (стиль)
+- `composer refactor` — Rector
+- `composer test` — Pest
+
+## Соглашения
+- Имена классов, методов, переменных, коммитов — на английском.
+- Документация и комментарии — можно на русском по необходимости.
+- Новый код в пакете — в соответствующем пакете (`packages/core` или `packages/filament`), не в корне (кроме общих конфигов вроде pint/rector и тестов монорепо).
+- При добавлении классов в core проверять регистрацию в `AzGuardServiceProvider` (сервисы, миграции, команды).
+
+## Документация
+- Пользовательская: `docs/` (VuePress), гайды в `docs/guide/`.
+- Для разработчиков: `DEVELOPMENT.md` — как подключать пакет локально, ветки, команды качества.
