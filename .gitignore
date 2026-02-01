@@ -1,0 +1,26 @@
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# PHP & Composer
+vendor/
+.php-cs-fixer.cache
+.phpunit.result.cache
+.pestphp-laravel-unit-test-result-cache
+composer.lock
+
+# Инструменты качества
+.rector_cache/
+pint.json.bak
+
+# VuePress (Документация)
+docs/.vuepress/dist/
+docs/.vuepress/.temp/
+docs/.vuepress/.cache/
+
+# Тесты и логи
+storage/*.log
+.env
+tests/temp/

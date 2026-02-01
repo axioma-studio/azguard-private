@@ -1,0 +1,33 @@
+{
+    "name": "azguard/azguard-monorepo",
+    "private": true,
+    "require-dev": {
+        "laravel/pint": "^1.13",
+        "rector/rector": "^1.0",
+        "pestphp/pest": "^2.0",
+        "orchestra/testbench": "^8.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AzGuard\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": "pint",
+        "refactor": "rector process",
+        "test": "pest"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/*"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

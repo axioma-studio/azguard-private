@@ -1,0 +1,12 @@
+{
+    "name": "azguard/filament",
+    "autoload": {
+        "psr-4": {
+            "AzGuard\\Filament\\": "src/"
+        }
+    },
+    "require": {
+        "azguard/azguard": "@dev",
+        "filament/filament": "^3.0"
+    }
+}

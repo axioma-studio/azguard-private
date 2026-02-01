@@ -1,0 +1,19 @@
+{
+    "name": "azguard/azguard",
+    "autoload": {
+        "psr-4": {
+            "AzGuard\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AzGuard\\AzGuardServiceProvider"
+            ]
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0"
+    }
+}
