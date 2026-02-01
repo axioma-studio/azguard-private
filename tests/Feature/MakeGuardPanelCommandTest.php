@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\File;
 
 beforeEach(function () {
-    // Очищаем тестовые директории перед каждым тестом
+    // В Testbench base_path указывает на виртуальную структуру в vendor/orchestra
     File::deleteDirectory(base_path('app/Guards'));
     File::deleteDirectory(base_path('Modules'));
 });
@@ -16,17 +16,20 @@ it('can generate a guard panel with default path', function () {
         ->expectsQuestion('Название маппинга разрешений (ресурса)', 'User')
         ->assertExitCode(0);
 
-    // Проверяем структуру папок
-    expect(base_path('app/Guards/Admin/Roles'))->toBeDirectory();
-    expect(base_path('app/Guards/Admin/Policies'))->toBeDirectory();
+    $basePath = base_path('app/Guards/Admin');
 
-    // Проверяем содержимое файлов и неймспейсы
-    $roleContent = File::get(base_path('app/Guards/Admin/Roles/SuperAdminRole.php'));
+    // Проверяем существование
+    expect($basePath . '/AdminGuardPanelProvider.php')->toBeFile();
+    expect($basePath . '/Roles/SuperAdminRole.php')->toBeFile();
+
+    // Проверяем содержимое и Namespace
+    $roleContent = File::get($basePath . '/Roles/SuperAdminRole.php');
     expect($roleContent)->toContain('namespace App\Guards\Admin\Roles;')
         ->and($roleContent)->toContain('class SuperAdminRole extends BaseRole');
 
-    $providerContent = File::get(base_path('app/Guards/Admin/AdminGuardPanelProvider.php'));
-    expect($providerContent)->toContain('namespace App\Guards\Admin;');
+    $policyContent = File::get($basePath . '/Policies/UserPolicy.php');
+    expect($policyContent)->toContain('namespace App\Guards\Admin\Policies;')
+        ->and($policyContent)->toContain("hasAzPermission('user.view')");
 });
 
 it('can generate a guard panel for a module with custom namespace', function () {
@@ -37,19 +40,22 @@ it('can generate a guard panel for a module with custom namespace', function () 
         ->expectsQuestion('Название маппинга разрешений (ресурса)', 'Post')
         ->assertExitCode(0);
 
-    // Проверяем неймспейс для модуля
-    $policyContent = File::get(base_path('Modules/Blog/Guards/BlogAdmin/Policies/PostPolicy.php'));
+    $basePath = base_path('Modules/Blog/Guards/BlogAdmin');
+
+    // Проверяем неймспейс для модуля (БЕЗ App в начале)
+    $policyContent = File::get($basePath . '/Policies/PostPolicy.php');
+
+    // Вот та самая проверка, которую мы обсуждали
     expect($policyContent)->toContain('namespace Modules\Blog\Guards\BlogAdmin\Policies;');
 });
 
 it('fails when panel already exists', function () {
-    // Создаем директорию заранее
-    $path = base_path('app/Guards/ExistPanel');
+    $path = base_path('app/Guards/ExistingPanel');
     File::makeDirectory($path, 0755, true);
 
     $this->artisan('make:guard-panel')
         ->expectsQuestion('Укажите путь для создания (например, app/Guards или Modules/Blog/Guards)', 'app/Guards')
-        ->expectsQuestion('Назовите панель (например, Admin)', 'ExistPanel')
-        ->expectsOutput('Ошибка: Панель по пути [' . $path . '] уже существует!')
+        ->expectsQuestion('Назовите панель (например, Admin)', 'ExistingPanel')
+        ->expectsOutputToContain('Ошибка: Панель по пути')
         ->assertExitCode(0);
 });

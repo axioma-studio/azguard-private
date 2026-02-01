@@ -25,8 +25,15 @@ class MakeGuardPanelCommand extends Command
 
         $targetDir = base_path($basePathInput . '/' . $panelName);
 
-        // Исправленная логика Namespace: заменяем только начальный "app"
+        // 1. Очищаем путь от лишних слешей
+        $basePathInput = trim($basePathInput, '/');
+
+        // 2. Делаем правильный Namespace
+        // Если путь начинается с 'app', заменяем его на 'App' (стандарт Laravel)
+        // Если начинается с 'Modules', 'packages' и т.д. — оставляем как есть
         $namespacePath = preg_replace('/^app\b/i', 'App', $basePathInput);
+
+        // 3. Превращаем слеши в бэкслеши для PHP
         $baseNamespace = str_replace('/', '\\', $namespacePath) . '\\' . $panelName;
 
         if (File::exists($targetDir)) {
@@ -52,7 +59,7 @@ class MakeGuardPanelCommand extends Command
             'resLower'  => Str::lower($permissionName),
         ];
 
-        $this->generateFile($targetDir, "{$panelName}GuardPanelProvider.php", 'provider', $replacements);
+        $this->generateFile($targetDir, "{$panelName}GuardPanelProvider.php", 'guardpanelprovider', $replacements);
         $this->generateFile("{$targetDir}/Roles", "{$roleName}Role.php", 'role', $replacements);
         $this->generateFile("{$targetDir}/Permissions", "{$permissionName}Permission.php", 'permission', $replacements);
         $this->generateFile("{$targetDir}/Policies", "{$permissionName}Policy.php", 'policy', $replacements);
