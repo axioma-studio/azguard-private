@@ -1,6 +1,10 @@
 {
     "name": "azguard/azguard-monorepo",
     "private": true,
+    "require": {
+        "azguard/azguard": "@dev",
+        "azguard/filament": "@dev"
+    },
     "require-dev": {
         "laravel/pint": "^1.13",
         "rector/rector": "^1.0",
@@ -9,13 +13,9 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "AzGuard\\Tests\\": "tests/"
+            "AzGuard\\Tests\\": "tests/",
+            "AzGuard\\Tests\\Stubs\\": "tests/Stubs/"
         }
-    },
-    "scripts": {
-        "lint": "pint",
-        "refactor": "rector process",
-        "test": "pest"
     },
     "repositories": [
         {
