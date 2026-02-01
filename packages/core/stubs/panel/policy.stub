@@ -1,0 +1,16 @@
+<?php
+
+namespace {{ namespace }}\Policies;
+
+use Illuminate\Auth\Access\HandlesAuthorization;
+use App\Models\User;
+
+class {{ resource }}Policy
+{
+    use HandlesAuthorization;
+
+    public function viewAny(User $user): bool
+    {
+        return $user->hasAzPermission('{{ resLower }}.view');
+    }
+}

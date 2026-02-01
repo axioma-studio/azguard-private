@@ -28,6 +28,7 @@ class AzGuardServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
             $this->commands([
                 Commands\CreateRoleCommand::class,
+                Commands\MakeGuardPanelCommand::class,
             ]);
         }
 

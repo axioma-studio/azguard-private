@@ -1,0 +1,16 @@
+<?php
+
+namespace {{ namespace }}\Roles;
+
+use AzGuard\Roles\BaseRole;
+
+class {{ name }}Role extends BaseRole
+{
+    public function permissions(): array
+    {
+        return [
+            '{{ resLower }}.view',
+            '{{ resLower }}.create',
+        ];
+    }
+}

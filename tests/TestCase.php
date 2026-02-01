@@ -28,7 +28,7 @@ class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
-        $this->loadMigrationsFrom(__DIR__.'/../packages/core/database/migrations');
-        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../packages/core/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
     }
 }
