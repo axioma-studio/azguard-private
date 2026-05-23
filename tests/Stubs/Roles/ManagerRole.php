@@ -8,6 +8,6 @@ class ManagerRole extends BaseRole
 {
     public function permissions(): array
     {
-        return ['edit-users'];
+        return ['test.post.view'];
     }
 }

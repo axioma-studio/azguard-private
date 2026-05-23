@@ -13,6 +13,8 @@ class FakeAdminRole
     }
 }
 
+class FakePost {}
+
 // Создаем "фейковую" политику
 class FakePostPolicy
 {
@@ -23,8 +25,7 @@ class FakePostPolicy
 }
 
 it('grants access when user has a role with the required permission', function () {
-    // 1. Настройка: связываем модель Post с нашей политикой
-    Gate::policy(\App\Models\Post::class, FakePostPolicy::class);
+    Gate::policy(FakePost::class, FakePostPolicy::class);
 
     // 2. Создаем роль в БД и указываем путь к классу логики
     $role = Role::create([
@@ -33,14 +34,18 @@ it('grants access when user has a role with the required permission', function (
     ]);
 
     // 3. Создаем пользователя и привязываем роль (используя твой трейт HasAzGuard)
-    $user = \App\Models\User::factory()->create();
+    $user = \AzGuard\Tests\Stubs\User::create([
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'password',
+    ]);
     $user->roles()->attach($role);
 
     // 4. Проверка: HasAzGuard должен залезть в FakeAdminRole и найти там разрешение
     expect($user->hasAzPermission('admin.post.view'))->toBeTrue();
     expect($user->hasAzPermission('admin.post.delete'))->toBeFalse();
 
-    // 5. Проверка через стандартный Gate Laravel
-    $post = new \App\Models\Post();
-    expect($user->can('view', $post))->toBeTrue();
+    $this->actingAs($user);
+
+    expect($user->can('view', new FakePost))->toBeTrue();
 });

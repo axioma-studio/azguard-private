@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\{{ domain }}\Policies;
+
+use {{ namespace }}\{{ domain }}\Permissions\{{ domain }}Permission;
+use App\Models\User;
+use AzGuard\Attributes\GateAbility;
+use AzGuard\Attributes\GuardPolicy;
+use AzGuard\Policies\AuthorizesPermission;
+
+#[GuardPolicy(model: \App\Models\{{ domain }}::class)]
+final class {{ domain }}Policy
+{
+    use AuthorizesPermission;
+
+    protected function panelId(): string
+    {
+        return '{{ panelId }}';
+    }
+
+    #[GateAbility(permission: {{ domain }}Permission::ViewAny)]
+    public function canViewAny(User $user): bool
+    {
+        return $this->allows(permission: {{ domain }}Permission::ViewAny, user: $user);
+    }
+
+    #[GateAbility(permission: {{ domain }}Permission::View)]
+    public function canView(User $user): bool
+    {
+        return $this->allows(permission: {{ domain }}Permission::View, user: $user);
+    }
+
+    #[GateAbility(permission: {{ domain }}Permission::Create)]
+    public function canCreate(User $user): bool
+    {
+        return $this->allows(permission: {{ domain }}Permission::Create, user: $user);
+    }
+
+    #[GateAbility(permission: {{ domain }}Permission::Update)]
+    public function canUpdate(User $user): bool
+    {
+        return $this->allows(permission: {{ domain }}Permission::Update, user: $user);
+    }
+
+    #[GateAbility(permission: {{ domain }}Permission::Delete)]
+    public function canDelete(User $user): bool
+    {
+        return $this->allows(permission: {{ domain }}Permission::Delete, user: $user);
+    }
+}

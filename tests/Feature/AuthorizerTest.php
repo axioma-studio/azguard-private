@@ -13,11 +13,14 @@ test('user with ManagerRole can edit-users via Gate', function () {
     ]);
 
     $role = Role::create([
-        'name' => ManagerRole::class,
+        'name' => 'manager',
+        'class_name' => ManagerRole::class,
         'level' => 0,
     ]);
 
     $user->roles()->attach($role);
 
-    expect(Gate::allows('edit-users', $user))->toBeTrue();
+    $this->actingAs($user);
+
+    expect(Gate::allows('edit-users'))->toBeTrue();
 });

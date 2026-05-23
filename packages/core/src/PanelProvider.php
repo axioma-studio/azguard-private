@@ -1,74 +1,73 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard;
 
+use AzGuard\Auth\PolicyAttributeRegistrar;
 use AzGuard\Facades\AzGuard;
+use AzGuard\Guard\PolicyDiscovery;
 use AzGuard\Support\Panel;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use Illuminate\Support\ServiceProvider;
 use ReflectionClass;
 
 abstract class PanelProvider extends ServiceProvider
 {
-    /**
-     * Конфигурация панели, которую определяет наследник.
-     */
+    private ?Panel $cachedPanel = null;
+
     abstract public function panel(Panel $panel): Panel;
 
-    /**
-     * Регистрация панели в менеджере при загрузке приложения.
-     */
     public function register(): void
     {
-        AzGuard::registerPanel(fn() => $this->panel(Panel::make()));
+        AzGuard::registerPanel(function (): Panel {
+            $panel = $this->getPanel();
+            $reflection = new ReflectionClass($this);
+            $panel->setBasePath(basePath: dirname(path: $reflection->getFileName()));
+
+            return $panel;
+        });
     }
 
-    /**
-     * Запуск магии автоматического обнаружения.
-     */
     public function boot(): void
     {
-        $panel = $this->panel(Panel::make());
-
-        // Получаем метаданные класса через Reflection
+        $panel = $this->getPanel();
         $reflection = new ReflectionClass($this);
-        $basePath = dirname($reflection->getFileName());
+        $basePath = dirname(path: $reflection->getFileName());
         $baseNamespace = $reflection->getNamespaceName();
 
-        // Регистрируем компоненты с учетом ID панели для исключения коллизий
-        $this->registerPolicies(
-            $basePath . '/Policies',
-            $baseNamespace . '\\Policies',
-            $panel->getId()
+        $discovery = new PolicyDiscovery;
+        $policyClasses = $discovery->discoverPolicyClasses(
+            basePath: $basePath,
+            baseNamespace: $baseNamespace,
         );
-    }
 
-    /**
-     * Автоматическое связывание политик с моделями.
-     * Права внутри политик будут автоматически префиксироваться ID панели.
-     */
-    protected function registerPolicies(string $path, string $namespace, string $panelId): void
-    {
-        if (!is_dir($path)) {
-            return;
-        }
+        app(PolicyAttributeRegistrar::class)->register(
+            policyClasses: $policyClasses,
+            panel: $panel,
+        );
 
-        foreach (File::allFiles($path) as $file) {
-            $class = $namespace . '\\' . str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
+        foreach ($policyClasses as $policyClass) {
+            $modelClass = $discovery->resolveModelClass(
+                policyClass: $policyClass,
+                basePath: $basePath,
+                baseNamespace: $baseNamespace,
+            );
 
-            // Находим модель (например, PostPolicy -> App\Models\Post)
-            $modelName = Str::replaceLast('Policy', '', class_basename($class));
-            $modelClass = "App\\Models\\" . $modelName;
-
-            if (class_exists($modelClass)) {
-                // Регистрируем политику в Laravel Gate
-                Gate::policy($modelClass, $class);
-
-                // Дополнительно: можно внедрить ID панели в политику через контейнер,
-                // если твои политики поддерживают конструктор, либо полагаться на стабы.
+            if ($modelClass !== null) {
+                Gate::policy($modelClass, $policyClass);
             }
         }
+    }
+
+    protected function getPanel(): Panel
+    {
+        if ($this->cachedPanel === null) {
+            $reflection = new ReflectionClass($this);
+            $this->cachedPanel = $this->panel(panel: Panel::make());
+            $this->cachedPanel->setNamespace(namespace: $reflection->getNamespaceName());
+        }
+
+        return $this->cachedPanel;
     }
 }

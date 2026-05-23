@@ -1,62 +1,96 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard;
 
+use AzGuard\Auth\PolicyAttributeRegistrar;
+use AzGuard\Commands\DoctorCommand;
+use AzGuard\Commands\MakeGuardAbilitiesCommand;
 use AzGuard\Commands\MakeGuardPanelCommand;
+use AzGuard\Commands\MakeGuardPermissionCommand;
+use AzGuard\Commands\MakeGuardPolicyCommand;
 use AzGuard\Commands\MakeGuardRoleCommand;
+use AzGuard\Guard\GuardDoctor;
+use AzGuard\Guard\Authorizer;
+use AzGuard\Http\Middleware\CheckAccess;
+use AzGuard\Http\Middleware\LoadAzGuardRoles;
+use AzGuard\Http\Middleware\SetCurrentPanel;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
-class AzGuardServiceProvider extends ServiceProvider
+final class AzGuardServiceProvider extends ServiceProvider
 {
-    /**
-     * Регистрация компонентов в контейнере.
-     */
     public function register(): void
     {
-        // 1. Регистрируем менеджер как синглтон
-        $this->app->singleton(AzGuardManager::class, function ($app) {
-            return new AzGuardManager();
-        });
+        $this->app->singleton(AzGuardManager::class, fn (): AzGuardManager => new AzGuardManager);
+        $this->app->singleton(PolicyAttributeRegistrar::class, fn (): PolicyAttributeRegistrar => new PolicyAttributeRegistrar);
+        $this->app->singleton(GuardDoctor::class, fn (): GuardDoctor => new GuardDoctor);
 
-        // 2. Слияние конфигурации
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/az-guard.php',
-            'az-guard'
+            path: __DIR__.'/../config/az-guard.php',
+            key: 'az-guard',
         );
 
-        // 3. Регистрация провайдеров панелей из конфига
         $this->registerPanelProviders();
     }
 
-    /**
-     * Загрузка ресурсов пакета.
-     */
     public function boot(): void
     {
-        // Публикация конфига
+        $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
+
+        Gate::before(function ($user, string $ability): ?bool {
+            if ($user === null || ! method_exists($user, 'hasAzPermission')) {
+                return null;
+            }
+
+            return app(Authorizer::class)->check(user: $user, ability: $ability);
+        });
+
+        $this->registerMiddlewareAliases();
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/az-guard.php' => config_path('az-guard.php'),
+                __DIR__.'/../config/az-guard.php' => config_path('az-guard.php'),
             ], 'az-guard-config');
 
-            // Регистрация команд
             $this->commands([
+                DoctorCommand::class,
                 MakeGuardPanelCommand::class,
+                MakeGuardPermissionCommand::class,
+                MakeGuardPolicyCommand::class,
+                MakeGuardAbilitiesCommand::class,
                 MakeGuardRoleCommand::class,
             ]);
         }
     }
 
-    /**
-     * Динамическая регистрация провайдеров панелей.
-     */
+    protected function registerMiddlewareAliases(): void
+    {
+        $router = $this->app->make(Router::class);
+
+        if (! $router instanceof Router) {
+            return;
+        }
+
+        $router->aliasMiddleware('azguard.roles', LoadAzGuardRoles::class);
+        $router->aliasMiddleware('azguard.panel', SetCurrentPanel::class);
+        $router->aliasMiddleware('azguard.check', CheckAccess::class);
+
+        $checkAccessAlias = (string) config(key: 'az-guard.middleware.check_access_alias', default: 'check.access');
+
+        if ($checkAccessAlias !== 'azguard.check') {
+            $router->aliasMiddleware($checkAccessAlias, CheckAccess::class);
+        }
+    }
+
     protected function registerPanelProviders(): void
     {
-        // Получаем список классов панелей из конфига пользователя
-        $providers = config('az-guard.panels', []);
+        $providers = config(key: 'az-guard.panels', default: []);
 
         foreach ($providers as $provider) {
-            if (class_exists($provider)) {
+            if (is_string($provider) && class_exists($provider)) {
                 $this->app->register($provider);
             }
         }

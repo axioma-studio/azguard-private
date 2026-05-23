@@ -1,24 +1,34 @@
-# Контекст для AI (AzGuard)
+# AI Context — AzGuard
 
-Файл можно подключать в чат через `@docs/AI-CONTEXT.md`, если нужна краткая выжимка по проекту.
+## В пакете
 
-## Что такое AzGuard
-Пакет авторизации для Laravel: роли, скоупы, привязка доступа к «панелям» (например, админка). Регистрация через `Gate::before` и провайдер; модели — `Role`, `ModelHasScope`; контракты — `RoleInterface`, `ScopeInterface`.
+- Gate, миграции, `Role`, `HasAzGuard`, `Panel`, `PanelProvider`
+- `PolicyAttributeRegistrar`, `GateAbility`, `GuardPolicy`, `CheckPermission`, `CheckAccess`
+- `AuthorizesPermission`, `SkipGuardCheck`, `RoleOnly`
+- `resolvePermission`, `AzGuard::permission()`, `guard:doctor`
+- Generators: `make:guard-panel`, `make:guard-permission`, `make:guard-policy`, `make:guard-abilities`, `make:guard-role`
+- `AbilitiesDto`, `azguard/filament` (`GuardResource`)
 
-## Где что искать
-| Задача | Место |
-|--------|--------|
-| Регистрация сервисов, команд, миграций | `packages/core/src/AzGuardServiceProvider.php` |
-| Конфиг по умолчанию | `packages/core/config/az-guard.php` |
-| Миграции БД | `packages/core/database/migrations/` |
-| Модели и контракты | `packages/core/src/Models/`, `packages/core/src/Contracts/` |
-| Логика Guard (авторизация, панели) | `packages/core/src/Guard/` |
-| Trait для моделей (роли/скоупы) | `packages/core/src/Concerns/HasAzGuard.php`, `InteractsWithAzScopes.php` |
-| Artisan-команды | `packages/core/src/Commands/` |
-| Документация для пользователей | `docs/guide/` |
-| Разработка и тесты | `DEVELOPMENT.md`, корневой `composer.json` (scripts) |
+## Не в пакете
 
-## Важно при правках
-- Не добавлять маршруты/контроллеры приложения в корень — это пакет.
-- Зависимости пакета указывать в `packages/core/composer.json` или `packages/filament/composer.json`, не в корне (кроме dev-инструментов в корне).
-- После изменений имеет смысл запускать `composer lint` и `composer test` из корня.
+- Модели и enum домена приложения
+- Inertia shared layout (глобальные permissions) — по решению приложения
+
+## Контракт роли
+
+| Поле | Значение |
+|------|----------|
+| `roles.name` | slug |
+| `roles.class_name` | FQCN класса роли |
+
+## Чеклист нового permission
+
+1. case в enum guard-домена
+2. метод политики + `#[GateAbility]` (или `#[RoleOnly]` для role-only)
+3. `#[CheckPermission]` на контроллере
+4. ключ в Abilities DTO (если UI)
+5. resolved string в роли
+6. `php artisan guard:doctor`
+7. тест allow/deny
+
+См. [recipes.md](guide/recipes.md), [filament.md](guide/filament.md).

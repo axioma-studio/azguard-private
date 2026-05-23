@@ -1,33 +1,43 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard\Guard;
 
 use AzGuard\Contracts\RoleInterface;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
-class Authorizer
+final class Authorizer
 {
     public function check(Authorizable $user, string $ability): ?bool
     {
-        // Получаем все роли пользователя (и из БД, и потенциально через классы)
-        foreach ($user->roles as $role) {
-            // Если в поле name записан существующий класс роли
-            if (class_exists($role->name) && is_subclass_of($role->name, RoleInterface::class)) {
-                $roleInstance = app($role->name);
+        unset($ability);
 
-                if ($this->hasPermission($roleInstance, $ability)) {
-                    return true;
-                }
+        if (! method_exists($user, 'roles')) {
+            return null;
+        }
+
+        foreach ($user->roles as $role) {
+            $roleClass = $role->class_name ?? $role->name;
+
+            if (! is_string($roleClass) || ! class_exists($roleClass) || ! is_subclass_of($roleClass, RoleInterface::class)) {
+                continue;
+            }
+
+            $roleInstance = app($roleClass);
+
+            if ($this->hasWildcard(role: $roleInstance)) {
+                return true;
             }
         }
 
-        return null; // Пропускаем проверку дальше (другим Gate или Policy)
+        return null;
     }
 
-    protected function hasPermission(RoleInterface $role, string $ability): bool
+    protected function hasWildcard(RoleInterface $role): bool
     {
         $permissions = $role->permissions();
 
-        return in_array('*', $permissions) || in_array($ability, $permissions);
+        return in_array('*', $permissions, strict: true);
     }
 }

@@ -6,6 +6,9 @@ use Illuminate\Support\Collection;
 
 trait HasAzGuard
 {
+    /** @var \Illuminate\Support\Collection<int, string>|null */
+    private ?Collection $azPermissionsCache = null;
+
     // Твои существующие связи
     public function roles()
     {
@@ -32,7 +35,13 @@ trait HasAzGuard
      */
     public function hasAzPermission(string $permission): bool
     {
-        return $this->getAzPermissions()->contains($permission);
+        $permissions = $this->getAzPermissions();
+
+        if ($permissions->contains('*')) {
+            return true;
+        }
+
+        return $permissions->contains($permission);
     }
 
     /*
@@ -40,23 +49,21 @@ trait HasAzGuard
     */
     public function getAzPermissions(): \Illuminate\Support\Collection
     {
-        // Используем helper once() (доступен в Laravel 11+) или локальный кэш,
-        // чтобы не выполнять тяжелую логику рефлексии и коллекций при каждой проверке @can
-        return once(function () {
-            return $this->roles
-                ->map(function ($roleModel) {
-                    // Вызываем метод, который мы добавили в модель Role
-                    return $roleModel->getRoleLogic();
-                })
-                ->filter() // Удаляем null, если класс роли не найден
-                ->flatMap(function ($roleLogic) {
-                    // Вызываем метод permissions() из PHP-класса (например, SuperAdminRole)
-                    $permissions = $roleLogic->permissions();
+        if ($this->azPermissionsCache !== null) {
+            return $this->azPermissionsCache;
+        }
 
-                    return is_array($permissions) ? $permissions : [];
-                })
-                ->unique()
-                ->values();
-        });
+        $this->azPermissionsCache = $this->roles
+            ->map(fn ($roleModel) => $roleModel->getRoleLogic())
+            ->filter()
+            ->flatMap(function ($roleLogic) {
+                $permissions = $roleLogic->permissions();
+
+                return is_array($permissions) ? $permissions : [];
+            })
+            ->unique()
+            ->values();
+
+        return $this->azPermissionsCache;
     }
 }

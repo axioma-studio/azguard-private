@@ -3,21 +3,45 @@
 ## 🛠 Локальная разработка
 
 ### Подключение к тестовому проекту
-Чтобы тестировать пакет локально, добавьте в `composer.json` вашего тестового Laravel-проекта:
+
+Симлинк (пример CRM):
+
+```bash
+ln -sfn ../../../packages/azguard /path/to/laravel/packages/azguard
+```
+
+`composer.json` Laravel-проекта:
 
 ```json
 "repositories": [
     {
         "type": "path",
-        "url": "../path-to-azguard/packages/*",
+        "url": "packages/azguard/packages/core",
         "options": { "symlink": true }
     }
 ],
 "require": {
-    "azguard/azguard": "@dev",
-    "azguard/filament": "@dev"
+    "azguard/azguard": "@dev"
 }
 ```
+
+### Docker (пример axioma-studio/crm)
+
+- Volume: `../../packages/azguard:/var/www/html/packages/azguard:ro`
+- Запуск: `docker compose --env-file .env --env-file .env.local up -d`
+- Postgres на хосте: `PGSQL_PORT=15433` в `.env.local` (не 5432)
+
+### Контракт роли
+
+| Поле | Значение |
+|------|----------|
+| `roles.name` | slug: `admin`, `member` |
+| `roles.class_name` | FQCN класса роли: `App\Guards\App\Roles\AdminRole` |
+
+### Middleware
+
+- Alias: `azguard.roles` — eager load `roles` для auth user
+- В Laravel 11+: `$middleware->alias(['azguard.roles' => \AzGuard\Http\Middleware\LoadAzGuardRoles::class])` или alias из провайдера пакета
 
 ## 🌿 Git Workflow
 1. Создайте ветку `feature/` или `fix/` от `develop`.

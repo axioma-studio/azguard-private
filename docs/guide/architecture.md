@@ -1,14 +1,20 @@
 # Архитектура панели AzGuard
 
-Каждая панель доступа в AzGuard — это изолированное пространство, где логика авторизации отделена от бизнес-модели.
+Каждая панель — изолированный guard-модуль в `app/Guards/{PanelName}/`.
 
-### Структура директории `app/Guards/{PanelName}`
+## Структура
 
-- **GuardPanelProvider.php**: Главный узел. Здесь регистрируются роли и плагины, специфичные для этой панели.
-- **Roles/**: Классы (или Enum), реализующие `RoleInterface`. Определяют «кто есть кто».
-- **Policies/**: Стандартные Laravel-политики, но вынесенные в контекст панели для удобства поддержки.
-- **Permissions/**: Маппинг. Связывает методы Policy (например, `update`) со строковыми ключами (`post.edit`), которые хранятся в ролях.
-- **Scopes/**: Логика фильтрации данных (Eloquent Scopes).
-- **Plugins/**: Дополнительные middleware или проверки (например, ограничение по IP).
+- **{Panel}GuardPanelProvider.php** — регистрация панели, discover policies, Gate.
+- **Roles/** — классы ролей (`RoleInterface`).
+- **{Domain}/Permissions/** — backed enum.
+- **{Domain}/Policies/** — политики с `#[GateAbility]`.
+- **{Domain}/Abilities/** — DTO для Inertia (опционально).
+- **Scopes/**, **Plugins/** — по необходимости.
 
-> **Note for Laravel Modules:** Если вы используете модульную архитектуру, при создании панели укажите полный Namespace (например, `Modules\Blog\Guards`), чтобы автозагрузчик корректно расположил файлы.
+## Поток проверки
+
+1. HTTP: `CheckPermission` → `Gate::allows(resolved, args)`.
+2. Gate вызывает callback политики (зарегистрирован через `GateAbility`).
+3. Политика: `hasAzPermission(resolved)` + доменные правила.
+
+См. также: [concept.md](concept.md), [permissions.md](permissions.md), [policies-and-gates.md](policies-and-gates.md).

@@ -10,7 +10,7 @@ class {{ panel }}GuardPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->id('{{ resLower }}')
-            ->path('{{ resLower }}');
+            ->id('{{ panelId }}')
+            ->path('{{ panelId }}');
     }
 }

@@ -23,6 +23,9 @@ class TestCase extends Orchestra
             'prefix' => '',
         ]);
         $app['config']->set('auth.providers.users.model', \AzGuard\Tests\Stubs\User::class);
+        $app['config']->set('az-guard.panels', [
+            \AzGuard\Tests\Stubs\TestGuardPanelProvider::class,
+        ]);
     }
 
     protected function setUp(): void

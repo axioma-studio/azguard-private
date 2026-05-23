@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create($t['roles'], function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->string('class_name')->nullable();
             $table->integer('level')->default(0);
             $table->timestamps();
         });
