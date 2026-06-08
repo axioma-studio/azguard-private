@@ -1,115 +1,103 @@
-# Why AzGuard?
+# What is AzGuard?
 
-## The Problem We Solved
+AzGuard is a **code-first RBAC package for Laravel**. Roles are PHP classes. Permissions are enum cases. The database stores only user ↔ role assignments and direct grants — not the permission definitions themselves.
 
-When building Laravel applications with complex access rules — multi-panel admin dashboards, SaaS tenants, multi-role systems — we kept hitting the same wall with existing packages:
+## The problem with DB-first RBAC
 
-**Permissions defined in the database are invisible to the codebase.**
+Every other popular Laravel permission package (Spatie, Bouncer, Laratrust) stores the permission catalog in the database. That creates a set of recurring problems at scale:
 
-You'd have:
-- Magic strings like `'edit-posts'` scattered across controllers, seeders, and documentation
-- No IDE autocompletion, no compile-time validation
-- Typos that only fail at runtime in production
-- `php artisan db:seed` races in CI pipelines
-- Permission lists that diverged between dev, staging, and production environments
-- Cache invalidation nightmares when deploying to Kubernetes or using Laravel Octane
+- **Magic strings** like `'edit-posts'` scattered across controllers, seeders, tests, and docs — no IDE support, no static analysis
+- **Typos that fail at runtime**, not at CI
+- **Diverging state** between dev, staging, and production databases
+- **Cache poisoning** under Octane or Kubernetes when shared app memory bleeds between requests
+- **Unmergeable diffs** — schema migrations for every new permission, impossible to review in a PR
 
-We tried Spatie Permission, Bouncer, and Laratrust. Each has great adoption, but all share the same architectural tradeoff: **the source of truth is the database, not the code**.
+## The AzGuard approach
 
-## The Core Idea
-
-AzGuard inverts this: **the source of truth is PHP**.
+Permissions live in PHP. The database is only ever asked "which role does this user have?" — never "what does this permission allow?"
 
 ```php
-// This is your permission — a PHP Enum case.
-// IDE can autocomplete it. PHPStan can validate it. Git can track it.
-enum AppPermissions: string
+// Permission — a backed enum. IDE-completable. PHPStan-checkable. Git-trackable.
+enum DocumentsPermission: string implements PermissionInterface
 {
-    case PostsEdit   = 'posts.edit';
-    case PostsDelete = 'posts.delete';
-    case UsersView   = 'users.view';
+    #[GateAbility]
+    case View   = 'documents.view';
+    #[GateAbility]
+    case Edit   = 'documents.edit';
+    #[GateAbility]
+    case Delete = 'documents.delete';
 }
 
-// This is your role — a PHP class.
-// It says exactly what it grants. No database lookup needed to understand it.
-final class EditorRole extends BaseRole
+// Role — a PHP class. Readable. Testable. Diffable.
+class EditorRole implements RoleInterface
 {
+    public function getName(): string  { return 'editor'; }
+    public function getPanel(): string { return 'app'; }
+    public function getLevel(): int    { return 10; }
+
     public function permissions(): array
     {
         return [
-            AppPermissions::PostsEdit->value,
+            AppGuard::permission(DocumentsPermission::View),
+            AppGuard::permission(DocumentsPermission::Edit),
         ];
     }
 }
 ```
 
-The database still exists — it stores **which user has which role**. But the permission definitions themselves live in code.
+When you add or rename a permission, the change is a **PHP file diff** — reviewable, searchable, and blocked by CI if a reference breaks.
 
-## What Makes AzGuard Different
+## Key capabilities
 
-### 1. Panels — Scoped Permission Namespaces
+### Panel namespacing
 
-Most applications have multiple "zones": a public-facing app, an admin dashboard, an API. AzGuard formalizes this:
+Permissions are scoped to a panel. `app.posts.edit` and `admin.posts.edit` are completely isolated — an app-panel role can never accidentally grant admin access.
 
-```
-admin.users.delete   ← admin panel
-app.posts.edit       ← app panel
-api.webhooks.create  ← api panel
-```
+### Custom (runtime) roles
 
-Each panel is a PHP class (`PanelProvider`). Roles within one panel cannot accidentally grant access in another.
+In addition to static PHP-class roles, AzGuard supports **DB-backed custom roles** created at runtime via Filament or API. Both kinds resolve through the same permission check path.
 
-### 2. PHP 8 Attributes for Declarative Access Control
-
-Instead of manually calling `$this->authorize()` in every controller method:
+### PHP 8 Attributes
 
 ```php
-// Before AzGuard
-public function update(Request $request, Post $post): Response
+// Declarative, visible in route inspection tools, no authorize() in the body
+#[CheckPermission(permission: DocumentsPermission::Edit, arguments: ['document'])]
+public function update(UpdateDocumentRequest $request, Document $document): Response
 {
-    $this->authorize('edit-posts');
     // ...
 }
-
-// With AzGuard
-#[CheckPermission(AppPermissions::PostsEdit, arguments: ['post'])]
-public function update(Request $request, Post $post): Response
-{
-    // Access already verified declaratively
-}
 ```
 
-### 3. Native Laravel Gate Integration
+### Native Gate integration
 
-AzGuard hooks into `Gate::before()` and works with every standard Laravel auth feature — no parallel system to maintain:
+AzGuard hooks into `Gate::before()`. Every standard Laravel auth primitive works unchanged:
 
 ```php
-Gate::allows('app.posts.edit');        // ✅ works
-$this->authorize('update', $post);     // ✅ works via policy
-@can('app.posts.edit') ... @endcan    // ✅ works
+Gate::allows('app.posts.edit');      // ✅
+$this->authorize('update', $post);   // ✅ via policy
+@can('app.posts.edit') ... @endcan  // ✅
 ```
 
-### 4. Developer Experience
+### Built-in diagnostics
 
 ```bash
-php artisan azguard:doctor            # Finds orphaned policies, missing abilities, typos
-php artisan azguard:list-permissions  # Shows all permissions across all panels
-php artisan azguard:sync-roles        # Syncs PHP role classes to DB
-php artisan azguard:sync-roles --dry-run  # Preview without writing
+php artisan azguard:doctor            # finds orphaned policies, typos, missing abilities
+php artisan azguard:list-permissions  # shows all permissions across all panels
+php artisan azguard:sync-roles        # syncs PHP role classes to DB
 ```
 
-## When to Use AzGuard
+## When AzGuard is the right choice
 
-AzGuard is the right choice when:
+**Use AzGuard when:**
+- Your app has multiple access zones (admin, app, API)
+- You want permissions reviewable in pull requests
+- You use Octane or deploy to Kubernetes
+- You need multi-panel RBAC with strict namespace isolation
+- You want IDE support and PHPStan on access control
 
-- Your application has **multiple access zones** (admin, app, API)
-- You want **permissions reviewable in pull requests** like any other code
-- You have a **team** and want IDE support + static analysis on access control
-- You use **Laravel Octane** or deploy to **Kubernetes** (cross-request cache works with Redis, not app memory)
-- You need **multi-panel RBAC** with permission isolation between zones
+**Consider alternatives when:**
+- You need non-developers to configure permissions from scratch at runtime (pure DB-driven workflow)
+- You're on a tiny app with 2-3 fixed roles that never change
+- You're migrating a legacy app deeply integrated with Spatie's DB schema
 
-AzGuard may not be the right choice when:
-
-- You need **runtime-editable permissions** by non-developers (e.g. admin UI where clients configure their own roles from scratch)
-- You have a very simple app with 2-3 fixed roles that never change
-- You are migrating a legacy app already deeply integrated with Spatie's DB schema
+→ [Detailed comparison with Spatie, Bouncer, and Laratrust](/guide/comparison)
