@@ -9,6 +9,7 @@ use AzGuard\Events\RoleDetached;
 use AzGuard\Models\Role;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\AzGuardContextBridge;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
@@ -51,22 +52,62 @@ trait HasAzGuard
      * Основной метод для политик.
      * Делегирует в EffectivePermissionResolver (через PermissionSet::grants).
      *
+     * Опциональный третий аргумент $context позволяет сделать одноразовую
+     * контекстную проверку без изменения глобального состояния.
+     * $context — объект с полями contextType, contextId (и опционально panelId).
+     * Удобнее использовать hasAzPermissionIn() как alias.
+     *
+     * Если пакет azguard/context не установлен или $context не передан —
+     * поведение идентично предыдущей версии (100% обратная совместимость).
+     *
      * Бросает исключение если ключ не зарегистрирован в каталоге
      * (только в strict-режиме; по умолчанию — тихо false).
+     *
+     * @param  object{contextType: string, contextId: int|string}|null  $context
      */
-    public function hasAzPermission(string $permission, string $panelId = 'app'): bool
+    public function hasAzPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
     {
+        if ($context !== null) {
+            return AzGuardContextBridge::checkWithContext($this, $permission, $panelId, $context);
+        }
+
         return $this->getAzPermissionSet($panelId)->grants($permission);
+    }
+
+    /**
+     * Удобный alias для контекстной проверки:
+     *
+     *   $user->hasAzPermissionIn('workspace', 42, 'app.posts.edit');
+     *   $user->hasAzPermissionIn('workspace', 42, 'app.posts.edit', 'admin');
+     *
+     * Полностью идемпотентен: не изменяет глобальный контекст.
+     * Возвращает false если пакет azguard/context не установлен.
+     */
+    public function hasAzPermissionIn(
+        string $contextType,
+        int|string $contextId,
+        string $permission,
+        string $panelId = 'app',
+    ): bool {
+        return AzGuardContextBridge::checkInContext(
+            user: $this,
+            contextType: $contextType,
+            contextId: $contextId,
+            permission: $permission,
+            panelId: $panelId,
+        );
     }
 
     /**
      * Тихая версия: никогда не бросает исключений.
      * Используйте в Blade-условиях и UI.
+     *
+     * @param  object{contextType: string, contextId: int|string}|null  $context
      */
-    public function checkAzPermission(string $permission, string $panelId = 'app'): bool
+    public function checkAzPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
     {
         try {
-            return $this->hasAzPermission($permission, $panelId);
+            return $this->hasAzPermission($permission, $panelId, $context);
         } catch (\Throwable) {
             return false;
         }
