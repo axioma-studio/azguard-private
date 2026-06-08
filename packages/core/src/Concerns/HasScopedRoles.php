@@ -14,10 +14,6 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Adds entity-scoped role support to Eloquent models.
  *
- * When a model uses this trait, a global scope is applied that filters
- * query results based on the authenticated user's scoped roles for this
- * entity type.
- *
  * Renamed from HasScopes (which conflicted with Laravel's own "scope"
  * terminology for Eloquent query scopes). HasScopes is kept as a
  * deprecated BC alias.
@@ -27,6 +23,8 @@ use Illuminate\Support\Facades\Auth;
  * - removeScopedRole()    — remove a scoped role assignment
  * - hasScopedRole()       — check if user has a role for a specific entity
  * - hasScopedPermission() — check permission within a specific entity scope
+ *
+ * Depends on HasAzGuard::resolveRole() being available on the same model.
  */
 trait HasScopedRoles
 {
@@ -137,7 +135,7 @@ trait HasScopedRoles
      *   $user->hasScopedPermission('app.projects.edit', $project);
      *
      * Resolution order:
-     *   1. SuperAdmin global wildcard (*) — always granted
+     *   1. SuperAdmin global wildcard (*) — always granted via hasPermission()
      *   2. Scoped roles for the given entity
      */
     public function hasScopedPermission(string $permission, Model $entity): bool
