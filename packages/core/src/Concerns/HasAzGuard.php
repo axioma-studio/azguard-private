@@ -10,6 +10,7 @@ use AzGuard\Models\Role;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\AzGuardContextBridge;
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
@@ -32,15 +33,15 @@ trait HasAzGuard
     public function roles(): MorphToMany
     {
         return $this->morphToMany(
-            config('az-guard.models.role'),
+            Config::roleModel(),
             'model',
-            config('az-guard.table_names.model_has_roles')
+            Config::modelHasRolesTable()
         );
     }
 
     public function azScopes()
     {
-        return $this->morphMany(config('az-guard.models.scope'), 'model');
+        return $this->morphMany(Config::scopeModel(), 'model');
     }
 
     public function hasAzRole(string $name): bool
@@ -240,7 +241,7 @@ trait HasAzGuard
         }
 
         /** @var class-string<Role> $roleClass */
-        $roleClass = config('az-guard.models.role');
+        $roleClass = Config::roleModel();
 
         return $roleClass::query()->where('name', $role)->first();
     }
