@@ -4,27 +4,30 @@ declare(strict_types=1);
 
 namespace AzGuard\Context\Strategies;
 
-use AzGuard\Context\Contracts\MergeStrategy;
-use AzGuard\Context\Exceptions\MissingAuthorizationContextException;
+use AzGuard\Context\Contracts\ContextMergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Стратегия: deny если контекст не установлен; иначе — глобальные ∪ контекстные.
+ * Стратегия: запретить всё без контекста, с контекстом — global ∪ context.
  *
- * Использовать для маршрутов, где контекст обязателен.
- * Если middleware azguard.context не установил контекст — бросает exception.
+ * Если контекст не установлен — возвращает пустой PermissionSet,
+ * блокируя любой доступ.
+ * Если контекст установлен — поведение как GlobalPlusContextStrategy.
  *
- * Пример: API workspace-ресурсов, где каждый запрос обязан содержать workspace_id.
+ * Подходит для панелей, где работа вне контекста
+ * (например, вне выбранного проекта) семантически невозможна.
  */
-final class DenyWithoutContextStrategy implements MergeStrategy
+final class DenyWithoutContextStrategy implements ContextMergeStrategy
 {
-    public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet
-    {
+    public function merge(
+        Authenticatable $user,
+        string $panelId,
+        PermissionSet $global,
+        ?PermissionSet $context,
+    ): PermissionSet {
         if ($context === null) {
-            throw new MissingAuthorizationContextException(
-                'Authorization context is required but was not set. '
-                . 'Ensure the azguard.context middleware is applied to this route.'
-            );
+            return PermissionSet::empty();
         }
 
         return $global->merge($context);

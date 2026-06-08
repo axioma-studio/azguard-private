@@ -11,49 +11,39 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Middleware: устанавливает AuthorizationContext на время запроса.
+ * Middleware: azguard.context
  *
- * Использует ResolvesContext (настраивается через 'context_resolver' в конфиге)
- * для автоматического определения контекста из запроса.
+ * Перебирает зарегистрированные ResolvesContext-резолверы,
+ * вызывает resolve($request) и устанавливает контекст в менеджер.
  *
- * Регистрация:
- *   // bootstrap/app.php (Laravel 11+)
- *   ->withMiddleware(function (Middleware $middleware) {
- *       $middleware->alias(['azguard.context' => SetAuthorizationContext::class]);
+ * Регистрация в bootstrap/app.php или RouteServiceProvider:
+ *   ->withMiddleware(function (Middleware $m) {
+ *       $m->alias(['azguard.context' => SetAuthorizationContext::class]);
  *   })
  *
- *   // Route
+ * Применение на роуте:
  *   Route::middleware('azguard.context')->group(function () { ... });
- *
- * Или вручную (без резолвера):
- *   app(AuthorizationContextManager::class)
- *       ->setContext(AuthorizationContext::make('workspace', $id));
  */
 final class SetAuthorizationContext
 {
+    /**
+     * @param iterable<ResolvesContext> $resolvers
+     */
     public function __construct(
         private readonly AuthorizationContextManager $manager,
+        private readonly iterable $resolvers,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        $resolverClass = config('az-guard-context.context_resolver');
-
-        if ($resolverClass !== null) {
-            /** @var ResolvesContext $resolver */
-            $resolver = app($resolverClass);
+        foreach ($this->resolvers as $resolver) {
             $context = $resolver->resolve($request);
 
             if ($context !== null) {
-                $this->manager->setContext($context);
+                $this->manager->set($context);
             }
         }
 
-        $response = $next($request);
-
-        // Очищаем контекст после запроса (защита от утечки в long-running processes).
-        $this->manager->clearContext();
-
-        return $response;
+        return $next($request);
     }
 }

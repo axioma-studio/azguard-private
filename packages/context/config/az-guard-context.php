@@ -1,34 +1,37 @@
 <?php
 
-use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
-
 return [
     /*
     |--------------------------------------------------------------------------
     | Merge Strategy
     |--------------------------------------------------------------------------
     |
-    | Определяет, как контекстные права объединяются с глобальными.
+    | Определяет, как объединяются глобальные права и контекстные права.
     |
-    | Доступные стратегии:
-    |   GlobalPlusContextStrategy  — глобальные + контекстные (default)
-    |   ContextOnlyStrategy        — только контекстные права, глобальные игнорируются
-    |   DenyWithoutContextStrategy — deny если контекст не установлен
+    | Встроенные стратегии:
+    |   GlobalPlusContextStrategy  — global ∪ context (дефолт)
+    |   ContextOnlyStrategy        — только context, global игнорируется
+    |   DenyWithoutContextStrategy — пустой set без контекста
     |
-    | Можно указать любой класс, реализующий MergeStrategy.
+    | Можно подставить свой класс, реализующий ContextMergeStrategy.
+    |
     */
-    'merge_strategy' => GlobalPlusContextStrategy::class,
+    'merge_strategy' => \AzGuard\Context\Strategies\GlobalPlusContextStrategy::class,
 
     /*
     |--------------------------------------------------------------------------
-    | Context Resolver
+    | Context Resolvers
     |--------------------------------------------------------------------------
     |
-    | FQCN класса, реализующего ResolvesContext.
-    | Используется SetAuthorizationContext middleware для автоматического
-    | определения контекста из запроса (например, из route parameter).
+    | Список FQCN классов, реализующих ResolvesContext.
+    | Каждый resolver извлекает AuthorizationContext из Request
+    | и устанавливает его в AuthorizationContextManager.
     |
-    | Если null — контекст устанавливается вручную через AuthorizationContextManager.
+    | Пример:
+    |   'resolvers' => [
+    |       App\AzGuard\WorkspaceContextResolver::class,
+    |   ],
+    |
     */
-    'context_resolver' => null,
+    'resolvers' => [],
 ];

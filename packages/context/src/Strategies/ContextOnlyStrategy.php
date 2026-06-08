@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 namespace AzGuard\Context\Strategies;
 
-use AzGuard\Context\Contracts\MergeStrategy;
+use AzGuard\Context\Contracts\ContextMergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Стратегия: только контекстные права, глобальные игнорируются.
+ * Стратегия: только контекстные права.
  *
- * Использовать, когда права полностью определяются контекстом (workspace / site),
- * а глобальные роли не должны давать доступ внутри контекста.
+ * Глобальные права полностью игнорируются.
+ * Если контекст не установлен — пустой PermissionSet.
  *
- * Пример: SaaS с изолированными workspace-ами, где роль суперадмина
- * не должна автоматически давать права внутри чужого workspace.
- *
- * Если контекст не установлен — возвращает empty (deny all).
+ * Подходит для строгой изоляции:
+ * пользователь вне контекста не имеет прав,
+ * даже если у него есть глобальная роль.
  */
-final class ContextOnlyStrategy implements MergeStrategy
+final class ContextOnlyStrategy implements ContextMergeStrategy
 {
-    public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet
-    {
+    public function merge(
+        Authenticatable $user,
+        string $panelId,
+        PermissionSet $global,
+        ?PermissionSet $context,
+    ): PermissionSet {
         return $context ?? PermissionSet::empty();
     }
 }

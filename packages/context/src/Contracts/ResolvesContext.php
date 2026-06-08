@@ -4,28 +4,40 @@ declare(strict_types=1);
 
 namespace AzGuard\Context\Contracts;
 
+use AzGuard\Context\AuthorizationContext;
 use Illuminate\Http\Request;
 
 /**
- * Резолвер контекста из HTTP-запроса.
+ * Интерфейс для классов, умеющих извлекать AuthorizationContext из Request.
  *
- * Реализуется в приложении и регистрируется через config:
- *   'context_resolver' => App\Auth\WorkspaceContextResolver::class
+ * Реализуется в приложении:
  *
- * Пример реализации:
- *
- *   class WorkspaceContextResolver implements ResolvesContext
+ *   final class WorkspaceContextResolver implements ResolvesContext
  *   {
- *       public function resolve(Request $request): ?AuthorizationContextInterface
+ *       public function resolve(Request $request): ?AuthorizationContext
  *       {
- *           $workspaceId = $request->route('workspace');
- *           return $workspaceId
- *               ? new AuthorizationContext('workspace', (string) $workspaceId)
+ *           $id = $request->route('workspace');
+ *           return $id
+ *               ? new AuthorizationContext('app', 'workspace', $id)
  *               : null;
  *       }
+ *
+ *       public function panel(): string { return 'app'; }
  *   }
+ *
+ * Регистрируется в PanelProvider:
+ *   AzGuardContext::registerResolver(WorkspaceContextResolver::class);
  */
 interface ResolvesContext
 {
-    public function resolve(Request $request): ?AuthorizationContextInterface;
+    /**
+     * Извлечь контекст из текущего request.
+     * Вернуть null, если контекст неприменим к этому запросу.
+     */
+    public function resolve(Request $request): ?AuthorizationContext;
+
+    /**
+     * Панель, для которой работает этот resolver.
+     */
+    public function panel(): string;
 }

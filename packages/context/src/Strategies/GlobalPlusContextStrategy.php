@@ -4,25 +4,28 @@ declare(strict_types=1);
 
 namespace AzGuard\Context\Strategies;
 
-use AzGuard\Context\Contracts\MergeStrategy;
+use AzGuard\Context\Contracts\ContextMergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Стратегия: глобальные права ∪ контекстные права.
+ * Стратегия: global ∪ context.
  *
- * Пользователь получает всё, что есть в его глобальных ролях,
- * плюс дополнительные права из контекста (workspace / site).
+ * Пользователь получает объединение глобальных прав и прав контекста.
+ * Если контекст не установлен — только глобальные права.
  *
- * Это стратегия по умолчанию — наименее ограничивающая.
- *
- * Пример: глобальная роль даёт app.posts.view,
- * контекст workspace:42 добавляет app.posts.publish.
- * Итог: {app.posts.view, app.posts.publish}.
+ * Подходит для большинства multi-workspace сценариев:
+ * администратор платформы имеет глобальные права,
+ * участник workspace — права своего workspace.
  */
-final class GlobalPlusContextStrategy implements MergeStrategy
+final class GlobalPlusContextStrategy implements ContextMergeStrategy
 {
-    public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet
-    {
+    public function merge(
+        Authenticatable $user,
+        string $panelId,
+        PermissionSet $global,
+        ?PermissionSet $context,
+    ): PermissionSet {
         if ($context === null) {
             return $global;
         }

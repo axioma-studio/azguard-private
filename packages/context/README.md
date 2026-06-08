@@ -1,51 +1,65 @@
 # azguard/context
 
-Опциональный пакет для multi-workspace / multi-site поддержки в AzGuard.
+Opt-in пакет для multi-workspace / multi-site поддержки в AzGuard.
 
 ## Установка
 
 ```bash
 composer require axioma-studio/azguard-context
-php artisan vendor:publish --tag=azguard-context-config
+php artisan vendor:publish --tag=azguard-context-migrations
+php artisan migrate
 ```
-
-## Концепция
-
-`azguard/context` добавляет понятие **контекста авторизации** — пространства (workspace, site, tenant), в рамках которого проверяются права пользователя.
-
-Пакет полностью opt-in: без его установки поведение `azguard/core` не меняется.
 
 ## Быстрый старт
 
+### 1. Создайте resolver
+
 ```php
-// 1. Реализуйте ResolvesContext в приложении
-class WorkspaceContextResolver implements ResolvesContext
+use AzGuard\Context\Contracts\ResolvesContext;
+use AzGuard\Context\AuthorizationContext;
+use Illuminate\Http\Request;
+
+final class WorkspaceContextResolver implements ResolvesContext
 {
-    public function resolve(Request $request): ?AuthorizationContextInterface
+    public function resolve(Request $request): ?AuthorizationContext
     {
         $id = $request->route('workspace');
-        return $id ? AuthorizationContext::make('workspace', (string) $id) : null;
+        return $id
+            ? new AuthorizationContext('app', 'workspace', $id)
+            : null;
     }
+
+    public function panel(): string { return 'app'; }
 }
-
-// 2. Зарегистрируйте в config/az-guard-context.php
-'context_resolver' => WorkspaceContextResolver::class,
-
-// 3. Добавьте middleware на маршруты
-Route::middleware(['auth', 'azguard.context'])->group(function () {
-    Route::get('/workspaces/{workspace}/posts', PostController::class);
-});
-
-// 4. Права проверяются как обычно
-Gate::allows('app.posts.publish'); // учитывает контекст workspace автоматически
 ```
 
-## Стратегии merge
+### 2. Зарегистрируйте в конфиге
 
-| Стратегия | Поведение |
+```php
+// config/az-guard-context.php
+'resolvers' => [
+    App\AzGuard\WorkspaceContextResolver::class,
+],
+```
+
+### 3. Подключите middleware
+
+```php
+// routes/web.php
+Route::middleware('azguard.context')->group(function () {
+    Route::get('/workspaces/{workspace}/posts', PostController::class);
+});
+```
+
+С этого момента `hasAzPermission('app.posts.edit')` автоматически учитывает
+права пользователя в текущем workspace.
+
+## Стратегии
+
+| Класс | Поведение |
 |---|---|
-| `GlobalPlusContextStrategy` | глобальные ∪ контекстные (default) |
-| `ContextOnlyStrategy` | только контекстные, глобальные игнорируются |
-| `DenyWithoutContextStrategy` | exception если контекст не установлен |
+| `GlobalPlusContextStrategy` | global ∪ context (дефолт) |
+| `ContextOnlyStrategy` | только context, global игнорируется |
+| `DenyWithoutContextStrategy` | без контекста — пусто |
 
-См. полную документацию: `docs/guide/context.md` (Sprint 8).
+См. `docs/guide/context.md` для полной документации.

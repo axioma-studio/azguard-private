@@ -4,40 +4,55 @@ declare(strict_types=1);
 
 namespace AzGuard\Context;
 
-use AzGuard\Context\Contracts\AuthorizationContextInterface;
-
 /**
- * Value object контекста авторизации.
+ * Value object: описывает контекст авторизации.
  *
- * Иммутабельный. Создаётся приложением и передаётся в AuthorizationContextManager.
+ * Пример: пользователь работает с workspace #42 панели "app".
  *
- * Пример:
- *   $ctx = new AuthorizationContext('workspace', '42');
- *   $ctx->contextId();   // 'workspace:42'
- *   $ctx->contextType(); // 'workspace'
+ *   $ctx = new AuthorizationContext(
+ *       panelId:     'app',
+ *       contextType: 'workspace',
+ *       contextId:   42,
+ *   );
+ *
+ * Иммутабельный — изменения создают новый экземпляр (withPanel / withContext).
  */
-final class AuthorizationContext implements AuthorizationContextInterface
+final readonly class AuthorizationContext
 {
     public function __construct(
-        private readonly string $type,
-        private readonly string $id,
+        public readonly string $panelId,
+        public readonly string $contextType,
+        public readonly int|string $contextId,
     ) {}
 
-    public function contextId(): string
+    /**
+     * Вернуть новый контекст с другим panelId.
+     */
+    public function withPanel(string $panelId): self
     {
-        return "{$this->type}:{$this->id}";
-    }
-
-    public function contextType(): string
-    {
-        return $this->type;
+        return new self($panelId, $this->contextType, $this->contextId);
     }
 
     /**
-     * Фабричный метод для удобства.
+     * Вернуть новый контекст с другой сущностью.
      */
-    public static function make(string $type, string $id): self
+    public function withContext(string $contextType, int|string $contextId): self
     {
-        return new self($type, $id);
+        return new self($this->panelId, $contextType, $contextId);
+    }
+
+    /**
+     * Строковый ключ для кэша / логов.
+     */
+    public function cacheKey(): string
+    {
+        return "{$this->panelId}:{$this->contextType}:{$this->contextId}";
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->panelId === $other->panelId
+            && $this->contextType === $other->contextType
+            && $this->contextId === $other->contextId;
     }
 }
