@@ -1,95 +1,126 @@
 # Roles
 
-AzGuard supports two kinds of roles: **static** (PHP class, code-first) and **custom** (DB-backed, created via Filament or API at runtime). Both implement `RoleInterface` and resolve to the same permission check path.
+In AzGuard, a role is a **PHP class** that declares which permissions it grants. Roles are code — not database records — which means they are version-controlled, diffable, and always consistent.
 
-## Static roles (code-first)
+## Static roles (recommended)
 
-A static role is a PHP class committed to your repository.
-
-```bash
-php artisan azguard:make-role App EditorRole
-```
+Static roles are PHP classes that implement `RoleInterface`. Their permissions are declared in code.
 
 ```php
-namespace App\Guards\App\Roles;
+// app/AzGuard/App/Roles/EditorRole.php
+namespace App\AzGuard\App\Roles;
 
 use AzGuard\Contracts\RoleInterface;
-use App\Guards\App\AppGuard;
-use App\Guards\App\Permissions\DocumentsPermission;
-use App\Guards\App\Permissions\ProjectsPermission;
+use App\AzGuard\App\Permissions\DocumentsPermission;
+use App\AzGuard\App\Permissions\CommentsPermission;
 
 class EditorRole implements RoleInterface
 {
     public function getName(): string  { return 'editor'; }
     public function getPanel(): string { return 'app'; }
-    public function getLevel(): int    { return 10; }  // higher = more privileged
+    public function getLevel(): int    { return 10; }
 
     public function permissions(): array
     {
         return [
-            AppGuard::permission(DocumentsPermission::View),
-            AppGuard::permission(DocumentsPermission::Create),
-            AppGuard::permission(DocumentsPermission::Edit),
-            AppGuard::permission(ProjectsPermission::View),
+            DocumentsPermission::View,
+            DocumentsPermission::Create,
+            DocumentsPermission::Edit,
+            CommentsPermission::View,
+            CommentsPermission::Create,
         ];
     }
 }
 ```
 
-### Assigning a static role
+### Role levels
 
-```php
-$user->assignRole(EditorRole::class, panel: 'app');
+`getLevel()` is an integer used for role hierarchy comparisons. Higher number = higher privilege:
 
-// Remove
-$user->removeRole(EditorRole::class, panel: 'app');
+| Role | Level |
+|---|---|
+| `viewer` | 1 |
+| `editor` | 10 |
+| `manager` | 50 |
+| `admin` | 100 |
+
+Levels are **not** used for permission inheritance (a higher-level role does not automatically inherit lower-level permissions). They exist for your application logic, e.g., `$user->hasRoleLevel('>= 50')`.
+
+## Generating roles
+
+```bash
+php artisan azguard:make-role App EditorRole
+php artisan azguard:make-role Admin SuperAdminRole
 ```
 
-## Custom roles (DB-backed)
-
-Custom roles are created at runtime — by an admin in the Filament UI, or programmatically. They are stored in the `az_guard_roles` table.
+## Assigning roles
 
 ```php
-use AzGuard\Models\AzRole;
+// By class name
+$user->assignRole(EditorRole::class);
 
-$role = AzRole::create([
-    'name'  => 'regional-manager',
-    'panel' => 'app',
-    'level' => 5,
+// By string name (panel auto-resolved from registration)
+$user->assignRole('editor');
+
+// Explicitly specifying the panel
+$user->assignRole('editor', panel: 'app');
+
+// Multiple roles at once
+$user->syncRoles(['editor', 'viewer']);
+
+// Remove a single role
+$user->removeRole('editor');
+
+// Remove all roles
+$user->syncRoles([]);
+```
+
+## Checking roles
+
+```php
+$user->hasRole('editor');               // bool
+$user->hasRole(EditorRole::class);      // bool
+$user->hasAnyRole(['editor', 'admin']); // bool — any of the listed roles
+$user->hasAllRoles(['editor', 'admin']); // bool — must have all
+$user->getRoleNames();                  // Collection<string>
+```
+
+## Dynamic (DB-backed) roles
+
+For admin UIs where roles are managed at runtime, you can use the `DynamicRole` model:
+
+```php
+use AzGuard\Models\DynamicRole;
+
+// Create a role at runtime
+$role = DynamicRole::create([
+    'name'    => 'tenant-admin',
+    'panel'   => 'app',
+    'level'   => 20,
 ]);
 
-// Attach permissions (resolved strings)
-$role->permissions()->attach([
-    AppGuard::permission(DocumentsPermission::View),
-    AppGuard::permission(ProjectsPermission::View),
+// Attach permissions
+$role->givePermissions([
+    DocumentsPermission::View,
+    DocumentsPermission::Create,
 ]);
 
 // Assign to user
 $user->assignRole($role);
 ```
 
-Custom roles appear alongside static roles in `$user->azRoles()` and are cached identically.
+Dynamic roles are stored in `az_guard_roles` and their permissions in `az_guard_role_permissions`.
 
-::: tip Filament
-Use `RoleResource` from `azguard/filament` to let admins create and manage custom roles without code. See [Filament integration](/guide/filament).
-:::
+## Listing roles
 
-## Role levels
-
-Role levels control precedence when multiple roles are assigned. A higher level wins conflicts. Levels do **not** imply role inheritance — every role's `permissions()` is independent.
-
-| Level | Example role |
-|---|---|
-| 100 | SuperAdmin (wildcard) |
-| 50 | Admin |
-| 10 | Editor |
-| 1 | Viewer |
-
-## Checking roles
-
-```php
-$user->hasAzRole('editor', panel: 'app');         // by name
-$user->hasAzRole(EditorRole::class, panel: 'app'); // by class
+```bash
+php artisan azguard:list-roles
+php artisan azguard:list-roles --panel=app
 ```
 
-Prefer permission checks (`hasAzPermission`) over role checks in business logic. Roles are configuration; permissions are the contract.
+## Best practices
+
+- **Use static roles as the source of truth.** Dynamic roles are useful for multi-tenant customization, but your base roles should always be in code.
+- **One role class per role.** `EditorRole`, `ViewerRole`, `AdminRole` — each in its own file.
+- **Keep permission lists explicit.** Avoid loops or computed permission arrays — the list should be readable at a glance.
+- **Use [Direct Grants](/guide/direct-grants) for exceptions.** If one user needs an extra permission, don't create a new role — grant it directly.
