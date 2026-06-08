@@ -12,17 +12,15 @@ use Illuminate\Contracts\Auth\Authenticatable;
 /**
  * Grant source from PHP role classes (RoleInterface::permissions()).
  *
- * Primary source in Phase 1. Only roles with class_name (code roles).
- * Custom DB roles are covered by DatabaseRoleGrantSource.
+ * Only processes roles that have a class_name set (code-defined roles).
+ * Pure DB roles without a class_name are handled by DatabaseRoleGrantSource.
+ * Priority: 100 (highest).
  */
 final class ClassRoleGrantSource implements GrantSource
 {
-    /** @var array<class-string, bool> */
-    private static array $traitCache = [];
-
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
-        if (! $this->hasAzGuardTrait($user)) {
+        if (! in_array(HasAzGuard::class, class_uses_recursive($user), strict: true)) {
             return PermissionSet::empty();
         }
 
@@ -34,6 +32,7 @@ final class ClassRoleGrantSource implements GrantSource
                 $permissions = $roleLogic->permissions();
                 $all = is_array($permissions) ? $permissions : [];
 
+                // Keep '*' (wildcard) and permissions prefixed with the current panel ID.
                 return array_filter(
                     $all,
                     static fn (string $p) => $p === '*' || str_starts_with($p, $panelId . '.'),
@@ -43,17 +42,15 @@ final class ClassRoleGrantSource implements GrantSource
             ->values()
             ->all();
 
-        return PermissionSet::fromRawKeys($keys);
+        if (in_array('*', $keys, strict: true)) {
+            return PermissionSet::wildcard();
+        }
+
+        return PermissionSet::fromKeys($keys);
     }
 
     public function priority(): int
     {
         return 100;
-    }
-
-    private function hasAzGuardTrait(Authenticatable $user): bool
-    {
-        return self::$traitCache[$user::class] ??=
-            in_array(HasAzGuard::class, class_uses_recursive($user), strict: true);
     }
 }

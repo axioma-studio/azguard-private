@@ -11,7 +11,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Grant source from DB roles via az_guard_role_permissions.
+ * Grant source from DB roles via the role_permissions table.
  *
  * Covers roles without class_name (pure DB roles, not PHP classes).
  * Priority 90 (ClassRoleGrantSource = 100, DirectGrantSource = 80).
@@ -25,8 +25,9 @@ final class DatabaseRoleGrantSource implements GrantSource
         $userId    = $user->getAuthIdentifier();
         $userClass = $user::class;
 
+        $rolesTable = Config::rolesTable();
         $pivotTable = Config::modelHasRolesTable();
-        $permTable  = Config::tableName('role_permissions');
+        $permTable  = Config::rolePermissionsTable();
 
         $keys = DB::table($permTable)
             ->join($pivotTable, "{$pivotTable}.role_id", '=', "{$permTable}.role_id")
@@ -36,7 +37,15 @@ final class DatabaseRoleGrantSource implements GrantSource
             ->pluck("{$permTable}.permission_key")
             ->all();
 
-        return PermissionSet::fromRawKeys($keys);
+        if ($keys === []) {
+            return PermissionSet::empty();
+        }
+
+        if (in_array('*', $keys, strict: true)) {
+            return PermissionSet::wildcard();
+        }
+
+        return PermissionSet::fromKeys($keys);
     }
 
     public function priority(): int
