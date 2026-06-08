@@ -18,6 +18,7 @@ The panel prefix (`app.`) is added automatically by AzGuard based on the panel t
 ## Defining permissions
 
 ```php
+// app/AzGuard/App/Permissions/DocumentsPermission.php
 use AzGuard\Contracts\PermissionInterface;
 use AzGuard\Attributes\GateAbility;
 use AzGuard\Attributes\RoleOnly;
@@ -35,7 +36,7 @@ enum DocumentsPermission: string implements PermissionInterface
     case Edit   = 'documents.edit';
 
     // Not registered as a Gate ability — only checked via hasPermission()
-    // Use for internal checks that should not be exposed to Gate
+    // Use for internal checks that should not be exposed to the Gate
     #[RoleOnly]
     case Delete = 'documents.delete';
 }
@@ -54,7 +55,7 @@ enum DocumentsPermission: string implements PermissionInterface
 ```bash
 php artisan azguard:make-permission {Panel} {ClassName}
 
-# Example:
+# Examples:
 php artisan azguard:make-permission App DocumentsPermission
 php artisan azguard:make-permission Admin UsersPermission
 ```
@@ -64,21 +65,54 @@ The command creates the file in `app/AzGuard/{Panel}/Permissions/` and reminds y
 ## Checking permissions
 
 ```php
-// Via HasAzGuard trait
-$user->hasPermission(DocumentsPermission::View);      // enum case
-$user->hasPermission('app.documents.view');            // full key string
+// Via HasAzGuard trait — preferred, enum case
+$user->hasPermission(DocumentsPermission::View);
+
+// Full key string also accepted
+$user->hasPermission('app.documents.view');
 
 // Via Gate (requires #[GateAbility])
 Gate::allows('app.documents.view');
-$this->authorize('app.documents.view');
+$this->authorize('app.documents.view');    // throws 403 on failure
 
 // Blade
 @can('app.documents.view')
     ...
 @endcan
 
-// Silent check (never throws, useful in conditions)
-$user->checkPermission(DocumentsPermission::View);    // false instead of exception
+// Silent check (returns false instead of throwing)
+$user->checkPermission(DocumentsPermission::View);
+```
+
+## Inspecting a user's permissions
+
+```php
+// All permissions the user has (via roles + direct grants)
+$user->getAllPermissions();       // Collection of permission key strings
+
+// Only permissions coming from roles
+$user->getPermissionsViaRoles();  // Collection of permission key strings
+
+// Only permissions granted directly (not via a role)
+$user->getDirectPermissions();    // Collection of permission key strings (requires HasDirectGrants)
+
+// All full permission keys
+$user->getAllPermissions()->toArray();
+// ["app.documents.view", "app.documents.create", ...]
+```
+
+## Query users by permission
+
+```php
+// Users who have a specific permission (via any role or direct grant)
+User::permission(DocumentsPermission::Edit)->get();
+User::permission('app.documents.edit')->get();
+
+// Users who do NOT have a specific permission
+User::withoutPermission('app.documents.delete')->get();
+
+// Accepts a string, array, or Collection
+User::permission(['app.documents.view', 'app.documents.edit'])->get();
 ```
 
 ## TypeScript export
@@ -104,7 +138,7 @@ export const Permissions = {
 } as const;
 ```
 
-See [Frontend Abilities](/guide/abilities-frontend) for how to use this with Inertia/Vue/React.
+See [Frontend Abilities](./abilities-frontend.md) for how to use this with Inertia / Vue / React.
 
 ## Listing all permissions
 
@@ -116,6 +150,7 @@ php artisan azguard:list-permissions --panel=app
 ## Best practices
 
 - **One enum per resource.** `DocumentsPermission`, `UsersPermission`, `ReportsPermission` — not one giant `AppPermission` enum.
-- **CRUD as the default actions.** `view`, `create`, `edit`, `delete`. Add only what you need: `export`, `publish`, `approve`.
-- **Use `#[GateAbility]` explicitly.** Even if it's the default, it makes intent clear during code review.
-- **Never hardcode string keys.** Always reference enum cases: `DocumentsPermission::View`, not `'app.documents.view'`.
+- **CRUD as the default action set.** `view`, `create`, `edit`, `delete`. Add only what you need: `export`, `publish`, `approve`.
+- **Use `#[GateAbility]` explicitly.** Even if it is the default, it makes intent clear during code review.
+- **Never hardcode string keys.** Always reference enum cases: `DocumentsPermission::View`, not `'app.documents.view'`. The enum is your source of truth.
+- **Prefer permission checks over role checks.** `$user->hasPermission(X)` stays correct when roles are reorganized; `$user->hasRole('editor')` breaks when the role is renamed or its permission set changes.
