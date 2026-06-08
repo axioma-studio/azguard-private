@@ -10,9 +10,9 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 
 /**
- * Filament v3 plugin.
+ * AzGuard Filament plugin (supports Filament 4 and 5).
  *
- * Регистрация в панели:
+ * Register in your PanelProvider:
  *
  * $panel->plugins([
  *     AzGuardPlugin::make()->forPanel('admin'),

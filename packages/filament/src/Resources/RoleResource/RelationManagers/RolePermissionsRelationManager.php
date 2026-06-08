@@ -9,6 +9,7 @@ use AzGuard\Models\RolePermission;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -37,8 +38,8 @@ final class RolePermissionsRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form->schema([
-            TextColumn::make('permission_key')->label('Право'),
-            TextColumn::make('panel_id')->label('Панель'),
+            TextInput::make('permission_key')->label('Право'),
+            TextInput::make('panel_id')->label('Панель'),
         ]);
     }
 
@@ -111,7 +112,7 @@ final class RolePermissionsRelationManager extends RelationManager
             }
 
             $sections[] = Section::make($panelId)
-                ->heading(«Панель: » . $panelId)
+                ->heading('Panel: ' . $panelId)
                 ->schema($checkboxLists)
                 ->collapsible();
         }
@@ -162,7 +163,6 @@ final class RolePermissionsRelationManager extends RelationManager
         $role = $this->getOwnerRecord();
         $permissionsData = $data['permissions'] ?? [];
 
-        // Собираем все ключи в формате panelId => [keys]
         $desired = [];
 
         foreach ($permissionsData as $panelId => $groups) {
@@ -173,7 +173,6 @@ final class RolePermissionsRelationManager extends RelationManager
             }
         }
 
-        // Удаляем всё, затем upsert
         $role->dbPermissions()->delete();
 
         $rows = [];
