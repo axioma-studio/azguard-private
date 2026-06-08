@@ -14,14 +14,9 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Adds entity-scoped role support to Eloquent models.
  *
- * When a model uses this trait, a global scope is applied that filters
- * results based on the authenticated user's scoped roles for this entity type.
+ * Requires HasAzGuard on the same model (uses resolveRole() from it).
  *
- * Also provides:
- * - assignScopedRole()    — assign a role scoped to a specific entity
- * - removeScopedRole()    — remove a scoped role assignment
- * - hasScopedRole()       — check if user has a role for a specific entity
- * - hasScopedPermission() — check permission within a specific entity scope
+ * @method ?Role resolveRole(string|Role $role) Inherited from HasAzGuard.
  */
 trait HasScopes
 {
@@ -57,7 +52,7 @@ trait HasScopes
      */
     public function assignScopedRole(string|Role $role, Model $entity): static
     {
-        $roleModel = $this->resolveScopeRole($role);
+        $roleModel = $this->resolveRole($role);
 
         if ($roleModel === null) {
             return $this;
@@ -85,7 +80,7 @@ trait HasScopes
      */
     public function removeScopedRole(string|Role $role, Model $entity): static
     {
-        $roleModel = $this->resolveScopeRole($role);
+        $roleModel = $this->resolveRole($role);
 
         if ($roleModel === null) {
             return $this;
@@ -111,7 +106,7 @@ trait HasScopes
      */
     public function hasScopedRole(string|Role $role, Model $entity): bool
     {
-        $roleModel = $this->resolveScopeRole($role);
+        $roleModel = $this->resolveRole($role);
 
         if ($roleModel === null) {
             return false;
@@ -173,21 +168,5 @@ trait HasScopes
         }
 
         return false;
-    }
-
-    /**
-     * Resolve a role by name or return the instance directly.
-     * Delegates to Role::findByName() — single source of truth.
-     */
-    protected function resolveScopeRole(string|Role $role): ?Role
-    {
-        if ($role instanceof Role) {
-            return $role;
-        }
-
-        /** @var class-string<Role> $roleClass */
-        $roleClass = Config::roleModel();
-
-        return $roleClass::findByName($role);
     }
 }
