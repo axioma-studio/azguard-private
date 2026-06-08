@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -38,20 +39,20 @@ class DirectGrant extends Model
 
     public function getTable(): string
     {
-        return (string) config('az-guard.table_names.direct_grants', 'az_direct_grants');
+        return Config::directGrantsTable();
     }
 
-    // ─── Relations ────────────────────────────────────────────────────────────
+    // ─── Relations ───────────────────────────────────────────────────────────────────
 
     public function grantable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    // ─── Scopes ───────────────────────────────────────────────────────────────
+    // ─── Scopes ────────────────────────────────────────────────────────────────────
 
     /**
-     * Только не истёкшие grants (бессрочные + expires_at > now).
+     * Active grants: no expiry or expires_at > now.
      *
      * @param  Builder<self>  $query
      */
@@ -71,7 +72,7 @@ class DirectGrant extends Model
         $query->where('panel_id', $panelId);
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
+    // ─── Helpers ────────────────────────────────────────────────────────────────────
 
     public function isExpired(): bool
     {
