@@ -1,6 +1,6 @@
 # Testing
 
-AzGuard is designed to be test-friendly. This page covers patterns for unit tests, feature tests, and using fakes.
+AzGuard is designed to be test-friendly. Roles are PHP classes — they're always available without seeding. Permission checks are pure functions — they're easy to assert.
 
 ## Setup
 
@@ -37,7 +37,8 @@ public function test_editor_can_view_documents(): void
 
 public function test_viewer_cannot_delete(): void
 {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
+    $document = Document::factory()->create();
     $user->assignRole('viewer');
 
     $this->actingAs($user)
@@ -49,13 +50,25 @@ public function test_viewer_cannot_delete(): void
 ## Testing permission checks directly
 
 ```php
-public function test_editor_has_edit_permission(): void
+public function test_editor_permissions(): void
 {
     $user = User::factory()->create();
     $user->assignRole('editor');
 
+    $this->assertTrue($user->hasPermission(DocumentsPermission::View));
     $this->assertTrue($user->hasPermission(DocumentsPermission::Edit));
     $this->assertFalse($user->hasPermission(DocumentsPermission::Delete));
+
+    // hasAnyPermission / hasAllPermissions
+    $this->assertTrue($user->hasAnyPermission([
+        DocumentsPermission::Edit,
+        DocumentsPermission::Delete,
+    ]));
+
+    $this->assertFalse($user->hasAllPermissions([
+        DocumentsPermission::Edit,
+        DocumentsPermission::Delete,  // editor doesn't have Delete
+    ]));
 }
 ```
 
@@ -82,9 +95,23 @@ public function test_expired_grant_is_denied(): void
     (new GrantBuilder($user))
         ->on('app')
         ->give(DocumentsPermission::View)
-        ->until(now()->subMinute());  // already expired
+        ->until(now()->subMinute());   // already expired
+
+    $user->flushPermissions();         // clear in-memory cache
 
     $this->assertFalse($user->hasPermission(DocumentsPermission::View));
+}
+
+public function test_grant_with_ttl_is_active(): void
+{
+    $user = User::factory()->create();
+
+    (new GrantBuilder($user))
+        ->on('app')
+        ->ttl(3600)                    // 1 hour from now
+        ->give(DocumentsPermission::Export);
+
+    $this->assertTrue($user->hasPermission(DocumentsPermission::Export));
 }
 ```
 
@@ -99,13 +126,26 @@ public function test_gate_allows_editor(): void
     $this->actingAs($user);
 
     $this->assertTrue(Gate::allows('app.documents.view'));
+    $this->assertTrue(Gate::allows('app.documents.edit'));
     $this->assertFalse(Gate::allows('app.documents.delete'));
+}
+
+public function test_gate_with_model(): void
+{
+    $user     = User::factory()->create();
+    $document = Document::factory()->create(['owner_id' => $user->id]);
+    $user->assignRole('editor');
+
+    $this->actingAs($user);
+
+    // Routes through DocumentPolicy::update() if registered
+    $this->assertTrue(Gate::allows('update', $document));
 }
 ```
 
 ## Mocking / faking the resolver
 
-For unit tests where you don't want a database:
+For unit tests where you don't want a real database:
 
 ```php
 use AzGuard\Testing\AzGuardFake;
@@ -122,36 +162,99 @@ public function test_service_checks_permission(): void
 {
     $user = User::factory()->make(['id' => 1]);
 
-    // Give the fake user a permission
+    // Grant in-memory — no DB writes
     AzGuardFake::grantPermission($user, 'app.documents.view');
+    AzGuardFake::grantRole($user, 'editor');
 
     $result = app(DocumentService::class)->canView($user, $document);
 
     $this->assertTrue($result);
 }
+
+public function test_service_denies_without_permission(): void
+{
+    $user = User::factory()->make(['id' => 2]);
+    // No permissions granted
+
+    $this->assertFalse(
+        app(DocumentService::class)->canView($user, $document)
+    );
+}
+```
+
+## Pest syntax
+
+```php
+it('allows editors to view documents', function () {
+    $user = User::factory()->create();
+    $user->assignRole('editor');
+
+    expect($user->hasPermission(DocumentsPermission::View))->toBeTrue();
+    expect($user->hasPermission(DocumentsPermission::Delete))->toBeFalse();
+});
+
+it('forbids unauthenticated access', function () {
+    $this->get(route('documents.index'))
+        ->assertRedirect(route('login'));
+});
+
+it('returns 403 for users without permission', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('documents.index'))
+        ->assertForbidden();
+});
+```
+
+## User factories with roles
+
+Define factory states so tests stay readable:
+
+```php
+// database/factories/UserFactory.php
+public function editor(): static
+{
+    return $this->afterCreating(fn (User $user) =>
+        $user->assignRole('editor', panel: 'app')
+    );
+}
+
+public function admin(): static
+{
+    return $this->afterCreating(fn (User $user) =>
+        $user->assignRole('super-admin', panel: 'admin')
+    );
+}
+```
+
+```php
+// Clean test setup
+$editor = User::factory()->editor()->create();
+$admin  = User::factory()->admin()->create();
 ```
 
 ## Asserting forbidden responses
 
 ```php
-public function test_unauthenticated_user_is_redirected(): void
-{
-    $this->get(route('documents.index'))
-        ->assertRedirect(route('login'));
-}
+// Unauthenticated — redirected to login
+$this->get(route('documents.index'))
+    ->assertRedirect(route('login'));
 
-public function test_user_without_permission_gets_403(): void
-{
-    $user = User::factory()->create();  // no roles assigned
+// Authenticated but no permission — 403
+$this->actingAs(User::factory()->create())
+    ->get(route('documents.index'))
+    ->assertForbidden();
 
-    $this->actingAs($user)
-        ->get(route('documents.index'))
-        ->assertForbidden();
-}
+// Correct role — passes
+$this->actingAs(User::factory()->editor()->create())
+    ->get(route('documents.index'))
+    ->assertOk();
 ```
 
 ## Tips
 
-- **Flush the permission cache between tests** if you're modifying roles/grants within a single test class: `$user->flushPermissions()`.
+- **Flush the permission cache between state changes** in a single test: `$user->flushPermissions()`.
 - **Use `assertForbidden()` not `assertStatus(403)`** for readable test output.
-- **Test the negative case.** For every permission you test as `true`, also test what a user *without* it sees.
+- **Test both sides.** For every permission you assert as `true`, also test what a user *without* it sees.
+- **Disable persistent cache in tests** — add `'cache' => ['enabled' => false]` to your `config/az-guard.php` test override.

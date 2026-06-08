@@ -11,16 +11,17 @@ Route::middleware([
     'check.access',       // reads #[CheckPermission] on the controller method
 ])->group(function () {
     Route::apiResource('documents', DocumentController::class);
+    Route::apiResource('reports', ReportController::class);
 });
 ```
 
 | Middleware | Alias | Purpose |
 |---|---|---|
-| `AzGuard\Http\Middleware\SetAzGuardPanel` | `azguard.panel` | Sets the active panel for this request |
-| `AzGuard\Http\Middleware\LoadAzGuardRoles` | `azguard.roles` | Loads and caches roles + grants for `auth()->user()` |
-| `AzGuard\Http\Middleware\CheckAccessMiddleware` | `check.access` | Reads `#[CheckPermission]` and calls `Gate::allows()` |
+| `SetAzGuardPanel` | `azguard.panel` | Sets the active panel for this request |
+| `LoadAzGuardRoles` | `azguard.roles` | Loads and caches roles + grants for `auth()->user()` |
+| `CheckAccessMiddleware` | `check.access` | Reads `#[CheckPermission]` and calls `Gate::allows()` |
 
-All three middleware aliases are registered automatically by `AzGuardServiceProvider`.
+All three aliases are registered automatically by `AzGuardServiceProvider`.
 
 ## `#[CheckPermission]`
 
@@ -30,14 +31,16 @@ use AzGuard\Attributes\SkipGuardCheck;
 
 class DocumentController extends Controller
 {
-    // Standard: check view permission, no model argument
+    // Check view permission — no model binding
     #[CheckPermission(DocumentsPermission::View)]
     public function index(): Response
     {
-        return Inertia::render('Documents/Index');
+        return Inertia::render('Documents/Index', [
+            'documents' => Document::paginate(),
+        ]);
     }
 
-    // With model argument — passed to Gate::allows() for policy integration
+    // With model argument — passed to Gate::allows() for Policy integration
     #[CheckPermission(permission: DocumentsPermission::View, arguments: ['document'])]
     public function show(Document $document): Response
     {
@@ -54,6 +57,13 @@ class DocumentController extends Controller
         return back()->with('success', 'Document updated.');
     }
 
+    #[CheckPermission(DocumentsPermission::Delete)]
+    public function destroy(Document $document): Response
+    {
+        $document->delete();
+        return redirect()->route('documents.index');
+    }
+
     // Skip the guard check entirely for public endpoints
     #[SkipGuardCheck]
     public function publicPreview(Document $document): Response
@@ -67,70 +77,117 @@ The `arguments` array maps to route model bindings by parameter name. The middle
 
 ## Manual Gate checks
 
-For non-controller code (jobs, listeners, services), call the Gate directly:
+For non-controller code (jobs, listeners, services):
 
 ```php
+// Throws AuthorizationException on deny
+Gate::authorize('app.documents.edit', $document);
+
+// Returns bool — handle the deny yourself
 if (! Gate::allows('app.documents.edit', $document)) {
-    throw new AuthorizationException();
+    throw new AuthorizationException('Cannot edit this document.');
 }
-```
 
-Or use `$this->authorize()` inside controllers:
-
-```php
+// In controllers
 $this->authorize('app.documents.delete', $document);
 ```
 
-::: tip
-`$this->authorize()` is fine, but `#[CheckPermission]` is the primary pattern — it keeps authorization out of the method body and makes it visible in route inspection tools.
-:::
-
 ## API routes (JSON 403)
 
-For API routes, Laravel returns JSON `{"message": "This action is unauthorized."}` with `403` by default when `$this->authorize()` or `Gate::authorize()` throws. For `check.access` middleware:
+For API routes, customize the error response in your exception handler:
 
 ```php
-// Customize the response in app/Exceptions/Handler.php
+// app/Exceptions/Handler.php (Laravel 10 style)
 public function render($request, Throwable $e)
 {
     if ($e instanceof AuthorizationException && $request->expectsJson()) {
-        return response()->json(['error' => 'Forbidden'], 403);
+        return response()->json([
+            'message' => 'Forbidden.',
+            'error'   => 'insufficient_permissions',
+        ], 403);
     }
 
     return parent::render($request, $e);
 }
-```
 
-## Protecting entire route groups
-
-To require a specific role (not just authentication) on every route in a group:
-
-```php
-Route::middleware([
-    'auth',
-    'azguard.panel:app',
-    'azguard.roles',
-    'check.access',
-    function ($request, $next) {
-        if (! $request->user()->hasRole('editor')) {
-            abort(403);
+// Laravel 11 — bootstrap/app.php
+->withExceptions(function (Exceptions $exceptions) {
+    $exceptions->render(function (AuthorizationException $e, Request $request) {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Forbidden.'], 403);
         }
-        return $next($request);
-    },
-])->group(function () {
-    // Only editors reach here
-});
+    });
+})
 ```
 
-Or use a dedicated middleware:
+## Middleware chaining
+
+Multiple panels in the same application — register each group with its own panel middleware:
 
 ```php
-// app/Http/Middleware/RequireEditorRole.php
-public function handle(Request $request, Closure $next, string $role = 'editor'): Response
+// App panel
+Route::prefix('app')
+    ->middleware(['auth', 'azguard.panel:app', 'azguard.roles', 'check.access'])
+    ->group(base_path('routes/app.php'));
+
+// Admin panel
+Route::prefix('admin')
+    ->middleware(['auth', 'azguard.panel:admin', 'azguard.roles', 'check.access'])
+    ->group(base_path('routes/admin.php'));
+
+// API (stateless)
+Route::prefix('api')
+    ->middleware(['auth:sanctum', 'azguard.panel:api', 'azguard.roles', 'check.access'])
+    ->group(base_path('routes/api.php'));
+```
+
+## Named middleware groups
+
+DRY up your route definitions by registering named groups:
+
+```php
+// bootstrap/app.php (Laravel 11)
+->withMiddleware(function (Middleware $middleware) {
+    $middleware->appendToGroup('app-guard', [
+        \AzGuard\Http\Middleware\SetAzGuardPanel::class.':app',
+        \AzGuard\Http\Middleware\LoadAzGuardRoles::class,
+        \AzGuard\Http\Middleware\CheckAccessMiddleware::class,
+    ]);
+
+    $middleware->appendToGroup('admin-guard', [
+        \AzGuard\Http\Middleware\SetAzGuardPanel::class.':admin',
+        \AzGuard\Http\Middleware\LoadAzGuardRoles::class,
+        \AzGuard\Http\Middleware\CheckAccessMiddleware::class,
+    ]);
+})
+```
+
+```php
+// routes/web.php — clean and readable
+Route::middleware(['auth', 'app-guard'])
+    ->group(base_path('routes/app.php'));
+
+Route::middleware(['auth', 'admin-guard'])
+    ->group(base_path('routes/admin.php'));
+```
+
+## Protecting entire route groups by role
+
+```php
+// Dedicated middleware class
+// app/Http/Middleware/RequireRole.php
+public function handle(Request $request, Closure $next, string $role, string $panel = 'app'): Response
 {
-    if (! $request->user()?->hasRole($role)) {
+    if (! $request->user()?->hasRole($role, panel: $panel)) {
         abort(403);
     }
     return $next($request);
 }
+```
+
+```php
+Route::middleware(['auth', 'app-guard', 'role:manager,app'])
+    ->group(function () {
+        Route::get('/reports', ReportsController::class);
+    });
 ```
