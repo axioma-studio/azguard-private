@@ -17,7 +17,7 @@ namespace AzGuard\Support;
  */
 final class Config
 {
-    // ─── Models ──────────────────────────────────────────────────────────────
+    // ─── Models ───────────────────────────────────────────────────────────────
 
     public static function roleModel(): string
     {
@@ -122,11 +122,21 @@ final class Config
         return (string) config('az-guard.cache.store', 'array');
     }
 
-    public static function cacheExpiration(): ?int
+    /**
+     * Cache TTL in seconds. Returns null for infinite cache.
+     * Alias: cacheExpiration() — both names are supported.
+     */
+    public static function cacheTtl(): ?int
     {
         $value = config('az-guard.cache.expiration_time', 3600);
 
         return $value !== null ? (int) $value : null;
+    }
+
+    /** @alias cacheTtl() */
+    public static function cacheExpiration(): ?int
+    {
+        return static::cacheTtl();
     }
 
     public static function cacheKey(): string
