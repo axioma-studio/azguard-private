@@ -6,6 +6,7 @@ namespace AzGuard\Registry\Sources;
 
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\Config;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 
@@ -24,9 +25,8 @@ final class DatabaseRoleGrantSource implements GrantSource
         $userId    = $user->getAuthIdentifier();
         $userClass = $user::class;
 
-        $rolesTable = config('az-guard.table_names.roles', 'az_guard_roles');
-        $pivotTable = config('az-guard.table_names.model_has_roles', 'az_guard_model_has_roles');
-        $permTable  = config('az-guard.table_names.role_permissions', 'az_guard_role_permissions');
+        $pivotTable = Config::modelHasRolesTable();
+        $permTable  = Config::tableName('role_permissions');
 
         $keys = DB::table($permTable)
             ->join($pivotTable, "{$pivotTable}.role_id", '=', "{$permTable}.role_id")
@@ -36,15 +36,7 @@ final class DatabaseRoleGrantSource implements GrantSource
             ->pluck("{$permTable}.permission_key")
             ->all();
 
-        if ($keys === []) {
-            return PermissionSet::empty();
-        }
-
-        if (in_array('*', $keys, strict: true)) {
-            return PermissionSet::wildcard();
-        }
-
-        return PermissionSet::fromKeys($keys);
+        return PermissionSet::fromRawKeys($keys);
     }
 
     public function priority(): int

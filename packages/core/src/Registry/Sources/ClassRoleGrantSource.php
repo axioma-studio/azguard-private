@@ -10,17 +10,19 @@ use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Источник grants из PHP-классов ролей (RoleInterface::permissions()).
- * Это основной источник в Фазе 1 — соответствует текущей логике
- * HasAzGuard::loadAzPermissions().
+ * Grant source from PHP role classes (RoleInterface::permissions()).
  *
- * Только роли с class_name (code roles). Custom DB roles — Фаза 3.
+ * Primary source in Phase 1. Only roles with class_name (code roles).
+ * Custom DB roles are covered by DatabaseRoleGrantSource.
  */
 final class ClassRoleGrantSource implements GrantSource
 {
+    /** @var array<class-string, bool> */
+    private static array $traitCache = [];
+
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
-        if (! in_array(HasAzGuard::class, class_uses_recursive($user), strict: true)) {
+        if (! $this->hasAzGuardTrait($user)) {
             return PermissionSet::empty();
         }
 
@@ -32,7 +34,6 @@ final class ClassRoleGrantSource implements GrantSource
                 $permissions = $roleLogic->permissions();
                 $all = is_array($permissions) ? $permissions : [];
 
-                // Фильтруем по панели: берём '*' и ключи с префиксом панели
                 return array_filter(
                     $all,
                     static fn (string $p) => $p === '*' || str_starts_with($p, $panelId . '.'),
@@ -42,15 +43,17 @@ final class ClassRoleGrantSource implements GrantSource
             ->values()
             ->all();
 
-        if (in_array('*', $keys, strict: true)) {
-            return PermissionSet::wildcard();
-        }
-
-        return PermissionSet::fromKeys($keys);
+        return PermissionSet::fromRawKeys($keys);
     }
 
     public function priority(): int
     {
         return 100;
+    }
+
+    private function hasAzGuardTrait(Authenticatable $user): bool
+    {
+        return self::$traitCache[$user::class] ??=
+            in_array(HasAzGuard::class, class_uses_recursive($user), strict: true);
     }
 }

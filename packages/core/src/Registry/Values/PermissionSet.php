@@ -35,6 +35,27 @@ final class PermissionSet
     }
 
     /**
+     * Build a PermissionSet from raw keys returned by a GrantSource.
+     *
+     * Centralises the repeated empty / wildcard / fromKeys pattern
+     * that previously appeared in every GrantSource implementation.
+     *
+     * @param list<string> $keys
+     */
+    public static function fromRawKeys(array $keys): self
+    {
+        if ($keys === []) {
+            return self::empty();
+        }
+
+        if (in_array('*', $keys, strict: true)) {
+            return self::wildcard();
+        }
+
+        return self::fromKeys($keys);
+    }
+
+    /**
      * Merge two sets. If either is wildcard — result is wildcard.
      */
     public function merge(self $other): self
