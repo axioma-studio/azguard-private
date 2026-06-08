@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard;
 
+use AzGuard\Auth\DirectGrantPolicy;
 use AzGuard\Auth\PolicyAttributeRegistrar;
 use AzGuard\Commands\DoctorCommand;
 use AzGuard\Commands\ListPermissionsCommand;
@@ -60,6 +61,9 @@ final class AzGuardServiceProvider extends ServiceProvider
             return app(Authorizer::class)->check(user: $user, ability: $ability);
         });
 
+        // Gate-абилити для direct grants
+        Gate::define('direct-grant', [DirectGrantPolicy::class, 'check']);
+
         $this->registerMiddlewareAliases();
         $this->registerBladeDirectives();
 
@@ -79,7 +83,6 @@ final class AzGuardServiceProvider extends ServiceProvider
                 ListScopedRolesCommand::class,
                 CacheResetCommand::class,
                 SyncRolesCommand::class,
-                // Phase 7 — Grants CLI
                 GrantCommand::class,
                 RevokeGrantCommand::class,
                 PruneGrantsCommand::class,
@@ -108,7 +111,11 @@ final class AzGuardServiceProvider extends ServiceProvider
     }
 
     /**
-     * Регистрирует Blade-директивы: @azcan, @endazcan, @azrole, @endazrole.
+     * Регистрирует Blade-директивы.
+     *
+     * @azcan   / @endazcan   — проверка через роли
+     * @azrole  / @endazrole  — проверка наличия роли
+     * @azdirect / @endazdirect — проверка direct grant (Phase 8)
      */
     protected function registerBladeDirectives(): void
     {
@@ -123,6 +130,14 @@ final class AzGuardServiceProvider extends ServiceProvider
         });
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
+
+        // @azdirect('app.documents.export')         — текущая панель
+        // @azdirect('app.documents.export', 'app')  — явная панель
+        Blade::directive('azdirect', function (string $expression): string {
+            return "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>";
+        });
+
+        Blade::directive('endazdirect', fn (): string => '<?php endif; ?>');
     }
 
     protected function registerPanelProviders(): void
