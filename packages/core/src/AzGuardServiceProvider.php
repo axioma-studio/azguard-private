@@ -21,6 +21,14 @@ use AzGuard\Guard\Authorizer;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\LoadAzGuardRoles;
 use AzGuard\Http\Middleware\SetCurrentPanel;
+use AzGuard\Registry\Builders\CompositePermissionCatalog;
+use AzGuard\Registry\Builders\EnumPermissionCatalogBuilder;
+use AzGuard\Registry\Builders\PolicyAbilityCatalogBuilder;
+use AzGuard\Registry\Contracts\GrantSource;
+use AzGuard\Registry\Contracts\PermissionCatalog;
+use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Registry\Resolver\PermissionResolverCache;
+use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
@@ -41,6 +49,7 @@ final class AzGuardServiceProvider extends ServiceProvider
         $this->app->singleton(PolicyAttributeRegistrar::class, fn (): PolicyAttributeRegistrar => new PolicyAttributeRegistrar);
         $this->app->singleton(GuardDoctor::class, fn (): GuardDoctor => new GuardDoctor);
 
+        $this->registerRegistryBindings();
         $this->registerPanelProviders();
     }
 
@@ -49,7 +58,7 @@ final class AzGuardServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(paths: __DIR__ . '/../database/migrations');
 
         Gate::before(function ($user, string $ability): ?bool {
-            if ($user === null || ! method_exists($user, 'getAzPermissions')) {
+            if ($user === null || ! method_exists($user, 'getAzPermissionSet')) {
                 return null;
             }
 
@@ -58,6 +67,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->registerMiddlewareAliases();
         $this->registerBladeDirectives();
+        $this->registerOctaneListeners();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -77,6 +87,76 @@ final class AzGuardServiceProvider extends ServiceProvider
                 SyncRolesCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Привязка компонентов Registry:
+     * - PermissionCatalog (singleton, lazy-build через CompositePermissionCatalog)
+     * - PermissionResolverCache (singleton, per-request, Octane-safe)
+     * - EffectivePermissionResolver (singleton)
+     * - GrantSource implementations
+     */
+    protected function registerRegistryBindings(): void
+    {
+        // Кэш resolver — singleton, живёт один request (Octane сбрасывает через событие)
+        $this->app->singleton(PermissionResolverCache::class, fn (): PermissionResolverCache => new PermissionResolverCache);
+
+        // GrantSource: ClassRoleGrantSource — Фаза 1
+        // Фаза 3 добавит: DatabaseRoleGrantSource, DirectGrantSource
+        $this->app->singleton(ClassRoleGrantSource::class, fn (): ClassRoleGrantSource => new ClassRoleGrantSource);
+
+        // PermissionCatalog: lazy-build при первом обращении
+        $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
+            /** @var AzGuardManager $manager */
+            $manager = $this->app->make(AzGuardManager::class);
+
+            $panelIds = array_keys($manager->getPanels());
+
+            $builders = [
+                new EnumPermissionCatalogBuilder,
+                new PolicyAbilityCatalogBuilder,
+            ];
+
+            return new CompositePermissionCatalog(
+                builders: $builders,
+                panelIds: $panelIds,
+            );
+        });
+
+        // EffectivePermissionResolver
+        $this->app->singleton(
+            EffectivePermissionResolver::class,
+            function (): EffectivePermissionResolver {
+                return new EffectivePermissionResolver(
+                    catalog: $this->app->make(PermissionCatalog::class),
+                    sources: [
+                        $this->app->make(ClassRoleGrantSource::class),
+                    ],
+                    cache: $this->app->make(PermissionResolverCache::class),
+                );
+            }
+        );
+
+        // Интерфейс GrantSource — тегируем для возможного extend в пакетах
+        $this->app->tag([ClassRoleGrantSource::class], [GrantSource::class]);
+    }
+
+    /**
+     * Octane: сбрасываем per-request кэш после каждого запроса.
+     * Listener регистрируется только если Octane установлен.
+     */
+    protected function registerOctaneListeners(): void
+    {
+        if (! class_exists('Laravel\Octane\Events\RequestHandled')) {
+            return;
+        }
+
+        $this->app['events']->listen(
+            'Laravel\Octane\Events\RequestHandled',
+            function (): void {
+                $this->app->make(PermissionResolverCache::class)->forgetAll();
+            }
+        );
     }
 
     protected function registerMiddlewareAliases(): void
@@ -104,7 +184,7 @@ final class AzGuardServiceProvider extends ServiceProvider
     protected function registerBladeDirectives(): void
     {
         Blade::directive('azcan', function (string $expression): string {
-            return "<?php if (auth()->check() && auth()->user()->hasAzPermission({$expression})): ?>";
+            return "<?php if (auth()->check() && auth()->user()->checkAzPermission({$expression})): ?>";
         });
 
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');

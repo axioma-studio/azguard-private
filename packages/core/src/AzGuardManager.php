@@ -34,6 +34,14 @@ final class AzGuardManager implements AzGuardManagerInterface
         return $this->panels[$id] ?? null;
     }
 
+    /**
+     * Alias for panel() — used by Registry builders.
+     */
+    public function getPanel(string $id): ?Panel
+    {
+        return $this->panel($id);
+    }
+
     public function currentPanel(): ?Panel
     {
         return $this->currentPanel;
