@@ -38,6 +38,7 @@ use AzGuard\Registry\Resolver\PermissionResolverCache;
 use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
+use AzGuard\Support\Config;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
@@ -58,10 +59,8 @@ final class AzGuardServiceProvider extends ServiceProvider
         $this->app->singleton(PolicyAttributeRegistrar::class, fn (): PolicyAttributeRegistrar => new PolicyAttributeRegistrar);
         $this->app->singleton(GuardDoctor::class, fn (): GuardDoctor => new GuardDoctor);
 
-        // ─── Registry ───────────────────────────────────────────────────────────
+        // ─── Registry ────────────────────────────────────────────────────────────────────────
 
-        // Grant sources — tagged so PanelProviders and packages can add more via tag.
-        // Priority: ClassRoleGrantSource=100, DatabaseRoleGrantSource=90, DirectGrantSource=80.
         $this->app->singleton(ClassRoleGrantSource::class);
         $this->app->singleton(DatabaseRoleGrantSource::class);
         $this->app->singleton(DirectGrantSource::class);
@@ -72,18 +71,13 @@ final class AzGuardServiceProvider extends ServiceProvider
             DirectGrantSource::class,
         ], 'azguard.grant_sources');
 
-        // PermissionResolverCache — request-scoped, but registered as singleton
-        // because it manages its own per-request lifecycle via a request store.
         $this->app->singleton(PermissionResolverCache::class);
 
-        // CompositePermissionCatalog is assembled lazily from builders registered
-        // by each PanelProvider. We defer creation until after all providers boot.
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
             $manager = $this->app->make(AzGuardManager::class);
             $panelIds = array_keys($manager->getPanels());
 
-            // Builders are tagged by PanelProvider::registerCatalogBuilders().
             $builders = iterator_to_array(
                 $this->app->tagged('azguard.catalog_builders'),
                 preserve_keys: false,
@@ -95,7 +89,6 @@ final class AzGuardServiceProvider extends ServiceProvider
             );
         });
 
-        // EffectivePermissionResolver receives catalog + all tagged grant sources.
         $this->app->singleton(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
             return new EffectivePermissionResolver(
                 catalog: $this->app->make(PermissionCatalog::class),
@@ -119,7 +112,6 @@ final class AzGuardServiceProvider extends ServiceProvider
             return app(Authorizer::class)->check(user: $user, ability: $ability);
         });
 
-        // Gate-абилити для direct grants
         Gate::define('direct-grant', [DirectGrantPolicy::class, 'check']);
 
         $this->registerMiddlewareAliases();
@@ -131,24 +123,20 @@ final class AzGuardServiceProvider extends ServiceProvider
             ], 'az-guard-config');
 
             $this->commands([
-                // Diagnostics
                 DoctorCommand::class,
                 CatalogListCommand::class,
                 CatalogValidateCommand::class,
                 RolePermissionsCommand::class,
-                // Scaffolding
                 MakeGuardPanelCommand::class,
                 MakeGuardPermissionCommand::class,
                 MakeGuardPolicyCommand::class,
                 MakeGuardAbilitiesCommand::class,
                 MakeGuardRoleCommand::class,
-                // Roles & permissions inspection
                 ListPermissionsCommand::class,
                 ListScopedRolesCommand::class,
                 GrantsListCommand::class,
                 SyncRolesCommand::class,
                 CacheResetCommand::class,
-                // Grants management
                 GrantCommand::class,
                 RevokeGrantCommand::class,
                 PruneGrantsCommand::class,
@@ -164,15 +152,15 @@ final class AzGuardServiceProvider extends ServiceProvider
             return;
         }
 
-        $router->aliasMiddleware('azguard.roles',  LoadAzGuardRoles::class);
-        $router->aliasMiddleware('azguard.panel',  SetCurrentPanel::class);
-        $router->aliasMiddleware('azguard.check',  CheckAccess::class);
-        $router->aliasMiddleware('az.grant',        CheckDirectGrant::class);
+        $router->aliasMiddleware('azguard.roles', LoadAzGuardRoles::class);
+        $router->aliasMiddleware('azguard.panel', SetCurrentPanel::class);
+        $router->aliasMiddleware('azguard.check', CheckAccess::class);
+        $router->aliasMiddleware('az.grant',       CheckDirectGrant::class);
 
-        $checkAccessAlias = (string) config(key: 'az-guard.middleware.check_access_alias', default: 'check.access');
+        $alias = Config::checkAccessAlias();
 
-        if ($checkAccessAlias !== 'azguard.check') {
-            $router->aliasMiddleware($checkAccessAlias, CheckAccess::class);
+        if ($alias !== 'azguard.check') {
+            $router->aliasMiddleware($alias, CheckAccess::class);
         }
     }
 
@@ -197,8 +185,6 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
 
-        // @azdirect('app.documents.export')         — текущая панель
-        // @azdirect('app.documents.export', 'app')  — явная панель
         Blade::directive('azdirect', function (string $expression): string {
             return "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>";
         });
@@ -208,9 +194,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
     protected function registerPanelProviders(): void
     {
-        $providers = config(key: 'az-guard.panels', default: []);
-
-        foreach ($providers as $provider) {
+        foreach (Config::panels() as $provider) {
             if (is_string($provider) && class_exists($provider)) {
                 $this->app->register($provider);
             }
