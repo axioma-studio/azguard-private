@@ -13,22 +13,17 @@ class Role extends Model
 {
     protected $fillable = ['name', 'level', 'class_name'];
 
-    public function getTable(): string
-    {
-        return Config::rolesTable();
-    }
-
     public function users(): MorphToMany
     {
         return $this->morphedByMany(
             config('auth.providers.users.model'),
             'model',
-            Config::modelHasRolesTable()
+            Config::modelHasRolesTable(),
         );
     }
 
     /**
-     * Permissions assigned to the role via DB (not via PHP class).
+     * Permissions assigned to the role via the DB (not via PHP class).
      * Used by DatabaseRoleGrantSource.
      */
     public function dbPermissions(): HasMany
@@ -40,8 +35,7 @@ class Role extends Model
     }
 
     /**
-     * Instantiate the role logic class via the service container.
-     * Allows constructor injection in role classes.
+     * Instantiate the role logic class (e.g. SuperAdminRole).
      */
     public function getRoleLogic(): ?object
     {
@@ -49,7 +43,7 @@ class Role extends Model
             return null;
         }
 
-        return app($this->class_name);
+        return new $this->class_name;
     }
 
     /**
@@ -64,7 +58,7 @@ class Role extends Model
     }
 
     /**
-     * Find a role by its name.
+     * Find a role by its name. Consolidates resolveRole() / resolveScopeRole() across traits.
      */
     public static function findByName(string $name): ?static
     {
