@@ -21,10 +21,11 @@ use Illuminate\Support\Collection;
  * - permission checks: hasPermission(), hasRole(), hasPermissionIn(), checkPermission()
  * - cache: permissionSet(), permissions(), flushPermissions()
  * - role management: assignRole(), removeRole(), syncRoles(), getRoleNames()
- * - role resolution: resolveRole() — shared with HasScopedRoles
  */
 trait HasAzGuard
 {
+    use ResolvesRole;
+
     public function roles(): MorphToMany
     {
         return $this->morphToMany(
@@ -48,7 +49,10 @@ trait HasAzGuard
      * Check if user has a permission on a panel.
      *
      * Optional $context allows a one-off contextual check without changing
-     * global state. Use hasPermissionIn() as a named alias.
+     * global state. Easier to use hasPermissionIn() as an alias.
+     *
+     * If azguard/context is not installed or $context is null —
+     * behaviour is identical to a plain permission check.
      *
      * @param  object{contextType: string, contextId: int|string}|null  $context
      */
@@ -65,6 +69,7 @@ trait HasAzGuard
      * Contextual permission check — does not mutate global state.
      *
      *   $user->hasPermissionIn('workspace', 42, 'app.posts.edit');
+     *   $user->hasPermissionIn('workspace', 42, 'app.posts.edit', 'admin');
      */
     public function hasPermissionIn(
         string $contextType,
@@ -82,10 +87,7 @@ trait HasAzGuard
     }
 
     /**
-     * Silent version: never throws. Safe to use in Blade / UI.
-     *
-     * Catches only \Exception — not \Error or \Throwable.
-     * PHP errors (TypeError, Error) must propagate to surface real bugs.
+     * Silent version: never throws. Use in Blade / UI.
      *
      * @param  object{contextType: string, contextId: int|string}|null  $context
      */
@@ -93,7 +95,7 @@ trait HasAzGuard
     {
         try {
             return $this->hasPermission($permission, $panelId, $context);
-        } catch (\Exception) {
+        } catch (\Throwable) {
             return false;
         }
     }
@@ -127,7 +129,6 @@ trait HasAzGuard
 
         if ($panelId !== null) {
             $resolver->forgetForUser($this, $panelId);
-
             return;
         }
 
@@ -191,7 +192,8 @@ trait HasAzGuard
     }
 
     /**
-     * Sync the set of roles on the model (single sync() call — no N+1).
+     * Sync the set of roles on the model.
+     * Uses a single sync() call instead of N detach + M attach queries.
      *
      * @param  array<string|Role>  $roles
      */
@@ -235,23 +237,5 @@ trait HasAzGuard
     public function getRoleNames(): Collection
     {
         return $this->roles->pluck('name');
-    }
-
-    /**
-     * Resolve a Role model from a name string or Role instance.
-     *
-     * Single source of truth shared by HasAzGuard and HasScopedRoles.
-     * Previously duplicated as resolveScopeRole() in HasScopes.
-     */
-    protected function resolveRole(string|Role $role): ?Role
-    {
-        if ($role instanceof Role) {
-            return $role;
-        }
-
-        /** @var class-string<Role> $roleClass */
-        $roleClass = Config::roleModel();
-
-        return $roleClass::findByName($role);
     }
 }
