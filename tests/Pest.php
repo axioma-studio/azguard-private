@@ -1,5 +1,6 @@
 <?php
 
-uses(AzGuard\Tests\TestCase::class)->in('Feature');
+declare(strict_types=1);
 
-require_once __DIR__.'/Support/InteractsWithGuard.php';
+uses(AzGuard\Tests\TestCase::class)
+    ->in('Feature', 'Unit');

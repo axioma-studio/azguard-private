@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AzGuard;
 
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Support\Panel;
 use Closure;
 
-final class AzGuardManager
+final class AzGuardManager implements AzGuardManagerInterface
 {
     /** @var array<string, Panel> */
     protected array $panels = [];

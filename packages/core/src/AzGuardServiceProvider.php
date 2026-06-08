@@ -6,17 +6,21 @@ namespace AzGuard;
 
 use AzGuard\Auth\PolicyAttributeRegistrar;
 use AzGuard\Commands\DoctorCommand;
+use AzGuard\Commands\ListPermissionsCommand;
+use AzGuard\Commands\CacheResetCommand;
 use AzGuard\Commands\MakeGuardAbilitiesCommand;
 use AzGuard\Commands\MakeGuardPanelCommand;
 use AzGuard\Commands\MakeGuardPermissionCommand;
 use AzGuard\Commands\MakeGuardPolicyCommand;
 use AzGuard\Commands\MakeGuardRoleCommand;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Guard\GuardDoctor;
 use AzGuard\Guard\Authorizer;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\LoadAzGuardRoles;
 use AzGuard\Http\Middleware\SetCurrentPanel;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,24 +28,27 @@ final class AzGuardServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(AzGuardManager::class, fn (): AzGuardManager => new AzGuardManager);
-        $this->app->singleton(PolicyAttributeRegistrar::class, fn (): PolicyAttributeRegistrar => new PolicyAttributeRegistrar);
-        $this->app->singleton(GuardDoctor::class, fn (): GuardDoctor => new GuardDoctor);
-
         $this->mergeConfigFrom(
-            path: __DIR__.'/../config/az-guard.php',
+            path: __DIR__ . '/../config/az-guard.php',
             key: 'az-guard',
         );
+
+        // Регистрируем синглтон и привязываем к интерфейсу
+        $this->app->singleton(AzGuardManager::class, fn (): AzGuardManager => new AzGuardManager);
+        $this->app->bind(AzGuardManagerInterface::class, AzGuardManager::class);
+
+        $this->app->singleton(PolicyAttributeRegistrar::class, fn (): PolicyAttributeRegistrar => new PolicyAttributeRegistrar);
+        $this->app->singleton(GuardDoctor::class, fn (): GuardDoctor => new GuardDoctor);
 
         $this->registerPanelProviders();
     }
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(paths: __DIR__ . '/../database/migrations');
 
         Gate::before(function ($user, string $ability): ?bool {
-            if ($user === null || ! method_exists($user, 'hasAzPermission')) {
+            if ($user === null || ! method_exists($user, 'getAzPermissions')) {
                 return null;
             }
 
@@ -49,10 +56,11 @@ final class AzGuardServiceProvider extends ServiceProvider
         });
 
         $this->registerMiddlewareAliases();
+        $this->registerBladeDirectives();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/az-guard.php' => config_path('az-guard.php'),
+                __DIR__ . '/../config/az-guard.php' => config_path('az-guard.php'),
             ], 'az-guard-config');
 
             $this->commands([
@@ -62,6 +70,8 @@ final class AzGuardServiceProvider extends ServiceProvider
                 MakeGuardPolicyCommand::class,
                 MakeGuardAbilitiesCommand::class,
                 MakeGuardRoleCommand::class,
+                ListPermissionsCommand::class,
+                CacheResetCommand::class,
             ]);
         }
     }
@@ -83,6 +93,24 @@ final class AzGuardServiceProvider extends ServiceProvider
         if ($checkAccessAlias !== 'azguard.check') {
             $router->aliasMiddleware($checkAccessAlias, CheckAccess::class);
         }
+    }
+
+    /**
+     * Регистрирует Blade-директивы: @azcan, @endazcan, @azrole, @endazrole.
+     */
+    protected function registerBladeDirectives(): void
+    {
+        Blade::directive('azcan', function (string $expression): string {
+            return "<?php if (auth()->check() && auth()->user()->hasAzPermission({$expression})): ?>";
+        });
+
+        Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
+
+        Blade::directive('azrole', function (string $expression): string {
+            return "<?php if (auth()->check() && auth()->user()->hasAzRole({$expression})): ?>";
+        });
+
+        Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
     }
 
     protected function registerPanelProviders(): void

@@ -1,0 +1,16 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - packages/core/src
+
+    level: 6
+
+    checkMissingIterableValueType: false
+
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Contracts\\Auth\\Access\\Authorizable::#'
+
+    excludePaths:
+        - packages/core/src/Support/BaseRole.php
