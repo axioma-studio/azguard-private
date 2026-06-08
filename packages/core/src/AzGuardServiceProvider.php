@@ -59,7 +59,7 @@ final class AzGuardServiceProvider extends ServiceProvider
         $this->app->singleton(PolicyAttributeRegistrar::class);
         $this->app->singleton(GuardDoctor::class);
 
-        // ─── Registry ─────────────────────────────────────────────────────────
+        // ─── Registry ────────────────────────────────────────────────────────────
 
         $this->app->singleton(ClassRoleGrantSource::class);
         $this->app->singleton(DatabaseRoleGrantSource::class);
@@ -104,7 +104,6 @@ final class AzGuardServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(paths: __DIR__ . '/../database/migrations');
 
-        // Use instanceof instead of method_exists for a precise type check.
         Gate::before(function ($user, string $ability): ?bool {
             if (! $user instanceof Authenticatable) {
                 return null;
@@ -153,10 +152,10 @@ final class AzGuardServiceProvider extends ServiceProvider
             return;
         }
 
-        $router->aliasMiddleware('azguard.roles',  LoadAzGuardRoles::class);
-        $router->aliasMiddleware('azguard.panel',  SetCurrentPanel::class);
-        $router->aliasMiddleware('azguard.check',  CheckAccess::class);
-        $router->aliasMiddleware('azguard.grant',  CheckDirectGrant::class);
+        $router->aliasMiddleware('azguard.roles', LoadAzGuardRoles::class);
+        $router->aliasMiddleware('azguard.panel', SetCurrentPanel::class);
+        $router->aliasMiddleware('azguard.check', CheckAccess::class);
+        $router->aliasMiddleware('azguard.grant', CheckDirectGrant::class);
 
         $alias = Config::checkAccessAlias();
 
@@ -168,23 +167,48 @@ final class AzGuardServiceProvider extends ServiceProvider
     /**
      * Blade directives.
      *
-     * @azcan    / @endazcan    — permission check
-     * @azrole   / @endazrole   — role check
-     * @azdirect / @endazdirect — direct grant check
+     * Permission directives:
+     *   @azcan($perm)         — open block if user has permission
+     *   @elseazcan            — else-branch inside @azcan block
+     *   @endazcan             — close @azcan / @elseazcan block
+     *   @unlessazcan($perm)   — open block if user does NOT have permission
+     *   @endunlessazcan       — close @unlessazcan block
+     *
+     * Role directives:
+     *   @azrole($role) / @endazrole
+     *
+     * Direct-grant directives:
+     *   @azdirect($perm) / @endazdirect
      */
     protected function registerBladeDirectives(): void
     {
+        // ─── Permission: @azcan ───────────────────────────────────────────────────
+
         Blade::directive('azcan', function (string $expression): string {
             return "<?php if (auth()->check() && auth()->user()->hasPermission({$expression})): ?>";
         });
 
+        Blade::directive('elseazcan', fn (): string => '<?php else: ?>');
+
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
+
+        // ─── Permission: @unlessazcan ───────────────────────────────────────────
+
+        Blade::directive('unlessazcan', function (string $expression): string {
+            return "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>";
+        });
+
+        Blade::directive('endunlessazcan', fn (): string => '<?php endif; ?>');
+
+        // ─── Role: @azrole ─────────────────────────────────────────────────────
 
         Blade::directive('azrole', function (string $expression): string {
             return "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>";
         });
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
+
+        // ─── Direct grant: @azdirect ─────────────────────────────────────────────
 
         Blade::directive('azdirect', function (string $expression): string {
             return "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>";
