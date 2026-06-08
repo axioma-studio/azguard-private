@@ -1,106 +1,51 @@
-# Comparison with Alternatives
+# AzGuard vs. Competitors
 
-AzGuard is not the first Laravel RBAC package. Here's an honest comparison with the most popular alternatives.
+This page provides an honest, up-to-date comparison of AzGuard against the most
+popular Laravel permission packages.
 
 ## Feature Matrix
 
 | Feature | AzGuard | Spatie Permission | Bouncer | Laratrust |
-|---------|---------|-------------------|---------|----------|
-| **Permissions stored in** | PHP Enums (code) | Database | Database | Database |
-| **Roles stored in** | PHP classes + DB ref | Database | Database | Database |
-| **IDE autocompletion** | ✅ Full (Enum) | ❌ Magic strings | ❌ Magic strings | ❌ Magic strings |
-| **PHPStan support** | ✅ Native | ⚠️ Partial | ⚠️ Partial | ❌ None |
-| **Git-trackable permissions** | ✅ Yes | ❌ No (DB only) | ❌ No (DB only) | ❌ No (DB only) |
-| **Multi-panel scoping** | ✅ Built-in | ❌ No | ❌ No | ⚠️ Teams only |
-| **PHP Attributes** | ✅ `#[CheckPermission]` | ❌ No | ❌ No | ❌ No |
-| **Laravel Gate integration** | ✅ Native | ✅ Native | ✅ Native | ✅ Native |
-| **Blade directives** | ✅ `@azcan`, `@azrole` | ✅ `@can`, `@role` | ✅ `@can`, `@ability` | ✅ Yes |
-| **Wildcard permissions** | ✅ `app.*` | ✅ `posts.*` | ❌ No | ❌ No |
-| **Direct permissions on user** | ❌ Roles only | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Octane / Kubernetes safe** | ✅ Redis cache | ⚠️ Known issues | ✅ Yes | ✅ Yes |
-| **Artisan doctor/lint** | ✅ `azguard:doctor` | ❌ No | ❌ No | ❌ No |
-| **Multi-guard support** | ✅ Via panels | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Teams / tenants** | ✅ Feature flag | ✅ Yes | ✅ Built-in | ✅ Yes |
-| **Filament integration** | ✅ `azguard/filament` | ✅ Community pkg | ⚠️ Unofficial | ❌ None |
-| **GitHub Stars** | 🔒 Private | ~7k | ~4k | ~2k |
-| **Laravel support** | 11, 12 | 10, 11, 12 | 10, 11, 12 | 10, 11 |
+|---|---|---|---|---|
+| **Role definition** | PHP class (code-first) | DB record | DB record | DB record |
+| **Permission definition** | String in PHP class | DB record | DB record | DB record |
+| **Multi-panel / multi-guard** | ✅ Native | ⚠️ Manual | ❌ No | ⚠️ Partial |
+| **Entity-scoped roles** | ✅ Sprint 4 | ❌ No | ✅ Yes | ❌ No |
+| **Laravel Gate integration** | ✅ Native | ✅ Yes | ✅ Yes | ✅ Yes |
+| **PHP 8.x Attributes** | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| **Wildcard permissions** | ✅ Configurable | ✅ Yes | ❌ No | ❌ No |
+| **Filament v3 support** | ✅ Native package | ⚠️ Community plugin | ❌ No | ❌ No |
+| **Cache strategy** | Per-user (store-agnostic) | Per-user (cache store) | Per-user | Per-user |
+| **Octane / Kubernetes safe** | ✅ Stateless | ⚠️ Known issues | ✅ Yes | ⚠️ Untested |
+| **Type-safe role logic** | ✅ Full PHP class | ❌ No | ❌ No | ❌ No |
+| **Artisan commands** | sync-roles, cache-reset, doctor | cache-reset | — | — |
+| **Pest test helpers** | ✅ Sprint 2 | ❌ No | ❌ No | ❌ No |
 
----
+## Why not Spatie?
 
-## Spatie Permission
+Spatie Permission is the most widely used package, but it has structural limitations
+that become painful at scale:
 
-[spatie/laravel-permission](https://github.com/spatie/laravel-permission) is the most popular Laravel RBAC package with ~7,000 stars.
+- **Cache bloat** — storing all permissions per user in a single cache key grows
+  rapidly with 100+ permissions (4+ MB per user observed in production).
+- **DB-first** — permissions live in the database, making code review, version
+  control, and static analysis impossible.
+- **No multi-panel** — there is no built-in concept of isolated permission namespaces
+  per application panel or guard.
+- **Octane issues** — shared state between requests causes permission bleed in
+  long-running processes.
 
-### Strengths
-- Massive community, extensive documentation
-- Both role-based and direct permissions on users
-- Good Blade directive support
-- Flexible permission guard system
-- Mature, battle-tested in thousands of projects
+## Why not Bouncer?
 
-### Weaknesses
-- **Permissions are magic strings** — `$user->givePermissionTo('edit-posts')` has no type safety
-- **All definitions in DB** — can't diff access changes in a PR, drift between environments
-- **Cache issues at scale** — with 100+ permissions, the cache key can exceed 4MB; known issues with Octane
-- **No panel scoping** — all permissions are global, easy to accidentally grant cross-zone access
-- **No doctor/lint tooling** — typos in permission strings fail silently at runtime
-- **No PHP Attribute support** — manual `$this->authorize()` calls everywhere
+Bouncer’s entity-scoped roles (`$bouncer->allow($user)->to('edit', $post)`) are
+powerful, but the package uses its own separate Gate clipper that can conflict with
+custom Gate hooks, and it does not support multi-panel architectures.
 
-### Best for
-Projects where admins need to create/edit permissions at runtime from a UI, or teams deeply familiar with Spatie's ecosystem.
+## AzGuard’s unique strengths
 
----
-
-## Bouncer
-
-[silber/bouncer](https://github.com/JosephSilber/bouncer) is a lightweight, elegant alternative from Joseph Silber.
-
-### Strengths
-- Clean, minimal API
-- Excellent multi-tenancy via "scopes"
-- Allows assigning abilities to specific model instances (e.g. can edit *this specific post*)
-- Good test coverage and stability
-- "Forbid" API — explicitly deny abilities even if a role grants them
-
-### Weaknesses
-- **No panel concept** — no namespaced permission zones
-- **Database-first** — all abilities defined at runtime, not in code
-- **Less active development** — last major update was 2022
-- **No PHP Attribute support**
-- **No Filament integration** (community only)
-- **No artisan tooling** beyond basic commands
-
-### Best for
-Apps needing model-level permissions (can edit *this specific resource*) or complex forbid logic.
-
----
-
-## Laratrust
-
-[santigarcor/laratrust](https://github.com/santigarcor/laratrust) is a traditional RBAC/RBAC-with-teams package.
-
-### Strengths
-- Team-based permissions built-in
-- Supports multiple user models natively
-- Mature, predictable API
-
-### Weaknesses
-- **No multi-panel scoping** — teams are global, not zone-based
-- **Database-first** like Spatie and Bouncer
-- **No PHP Attributes**
-- **Limited Octane support**
-- **No doctor/lint tooling**
-- Less active community vs Spatie
-
-### Best for
-Classic multi-tenant SaaS where each tenant is a "team" and permissions are the same across all tenants.
-
----
-
-## Summary
-
-The fundamental tradeoff is **flexibility at runtime** (Spatie/Bouncer/Laratrust) vs **safety and traceability in code** (AzGuard).
-
-If your product manager needs to add new permission types from an admin panel without a developer — use Spatie.
-
-If your team needs to code-review every access control change, catch typos at the IDE level, and run PHPStan on authorization logic — use AzGuard.
+1. **Code-first roles** — roles are PHP classes, fully type-safe, diffable, testable.
+2. **Panel namespacing** — `app.posts.edit` and `admin.posts.edit` are isolated by design.
+3. **PHP Attributes** — `#[CheckPermission]`, `#[RoleOnly]`, `#[SkipGuardCheck]` on
+   controllers for declarative access control.
+4. **Filament-native** — `azguard/filament` provides `GuardResource` out of the box.
+5. **Octane-safe** — no static state, per-request cache keyed by user ID.
