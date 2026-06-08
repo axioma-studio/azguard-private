@@ -4,158 +4,173 @@ declare(strict_types=1);
 
 namespace AzGuard\Grants;
 
+use AzGuard\Events\GrantGiven;
+use AzGuard\Events\GrantRevoked;
 use AzGuard\Models\DirectGrant;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 /**
- * Fluent builder для выдачи / отзыва direct grants.
+ * Fluent-строитель для работы с Direct Grants.
  *
  * Использование:
- *
- *   AzGuard::forUser($user)
- *       ->on('app')
- *       ->give('app.documents.export')
- *       ->ttl(3600)
- *       ->save();
- *
- *   AzGuard::forUser($user)
- *       ->on('app')
- *       ->revoke('app.documents.export');
- *
- *   AzGuard::forUser($user)->on('app')->revokeAll();
+ *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.documents.export');
+ *   AzGuard::forUser($user)->on('app')->revoke('app.documents.export');
+ *   AzGuard::forUser($user)->on('app')->list();
  */
 final class GrantBuilder
 {
-    private string  $panelId    = 'app';
-    private ?int    $ttlSeconds = null;
+    private ?string $panelId = null;
+    private ?int $ttlSeconds = null;
 
     public function __construct(
         private readonly Authenticatable $user,
     ) {}
 
-    /**
-     * Установить панель.
-     */
+    // ─── Fluent setters ───────────────────────────────────────────────────────
+
     public function on(string $panelId): static
     {
-        $clone = clone $this;
-        $clone->panelId = $panelId;
+        $this->panelId = $panelId;
 
-        return $clone;
+        return $this;
     }
 
     /**
-     * Установить TTL в секундах (назначается перед ->give()).
+     * Установить TTL в секундах. null = бессрочно.
      */
-    public function ttl(int $seconds): static
+    public function ttl(?int $seconds): static
     {
-        $clone = clone $this;
-        $clone->ttlSeconds = $seconds;
+        $this->ttlSeconds = $seconds;
 
-        return $clone;
+        return $this;
     }
 
+    // ─── Actions ──────────────────────────────────────────────────────────────
+
     /**
-     * Сохранить grant: создаёт или обновляет запись в БД и диспатчит GrantGiven.
-     * Возвращает сохранённую модель DirectGrant.
+     * Выдать право (или обновить expires_at существующего).
+     *
+     * Idempotent: повторный вызов обновляет expires_at.
      */
     public function give(string $permissionKey): DirectGrant
     {
-        $pending = new PendingGrant(
-            user:          $this->user,
-            panelId:       $this->panelId,
-            permissionKey: $permissionKey,
-            ttlSeconds:    $this->ttlSeconds,
+        $panel = $this->resolvePanel();
+
+        $expiresAt = $this->ttlSeconds !== null
+            ? Carbon::now()->addSeconds($this->ttlSeconds)
+            : null;
+
+        /** @var DirectGrant $grant */
+        $grant = DirectGrant::query()->updateOrCreate(
+            [
+                'grantable_type'  => $this->user::class,
+                'grantable_id'    => $this->user->getAuthIdentifier(),
+                'panel_id'        => $panel,
+                'permission_key'  => $permissionKey,
+            ],
+            [
+                'expires_at' => $expiresAt,
+            ],
         );
 
-        $modelClass = get_class($this->user);
-        $userId     = $this->user->getAuthIdentifier();
-        $expiresAt  = $pending->expiresAt();
-
-        $grant = DirectGrant::firstOrNew([
-            'model_type'     => $modelClass,
-            'model_id'       => $userId,
-            'permission_key' => $permissionKey,
-            'panel_id'       => $this->panelId,
-        ]);
-
-        $grant->expires_at = $expiresAt;
-        $grant->save();
-
-        event(new \AzGuard\Events\GrantGiven(
-            user:          $this->user,
+        event(new GrantGiven(
+            user: $this->user,
             permissionKey: $permissionKey,
-            panelId:       $this->panelId,
-            expiresAt:     $expiresAt,
+            panelId: $panel,
+            grant: $grant,
         ));
 
         return $grant;
     }
 
     /**
-     * Отозвать конкретный grant. Возвращает количество удалённых записей.
+     * Отозвать конкретное право.
+     *
+     * @return int  Количество удалённых записей (0 или 1).
      */
     public function revoke(string $permissionKey): int
     {
-        $deleted = DirectGrant::where('model_type', get_class($this->user))
-            ->where('model_id', $this->user->getAuthIdentifier())
+        $panel = $this->resolvePanel();
+
+        $deleted = DirectGrant::query()
+            ->where('grantable_type', $this->user::class)
+            ->where('grantable_id', $this->user->getAuthIdentifier())
+            ->where('panel_id', $panel)
             ->where('permission_key', $permissionKey)
-            ->where('panel_id', $this->panelId)
             ->delete();
 
         if ($deleted > 0) {
-            event(new \AzGuard\Events\GrantRevoked(
-                user:          $this->user,
+            event(new GrantRevoked(
+                user: $this->user,
                 permissionKey: $permissionKey,
-                panelId:       $this->panelId,
+                panelId: $panel,
             ));
         }
 
-        return $deleted;
+        return (int) $deleted;
     }
 
     /**
-     * Отозвать все direct grants пользователя в данной панели.
+     * Отозвать все права пользователя в панели.
+     *
+     * @return int  Количество удалённых записей.
      */
     public function revokeAll(): int
     {
-        $keys = DirectGrant::where('model_type', get_class($this->user))
-            ->where('model_id', $this->user->getAuthIdentifier())
-            ->where('panel_id', $this->panelId)
-            ->pluck('permission_key')
-            ->all();
+        $panel = $this->resolvePanel();
 
-        if (empty($keys)) {
-            return 0;
-        }
-
-        $deleted = DirectGrant::where('model_type', get_class($this->user))
-            ->where('model_id', $this->user->getAuthIdentifier())
-            ->where('panel_id', $this->panelId)
+        $deleted = DirectGrant::query()
+            ->where('grantable_type', $this->user::class)
+            ->where('grantable_id', $this->user->getAuthIdentifier())
+            ->where('panel_id', $panel)
             ->delete();
 
-        foreach ($keys as $key) {
-            event(new \AzGuard\Events\GrantRevoked(
-                user:          $this->user,
-                permissionKey: $key,
-                panelId:       $this->panelId,
+        if ($deleted > 0) {
+            event(new GrantRevoked(
+                user: $this->user,
+                permissionKey: '*',
+                panelId: $panel,
             ));
         }
 
-        return $deleted;
+        return (int) $deleted;
     }
 
     /**
-     * Вернуть все активные grants пользователя для данной панели.
+     * Вернуть все активные grants пользователя в панели.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, DirectGrant>
+     * @return Collection<int, DirectGrant>
      */
-    public function list(): \Illuminate\Database\Eloquent\Collection
+    public function list(): Collection
     {
-        return DirectGrant::where('model_type', get_class($this->user))
-            ->where('model_id', $this->user->getAuthIdentifier())
-            ->where('panel_id', $this->panelId)
+        $panel = $this->resolvePanel();
+
+        return DirectGrant::query()
+            ->where('grantable_type', $this->user::class)
+            ->where('grantable_id', $this->user->getAuthIdentifier())
+            ->where('panel_id', $panel)
             ->active()
             ->get();
+    }
+
+    // ─── Internal ─────────────────────────────────────────────────────────────
+
+    private function resolvePanel(): string
+    {
+        if ($this->panelId !== null) {
+            return $this->panelId;
+        }
+
+        $current = \AzGuard\Facades\AzGuard::currentPanel();
+
+        if ($current === null) {
+            throw new \RuntimeException(
+                'AzGuard\Grants\GrantBuilder: панель не указана. Вызовите ->on("panel-id") или установите текущую панель.',
+            );
+        }
+
+        return $current->getId();
     }
 }

@@ -19,9 +19,7 @@ final class AzGuardManager implements AzGuardManagerInterface
 
     protected ?Panel $currentPanel = null;
 
-    // -------------------------------------------------------------------------
-    // Panel registry
-    // -------------------------------------------------------------------------
+    // ─── Panels ───────────────────────────────────────────────────────────────
 
     public function registerPanel(Closure $panel): void
     {
@@ -63,18 +61,13 @@ final class AzGuardManager implements AzGuardManagerInterface
         return $panel->resolvePermission(permission: $permission);
     }
 
-    // -------------------------------------------------------------------------
-    // Fluent Grants API (Phase 5)
-    // -------------------------------------------------------------------------
+    // ─── Grants API ───────────────────────────────────────────────────────────
 
     /**
-     * Получить fluent builder для управления grants пользователя.
+     * Возвращает fluent GrantBuilder для пользователя.
      *
-     * @example
-     *   AzGuard::forUser($user)
-     *       ->on('app')
-     *       ->ttl(86400)
-     *       ->give('app.documents.export');
+     * Пример:
+     *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
      */
     public function forUser(Authenticatable $user): GrantBuilder
     {
@@ -82,47 +75,41 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Выдать direct grant без fluent-цепочки.
+     * Короткий хелпер: выдать direct grant.
      *
-     * @example
-     *   AzGuard::grantDirect($user, 'app.documents.export', 'app', ttl: 3600);
+     * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
      */
     public function grantDirect(
         Authenticatable $user,
-        string          $permissionKey,
-        string          $panelId = 'app',
-        ?int            $ttl = null,
+        string $permissionKey,
+        string $panelId = 'app',
+        ?int $ttl = null,
     ): DirectGrant {
-        return $this->forUser($user)
-            ->on($panelId)
-            ->ttl($ttl ?? 0)
-            ->give($permissionKey);
+        return $this->forUser($user)->on($panelId)->ttl($ttl)->give($permissionKey);
     }
 
     /**
-     * Отозвать direct grant.
+     * Короткий хелпер: отозвать direct grant.
+     *
+     * @return int  Количество удалённых записей.
      */
     public function revokeDirect(
         Authenticatable $user,
-        string          $permissionKey,
-        string          $panelId = 'app',
+        string $permissionKey,
+        string $panelId = 'app',
     ): int {
-        return $this->forUser($user)
-            ->on($panelId)
-            ->revoke($permissionKey);
+        return $this->forUser($user)->on($panelId)->revoke($permissionKey);
     }
 
     /**
-     * Вернуть все активные direct grants пользователя для панели.
+     * Короткий хелпер: список активных grants пользователя в панели.
      *
      * @return Collection<int, DirectGrant>
      */
     public function activeGrants(
         Authenticatable $user,
-        string          $panelId = 'app',
+        string $panelId = 'app',
     ): Collection {
-        return $this->forUser($user)
-            ->on($panelId)
-            ->list();
+        return $this->forUser($user)->on($panelId)->list();
     }
 }

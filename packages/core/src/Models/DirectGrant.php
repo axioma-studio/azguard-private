@@ -7,31 +7,28 @@ namespace AzGuard\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
- * Прямой grant permission пользователю (без роли).
- *
  * @property int         $id
- * @property string      $model_type
- * @property int|string  $model_id
- * @property string      $permission_key
+ * @property string      $grantable_type
+ * @property int         $grantable_id
  * @property string      $panel_id
- * @property \Carbon\Carbon|null $expires_at
+ * @property string      $permission_key
+ * @property Carbon|null $expires_at
+ * @property Carbon      $created_at
+ * @property Carbon      $updated_at
  *
- * @method static Builder active()
+ * @method static Builder<self> active()
+ * @method static Builder<self> forPanel(string $panelId)
  */
 class DirectGrant extends Model
 {
-    public function getTable(): string
-    {
-        return config('az-guard.table_names.direct_grants', 'az_guard_direct_grants');
-    }
-
     protected $fillable = [
-        'model_type',
-        'model_id',
-        'permission_key',
+        'grantable_type',
+        'grantable_id',
         'panel_id',
+        'permission_key',
         'expires_at',
     ];
 
@@ -39,30 +36,50 @@ class DirectGrant extends Model
         'expires_at' => 'datetime',
     ];
 
-    /**
-     * Только активные grants: бессрочные или ещё не истекшие.
- *
-     * @param  Builder<DirectGrant>  $query
-     * @return Builder<DirectGrant>
-     */
-    public function scopeActive(Builder $query): Builder
+    public function getTable(): string
     {
-        return $query->where(function (Builder $q): void {
+        return (string) config('az-guard.table_names.direct_grants', 'az_direct_grants');
+    }
+
+    // ─── Relations ────────────────────────────────────────────────────────────
+
+    public function grantable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    // ─── Scopes ───────────────────────────────────────────────────────────────
+
+    /**
+     * Только не истёкшие grants (бессрочные + expires_at > now).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->where(function (Builder $q): void {
             $q->whereNull('expires_at')
               ->orWhere('expires_at', '>', now());
         });
     }
 
-    public function model(): MorphTo
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeForPanel(Builder $query, string $panelId): void
     {
-        return $this->morphTo();
+        $query->where('panel_id', $panelId);
     }
 
-    /**
-     * Проверить, активен ли grant в настоящий момент.
-     */
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
     public function isActive(): bool
     {
-        return $this->expires_at === null || $this->expires_at->isFuture();
+        return ! $this->isExpired();
     }
 }
