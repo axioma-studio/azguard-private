@@ -1,37 +1,37 @@
 # Blade Directives
 
-AzGuard integrates with Laravel's native Gate layer. All standard Laravel Blade directives work out of the box — no extra package or service provider setup required.
+AzGuard integrates with Laravel's native Gate, so all standard `@can` / `@cannot` / `@canany` Blade directives work out of the box — no additional setup required.
 
-::: tip Prefer permission directives over role directives
-Always check a **permission** in Blade, not a **role**. `@can('app.documents.edit')` will remain correct even if you later reorganize your roles. Checking `@role('editor')` is fragile because the role name or its permissions may change.
+::: tip Use permission directives, not role directives
+Always prefer `@can('app.documents.edit')` over `@hasrole('editor')`. Permissions express *what* can be done; roles express *who* someone is. Permissions stay stable as your application grows, roles change.
 :::
 
 ## `@can` / `@cannot`
 
-The primary directive. Checks a Gate ability registered with `#[GateAbility]`:
-
 ```blade
-{{-- Show if the user can edit documents --}}
+{{-- Show only if the user has this permission --}}
 @can('app.documents.edit')
-    <a href="{{ route('documents.edit', $document) }}" class="btn">Edit</a>
+    <a href="{{ route('documents.edit', $document) }}" class="btn">
+        Edit
+    </a>
 @endcan
 
-{{-- Show a fallback --}}
+{{-- Show fallback when access is missing --}}
 @cannot('app.documents.delete')
     <p class="text-muted">You don't have permission to delete documents.</p>
 @endcannot
 
-{{-- With else branch --}}
+{{-- With an else branch --}}
 @can('app.documents.create')
     <a href="{{ route('documents.create') }}">New document</a>
 @else
-    <span class="text-gray-400">Read-only access</span>
+    <span>Read-only access</span>
 @endcan
 ```
 
 ## `@canany`
 
-Passes if the user has **at least one** of the listed abilities:
+Renders the block if the user has **at least one** of the listed permissions:
 
 ```blade
 @canany(['app.documents.edit', 'app.documents.delete'])
@@ -41,35 +41,45 @@ Passes if the user has **at least one** of the listed abilities:
         @endcan
 
         @can('app.documents.delete')
-            <button wire:click="delete">Delete</button>
+            <button type="submit">Delete</button>
         @endcan
     </div>
 @endcanany
 ```
 
-## With model argument (policy-style)
+## With model arguments (policy-style)
 
-Pass a model as the second argument to route through Laravel's policy system:
+Passing a model as the second argument routes the check through Laravel's policy system:
 
 ```blade
 @can('app.documents.edit', $document)
-    <button type="button">Edit</button>
+    <button type="button">Edit this document</button>
 @endcan
 ```
 
-If a policy exists for `Document`, Laravel will call `DocumentPolicy::edit($user, $document)`. Otherwise it falls back to the Gate ability check.
+This works if you have a `DocumentPolicy` registered in `AuthServiceProvider`. Without a policy, Gate falls back to permission string matching.
 
 ## Checking roles in Blade
 
-Blade does not have a built-in `@role` directive. The idiomatic approach is to use `@if` with the trait method:
+Blade has no built-in `@hasrole` directive. Use `@if` with the trait method:
 
 ```blade
 @if(auth()->user()?->hasRole('admin'))
     <a href="/admin">Admin panel</a>
 @endif
+
+@if(auth()->user()?->hasAnyRole(['editor', 'admin']))
+    <a href="/dashboard">Dashboard</a>
+@endif
 ```
 
-If you prefer a cleaner syntax, register custom Blade directives in your `AppServiceProvider`:
+::: warning Don't gate features with role checks
+If you find yourself writing `@if(auth()->user()->hasRole('admin'))` everywhere, that's a sign those should be explicit permissions. Create `AdminPermission::AccessPanel` and check `@can('admin.panel.access')` instead.
+:::
+
+## Custom `@role` / `@endrole` directive
+
+If you still want a `@role` shorthand, register it in `AppServiceProvider`:
 
 ```php
 use Illuminate\Support\Facades\Blade;
@@ -77,7 +87,7 @@ use Illuminate\Support\Facades\Blade;
 public function boot(): void
 {
     Blade::directive('role', function (string $expression) {
-        return "<?php if(auth()->check() && auth()->user()->hasRole({$expression})): ?>";
+        return "<?php if(auth()->user()?->hasRole({$expression})): ?>";
     });
 
     Blade::directive('endrole', function () {
@@ -85,26 +95,10 @@ public function boot(): void
     });
 
     Blade::directive('hasanyrole', function (string $expression) {
-        return "<?php if(auth()->check() && auth()->user()->hasAnyRole({$expression})): ?>";
+        return "<?php if(auth()->user()?->hasAnyRole({$expression})): ?>";
     });
 
     Blade::directive('endhasanyrole', function () {
-        return '<?php endif; ?>';
-    });
-
-    Blade::directive('hasallroles', function (string $expression) {
-        return "<?php if(auth()->check() && auth()->user()->hasAllRoles({$expression})): ?>";
-    });
-
-    Blade::directive('endhasallroles', function () {
-        return '<?php endif; ?>';
-    });
-
-    Blade::directive('unlessrole', function (string $expression) {
-        return "<?php if(!auth()->check() || !auth()->user()->hasRole({$expression})): ?>";
-    });
-
-    Blade::directive('endunlessrole', function () {
         return '<?php endif; ?>';
     });
 }
@@ -118,46 +112,57 @@ Usage:
 @endrole
 
 @hasanyrole(['editor', 'manager'])
-    <a href="/cms">CMS</a>
+    <a href="/editor">Content Studio</a>
 @endhasanyrole
-
-@unlessrole('viewer')
-    <button>Advanced actions</button>
-@endunlessrole
 ```
-
-::: warning
-Custom role directives bypass the Gate and do not go through policies. Use them **only for UI hints** (showing/hiding elements). For actual access control on routes or controllers, always use `can:` middleware or `$this->authorize()`, which go through the Gate.
-:::
 
 ## In Livewire components
 
-In Livewire, access control belongs in the component class, not the template:
+Define a computed method and use it in the template:
 
 ```php
 // In your Livewire component
 public function canEdit(): bool
 {
-    return $this->authorize('app.documents.edit');
+    return $this->user->hasPermission(DocumentsPermission::Edit);
 }
 
-// Or check without throwing:
 public function canDelete(): bool
 {
-    return auth()->user()?->hasPermission(DocumentsPermission::Delete) ?? false;
+    return Gate::allows('app.documents.delete');
 }
 ```
 
 ```blade
 @if($this->canEdit())
-    <button wire:click="save">Save</button>
+    <button wire:click="openEditModal">Edit</button>
 @endif
 
 @if($this->canDelete())
-    <button wire:click="delete" class="danger">Delete</button>
+    <button wire:click="delete" class="btn-danger">Delete</button>
 @endif
 ```
 
+Alternatively, use `@can` directly — it works inside Livewire views the same way:
+
+```blade
+@can('app.documents.edit')
+    <button wire:click="openEditModal">Edit</button>
+@endcan
+```
+
+## Direct grants in Blade
+
+For permissions granted directly to a user (not via roles), use the `@azdirect` directive:
+
+```blade
+@azdirect('app.documents.export')
+    <button>Export</button>
+@endazdirect
+```
+
+See [Direct Grants](./direct-grants.md) for the full reference.
+
 ## Performance note
 
-Gate checks with AzGuard are resolved per-request from an in-memory permission set. Calling `@can('app.documents.view')` multiple times on the same page does not re-query the database.
+Gate checks in AzGuard are resolved once per request and cached in memory. Calling `@can('app.documents.view')` five times on the same page costs one resolution, not five queries. No additional caching is needed for Blade.
