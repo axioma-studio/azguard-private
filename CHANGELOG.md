@@ -28,6 +28,8 @@
 - `infection/infection` для мутационного тестирования
 - `composer scripts`: `test:unit`, `test:feature`, `test:coverage`, `analyse`, `mutate`
 - README.md с документацией и сравнением с конкурентами
+- `packages/filament`: `AzGuardPlugin`, `RoleResource`, `DirectGrantResource`, `RelationManagers` — Filament UI пакет (Sprint 7)
+- Unit-тесты Filament-пакета: `AzGuardPluginTest`, `AzGuardFilamentServiceProviderTest`, `FilamentArchTest` (Sprint 8.2)
 
 ### Changed
 - `Authorizer::check()` теперь использует параметр `$ability` для точной проверки прав
@@ -35,9 +37,12 @@
 - `AzGuardManager` теперь реализует `AzGuardManagerInterface`
 - `AzGuardServiceProvider` биндит `AzGuardManagerInterface` → `AzGuardManager` в контейнере
 - Расширен `az-guard.php`: добавлены секции `column_names`, `cache`, `features`, `teams`
+- `packages/filament/composer.json`: `filament/filament` обновлён до `^4.0 || ^5.0` (Sprint 8.1)
 
 ### Fixed
 - `Authorizer::check()` больше не игнорирует параметр `$ability` через `unset()`
+- `RolePermissionsRelationManager`: `TextColumn` заменён на `TextInput` в `form()` (Filament 4 compat)
+- `RolePermissionsRelationManager`: кириллические «ёлочки» заменены на обычные кавычки в `heading()`
 
 ---
 
