@@ -15,21 +15,14 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
 /**
- * Trait для User-модели. Предоставляет:
- * - связи roles() и azScopes()
- * - проверку прав hasAzPermission() и hasAzRole()
- * - кэширование прав делегируется EffectivePermissionResolver
- * - API управления ролями: assignRole, removeRole, syncRoles, getRoleNames
+ * Trait for User model. Provides:
+ * - relations: roles(), scopes()
+ * - permission checks: hasPermission(), hasRole(), hasPermissionIn(), checkPermission()
+ * - cache: permissionSet(), permissions(), flushPermissions()
+ * - role management: assignRole(), removeRole(), syncRoles(), getRoleNames()
  */
 trait HasAzGuard
 {
-    /**
-     * @deprecated Используйте EffectivePermissionResolver напрямую или через hasAzPermission().
-     * Оставлен для обратной совместимости; будет удалён в следующей мажорной версии.
-     * @var Collection<int, string>|null
-     */
-    private ?Collection $azPermissionsCache = null;
-
     public function roles(): MorphToMany
     {
         return $this->morphToMany(
@@ -39,52 +32,43 @@ trait HasAzGuard
         );
     }
 
-    public function azScopes()
+    public function scopes()
     {
         return $this->morphMany(Config::scopeModel(), 'model');
     }
 
-    public function hasAzRole(string $name): bool
+    public function hasRole(string $name): bool
     {
         return $this->roles->contains('name', $name);
     }
 
     /**
-     * Основной метод для политик.
-     * Делегирует в EffectivePermissionResolver (через PermissionSet::grants).
+     * Check if user has a permission on a panel.
      *
-     * Опциональный третий аргумент $context позволяет сделать одноразовую
-     * контекстную проверку без изменения глобального состояния.
-     * $context — объект с полями contextType, contextId (и опционально panelId).
-     * Удобнее использовать hasAzPermissionIn() как alias.
+     * Optional $context allows a one-off contextual check without changing
+     * global state. Easier to use hasPermissionIn() as an alias.
      *
-     * Если пакет azguard/context не установлен или $context не передан —
-     * поведение идентично предыдущей версии (100% обратная совместимость).
-     *
-     * Бросает исключение если ключ не зарегистрирован в каталоге
-     * (только в strict-режиме; по умолчанию — тихо false).
+     * If azguard/context is not installed or $context is null —
+     * behaviour is identical to a plain permission check.
      *
      * @param  object{contextType: string, contextId: int|string}|null  $context
      */
-    public function hasAzPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
+    public function hasPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
     {
         if ($context !== null) {
             return AzGuardContextBridge::checkWithContext($this, $permission, $panelId, $context);
         }
 
-        return $this->getAzPermissionSet($panelId)->grants($permission);
+        return $this->permissionSet($panelId)->grants($permission);
     }
 
     /**
-     * Удобный alias для контекстной проверки:
+     * Contextual permission check — does not mutate global state.
      *
-     *   $user->hasAzPermissionIn('workspace', 42, 'app.posts.edit');
-     *   $user->hasAzPermissionIn('workspace', 42, 'app.posts.edit', 'admin');
-     *
-     * Полностью идемпотентен: не изменяет глобальный контекст.
-     * Возвращает false если пакет azguard/context не установлен.
+     *   $user->hasPermissionIn('workspace', 42, 'app.posts.edit');
+     *   $user->hasPermissionIn('workspace', 42, 'app.posts.edit', 'admin');
      */
-    public function hasAzPermissionIn(
+    public function hasPermissionIn(
         string $contextType,
         int|string $contextId,
         string $permission,
@@ -100,52 +84,49 @@ trait HasAzGuard
     }
 
     /**
-     * Тихая версия: никогда не бросает исключений.
-     * Используйте в Blade-условиях и UI.
+     * Silent version: never throws. Use in Blade / UI.
      *
      * @param  object{contextType: string, contextId: int|string}|null  $context
      */
-    public function checkAzPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
+    public function checkPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
     {
         try {
-            return $this->hasAzPermission($permission, $panelId, $context);
+            return $this->hasPermission($permission, $panelId, $context);
         } catch (\Throwable) {
             return false;
         }
     }
 
     /**
-     * Получить PermissionSet для панели.
-     * Все кэширование — в EffectivePermissionResolver.
+     * Get the PermissionSet for a panel.
+     * All caching is delegated to EffectivePermissionResolver.
      */
-    public function getAzPermissionSet(string $panelId = 'app'): PermissionSet
+    public function permissionSet(string $panelId = 'app'): PermissionSet
     {
         return app(EffectivePermissionResolver::class)->forUser($this, $panelId);
     }
 
     /**
-     * @deprecated Используйте getAzPermissionSet()->toArray().
-     * Оставлен для обратной совместимости.
+     * Get all permission keys for a panel as a Collection.
      *
      * @return Collection<int, string>
      */
-    public function getAzPermissions(string $panelId = 'app'): Collection
+    public function permissions(string $panelId = 'app'): Collection
     {
-        return collect($this->getAzPermissionSet($panelId)->toArray());
+        return collect($this->permissionSet($panelId)->toArray());
     }
 
     /**
-     * Сброс кэша прав пользователя.
-     * Вызывается автоматически при assignRole/removeRole/syncRoles.
+     * Flush the permission cache for this user.
+     * Called automatically by assignRole / removeRole / syncRoles.
      */
-    public function clearAzPermissionsCache(string $panelId = 'app'): void
+    public function flushPermissions(string $panelId = 'app'): void
     {
-        $this->azPermissionsCache = null;
         app(EffectivePermissionResolver::class)->forgetForUser($this, $panelId);
     }
 
     /**
-     * Назначить одну или несколько ролей модели.
+     * Assign one or more roles to the model.
      *
      * @param  string|Role  ...$roles
      */
@@ -159,7 +140,7 @@ trait HasAzGuard
             }
 
             $this->roles()->syncWithoutDetaching([$roleModel->getKey()]);
-            $this->clearAzPermissionsCache();
+            $this->flushPermissions();
             event(new RoleAttached($this, $roleModel));
         }
 
@@ -169,7 +150,7 @@ trait HasAzGuard
     }
 
     /**
-     * Отозвать одну или несколько ролей у модели.
+     * Remove one or more roles from the model.
      *
      * @param  string|Role  ...$roles
      */
@@ -183,7 +164,7 @@ trait HasAzGuard
             }
 
             $this->roles()->detach($roleModel->getKey());
-            $this->clearAzPermissionsCache();
+            $this->flushPermissions();
             event(new RoleDetached($this, $roleModel));
         }
 
@@ -193,15 +174,13 @@ trait HasAzGuard
     }
 
     /**
-     * Синхронизировать набор ролей.
+     * Sync the set of roles on the model.
      *
      * @param  array<string|Role>  $roles
      */
     public function syncRoles(array $roles): static
     {
-        $currentRoles = $this->roles()->get();
-
-        foreach ($currentRoles as $currentRole) {
+        foreach ($this->roles()->get() as $currentRole) {
             $this->roles()->detach($currentRole->getKey());
             event(new RoleDetached($this, $currentRole));
         }
@@ -215,14 +194,14 @@ trait HasAzGuard
             event(new RoleAttached($this, $roleModel));
         }
 
-        $this->clearAzPermissionsCache();
+        $this->flushPermissions();
         $this->unsetRelation('roles');
 
         return $this;
     }
 
     /**
-     * Получить имена всех ролей пользователя.
+     * Get all role names for the model.
      *
      * @return Collection<int, string>
      */
@@ -232,7 +211,7 @@ trait HasAzGuard
     }
 
     /**
-     * Разрешает Role-объект из строки (по имени) или экземпляра Role.
+     * Resolve a Role model from a name string or Role instance.
      */
     protected function resolveRole(string|Role $role): ?Role
     {
@@ -244,13 +223,5 @@ trait HasAzGuard
         $roleClass = Config::roleModel();
 
         return $roleClass::query()->where('name', $role)->first();
-    }
-
-    /**
-     * @deprecated Используйте clearAzPermissionsCache().
-     */
-    protected function loadAzPermissions(): Collection
-    {
-        return $this->getAzPermissions();
     }
 }

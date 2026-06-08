@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\ModelHasScope;
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -16,14 +17,14 @@ use Illuminate\Support\Facades\Auth;
  * results based on the authenticated user's scoped roles for this entity type.
  *
  * Also provides:
- * - assignScopedRole() — assign a role scoped to a specific entity
- * - removeScopedRole() — remove a scoped role assignment
- * - hasScopedRole()   — check if user has a role for a specific entity
+ * - assignScopedRole()    — assign a role scoped to a specific entity
+ * - removeScopedRole()    — remove a scoped role assignment
+ * - hasScopedRole()       — check if user has a role for a specific entity
  * - hasScopedPermission() — check permission within a specific entity scope
  */
-trait InteractsWithAzScopes
+trait HasScopes
 {
-    public static function bootInteractsWithAzScopes(): void
+    public static function bootHasScopes(): void
     {
         static::addGlobalScope('az_guard_filter', function (Builder $builder): void {
             if (app()->runningInConsole() || ! Auth::check()) {
@@ -32,11 +33,11 @@ trait InteractsWithAzScopes
 
             $user = Auth::user();
 
-            if (! method_exists($user, 'azScopes')) {
+            if (! method_exists($user, 'scopes')) {
                 return;
             }
 
-            $scopes = $user->azScopes()
+            $scopes = $user->scopes()
                 ->where('scope_entity_type', static::class)
                 ->get();
 
@@ -52,9 +53,6 @@ trait InteractsWithAzScopes
      * Assign a role scoped to a specific entity.
      *
      *   $user->assignScopedRole('editor', $project);
-     *
-     * @param  string|\AzGuard\Models\Role  $role
-     * @param  Model  $entity
      */
     public function assignScopedRole(string|\AzGuard\Models\Role $role, Model $entity): static
     {
@@ -74,7 +72,7 @@ trait InteractsWithAzScopes
             'scope_class' => get_class($roleModel->getRoleLogic() ?? new class {}),
         ]);
 
-        $this->clearAzPermissionsCache();
+        $this->flushPermissions();
 
         return $this;
     }
@@ -100,7 +98,7 @@ trait InteractsWithAzScopes
             ->where('role_id', $roleModel->getKey())
             ->delete();
 
-        $this->clearAzPermissionsCache();
+        $this->flushPermissions();
 
         return $this;
     }
@@ -132,19 +130,16 @@ trait InteractsWithAzScopes
      *
      *   $user->hasScopedPermission('app.projects.edit', $project);
      *
-     * Order of resolution:
+     * Resolution order:
      *   1. SuperAdmin global wildcard (*) — always granted
-     *   2. Global roles (from HasAzGuard::hasAzPermission)
-     *   3. Scoped roles for the given entity
+     *   2. Scoped roles for the given entity
      */
     public function hasScopedPermission(string $permission, Model $entity): bool
     {
-        // 1. SuperAdmin global wildcard
-        if (method_exists($this, 'hasAzPermission') && $this->hasAzPermission($permission)) {
+        if (method_exists($this, 'hasPermission') && $this->hasPermission($permission)) {
             return true;
         }
 
-        // 2. Check scoped roles for this entity
         $scopedRoleIds = ModelHasScope::query()
             ->where('model_type', $this->getMorphClass())
             ->where('model_id', $this->getKey())
@@ -158,7 +153,7 @@ trait InteractsWithAzScopes
         }
 
         /** @var class-string<\AzGuard\Models\Role> $roleClass */
-        $roleClass = config('az-guard.models.role');
+        $roleClass = Config::roleModel();
 
         $roles = $roleClass::query()->whereIn('id', $scopedRoleIds)->get();
 
@@ -179,9 +174,6 @@ trait InteractsWithAzScopes
         return false;
     }
 
-    /**
-     * Resolve a Role model from a string name or Role instance.
-     */
     protected function resolveScopeRole(string|\AzGuard\Models\Role $role): ?\AzGuard\Models\Role
     {
         if ($role instanceof \AzGuard\Models\Role) {
@@ -189,7 +181,7 @@ trait InteractsWithAzScopes
         }
 
         /** @var class-string<\AzGuard\Models\Role> $roleClass */
-        $roleClass = config('az-guard.models.role');
+        $roleClass = Config::roleModel();
 
         return $roleClass::query()->where('name', $role)->first();
     }
