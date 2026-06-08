@@ -1,36 +1,36 @@
 # Обновление
 
-## С 0.x до 1.0
+## С v0.x на v1.0
 
-::: warning Критические изменения
-Версия 1.0 содержит несовместимые изменения в API.
-:::
+Version 1.0 вводит несколько ломающих изменений в API трейта.
 
-### Изменения пространств имён
+### Переименования методов `HasAzGuard`
 
-```php
-// Было
-use AzGuard\Traits\HasPermissions;
+| v0.x | v1.0 |
+|---|---|
+| `hasAzPermission()` | `hasPermission()` |
+| `giveAzPermission()` | `HasDirectGrants::directGrant()` |
+| `revokeAzPermission()` | `HasDirectGrants::revokeDirectGrant()` |
+| `clearAzPermissionsCache()` | `flushPermissions()` |
 
-// Стало
-use AzGuard\Concerns\HasAzGuard;
+### Поиск и замена
+
+Выполните в корне проекта:
+
+```bash
+grep -r 'hasAzPermission' . --include='*.php'
+grep -r 'giveAzPermission' . --include='*.php'
+grep -r 'clearAzPermissionsCache' . --include='*.php'
 ```
+
+### Изменения конфига
+
+Ключи конфига не переименовывались в v1.0. Ваш `config/az-guard.php` остаётся совместим.
 
 ### Изменения миграций
 
-Запустите новые миграции после обновления:
+Новых миграций в v1.0 нет. Миграции от v0.x остаются валидными.
 
-```bash
-php artisan vendor:publish --tag=azguard-migrations --force
-php artisan migrate
-```
+## Миграция с Spatie Permission
 
-### Изменения конфигурации
-
-Переопубликуйте конфигурацию:
-
-```bash
-php artisan vendor:publish --tag=azguard-config --force
-```
-
-Сверьте `config/azguard.php` с новой структурой — ключ `panels` теперь обязателен.
+Если вы переходите с Spatie `laravel-permission`, см. [Сравнение с другими библиотеками](/ru/guide/comparison) и раздел рецептов.
