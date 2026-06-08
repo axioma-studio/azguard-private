@@ -93,7 +93,7 @@ Gate::allows('direct-grant', ['app.x', 'app']);    // bool
 6. `php artisan guard:doctor`
 7. тест allow/deny
 
-См. [recipes.md](guide/recipes.md), [filament.md](guide/filament.md), [entity-scopes.md](guide/entity-scopes.md), [direct-grants.md](guide/direct-grants.md).
+См. [recipes/index.md](guide/recipes/index.md), [filament.md](guide/filament.md), [entity-scopes.md](guide/entity-scopes.md), [direct-grants.md](guide/direct-grants.md).
 
 ## Документация (docs/guide)
 
@@ -103,7 +103,7 @@ Gate::allows('direct-grant', ['app.x', 'app']);    // bool
 | `concept.md` | Концепция: панели → роли → права → политики |
 | `comparison.md` | AzGuard vs Spatie vs Bouncer vs Laratrust |
 | `architecture.md` | Структура пакета, service provider, authorizer flow |
-| `getting-started.md` | Установка, первая роль |
+| `quick-start.md` | Установка, первая роль |
 | `entity-scopes.md` | Entity-scoped роли (Sprint 4) |
 | `direct-grants.md` | Direct Grants (v0.3) — все способы выдачи/проверки |
-| `recipes.md` | Реальные паттерны |
+| `recipes/index.md` | Реальные паттерны |
