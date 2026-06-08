@@ -33,7 +33,7 @@ use AzGuard\Http\Middleware\SetCurrentPanel;
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
-use AzGuard\Registry\Resolver\PermissionResolverCache;
+use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
@@ -71,7 +71,12 @@ final class AzGuardServiceProvider extends ServiceProvider
             DirectGrantSource::class,
         ], 'azguard.grant_sources');
 
-        $this->app->singleton(PermissionResolverCache::class);
+        $this->app->singleton(PermissionCache::class);
+        // BC alias: old bindings that resolve PermissionResolverCache still work.
+        $this->app->singleton(
+            \AzGuard\Registry\Resolver\PermissionResolverCache::class,
+            fn () => $this->app->make(PermissionCache::class),
+        );
 
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
@@ -93,7 +98,7 @@ final class AzGuardServiceProvider extends ServiceProvider
             return new EffectivePermissionResolver(
                 catalog: $this->app->make(PermissionCatalog::class),
                 sources: $this->app->tagged('azguard.grant_sources'),
-                cache:   $this->app->make(PermissionResolverCache::class),
+                cache:   $this->app->make(PermissionCache::class),
             );
         });
 
