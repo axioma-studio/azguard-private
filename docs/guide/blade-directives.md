@@ -40,7 +40,7 @@ Passes if the user has **at least one** of the listed permissions:
 @endcanany
 ```
 
-There is no `@canall` directive. To check for all permissions, chain multiple `@can` blocks or use `$user->hasPermission()` in a condition.
+There is no `@canall` directive. To check for all permissions, chain multiple `@can` blocks or use `$user->hasAllPermissions()` in a condition.
 
 ### `@haspermission`
 
