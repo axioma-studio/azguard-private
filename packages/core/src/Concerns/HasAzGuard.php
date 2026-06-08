@@ -6,7 +6,6 @@ namespace AzGuard\Concerns;
 
 use AzGuard\Events\RoleAttached;
 use AzGuard\Events\RoleDetached;
-use AzGuard\Exceptions\AzGuardException;
 use AzGuard\Models\Role;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
@@ -22,6 +21,7 @@ use Illuminate\Support\Collection;
  * - permission checks: hasPermission(), hasRole(), hasPermissionIn(), checkPermission()
  * - cache: permissionSet(), permissions(), flushPermissions()
  * - role management: assignRole(), removeRole(), syncRoles(), getRoleNames()
+ * - role resolution: resolveRole() — shared with HasScopedRoles
  */
 trait HasAzGuard
 {
@@ -48,7 +48,7 @@ trait HasAzGuard
      * Check if user has a permission on a panel.
      *
      * Optional $context allows a one-off contextual check without changing
-     * global state. Easier to use hasPermissionIn() as an alias.
+     * global state. Use hasPermissionIn() as a named alias.
      *
      * @param  object{contextType: string, contextId: int|string}|null  $context
      */
@@ -82,9 +82,10 @@ trait HasAzGuard
     }
 
     /**
-     * Silent version: never throws. Use in Blade / UI.
+     * Silent version: never throws. Safe to use in Blade / UI.
      *
-     * Only catches AzGuardException — PHP errors (TypeError, Error) still propagate.
+     * Catches only \Exception — not \Error or \Throwable.
+     * PHP errors (TypeError, Error) must propagate to surface real bugs.
      *
      * @param  object{contextType: string, contextId: int|string}|null  $context
      */
@@ -92,13 +93,14 @@ trait HasAzGuard
     {
         try {
             return $this->hasPermission($permission, $panelId, $context);
-        } catch (AzGuardException) {
+        } catch (\Exception) {
             return false;
         }
     }
 
     /**
      * Get the PermissionSet for a panel.
+     * All caching is delegated to EffectivePermissionResolver.
      */
     public function permissionSet(string $panelId = 'app'): PermissionSet
     {
@@ -117,6 +119,7 @@ trait HasAzGuard
 
     /**
      * Flush the permission cache for this user across ALL registered panels.
+     * Called automatically by assignRole / removeRole / syncRoles.
      */
     public function flushPermissions(?string $panelId = null): void
     {
@@ -124,6 +127,7 @@ trait HasAzGuard
 
         if ($panelId !== null) {
             $resolver->forgetForUser($this, $panelId);
+
             return;
         }
 
@@ -187,7 +191,7 @@ trait HasAzGuard
     }
 
     /**
-     * Sync roles. Single sync() call — no N flushes.
+     * Sync the set of roles on the model (single sync() call — no N+1).
      *
      * @param  array<string|Role>  $roles
      */
@@ -224,6 +228,8 @@ trait HasAzGuard
     }
 
     /**
+     * Get all role names for the model.
+     *
      * @return Collection<int, string>
      */
     public function getRoleNames(): Collection
@@ -232,7 +238,10 @@ trait HasAzGuard
     }
 
     /**
-     * Resolve a Role model from name or instance.
+     * Resolve a Role model from a name string or Role instance.
+     *
+     * Single source of truth shared by HasAzGuard and HasScopedRoles.
+     * Previously duplicated as resolveScopeRole() in HasScopes.
      */
     protected function resolveRole(string|Role $role): ?Role
     {
