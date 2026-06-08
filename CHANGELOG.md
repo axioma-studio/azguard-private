@@ -1,60 +1,89 @@
 # Changelog
 
-Все заметные изменения в проекте документируются здесь.
-
-Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
-Проект следует [Semantic Versioning](https://semver.org/).
+All notable changes to AzGuard are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
 ## [Unreleased]
 
+---
+
+## Sprint 8 — Context Package
+
 ### Added
-- `AzGuardManagerInterface` — контракт для менеджера панелей, поддерживает mock в тестах
-- Blade-директивы `@azcan` / `@endazcan` и `@azrole` / `@endazrole`
-- Artisan-команда `azguard:list-permissions` — вывод всех прав по панелям
-- Artisan-команда `azguard:cache-reset` — сброс кэша разрешений
-- Configurable cache store в `az-guard.php`: `cache.store`, `cache.expiration_time`, `cache.key`
-- Feature-флаги в конфиге: `features.wildcard_permission`, `features.teams`, `features.audit_log`
-- Wildcard-паттерны (`admin.*`) при включённом `features.wildcard_permission`
-- Cross-request кэш прав через любой Laravel cache driver (Redis, file и др.)
-- Метод `clearAzPermissionsCache()` в trait `HasAzGuard`
-- GitHub Actions CI: матрица PHP 8.2–8.4 × Laravel 10–12
-- GitHub Actions: Pint + Rector lint workflow
-- GitHub Actions: PHPStan / Larastan static analysis
-- Unit-тесты для `Panel`, `Authorizer`, `BaseRole`, `HasAzGuard`, `AzGuardManager`
-- Architecture-тесты (Pest arch testing)
-- PHPStan конфигурация `phpstan.neon` (level 6)
-- `infection/infection` для мутационного тестирования
-- `composer scripts`: `test:unit`, `test:feature`, `test:coverage`, `analyse`, `mutate`
-- README.md с документацией и сравнением с конкурентами
-- `packages/filament`: `AzGuardPlugin`, `RoleResource`, `DirectGrantResource`, `RelationManagers` — Filament UI пакет (Sprint 7)
-- Unit-тесты Filament-пакета: `AzGuardPluginTest`, `AzGuardFilamentServiceProviderTest`, `FilamentArchTest` (Sprint 8.2)
 
-### Changed
-- `Authorizer::check()` теперь использует параметр `$ability` для точной проверки прав
-- `HasAzGuard::getAzPermissions()` поддерживает cross-request кэш при `store != 'array'`
-- `AzGuardManager` теперь реализует `AzGuardManagerInterface`
-- `AzGuardServiceProvider` биндит `AzGuardManagerInterface` → `AzGuardManager` в контейнере
-- Расширен `az-guard.php`: добавлены секции `column_names`, `cache`, `features`, `teams`
-- `packages/filament/composer.json`: `filament/filament` обновлён до `^4.0 || ^5.0` (Sprint 8.1)
+#### `packages/context` (новый opt-in пакет `axioma-studio/azguard-context`)
 
-### Fixed
-- `Authorizer::check()` больше не игнорирует параметр `$ability` через `unset()`
-- `RolePermissionsRelationManager`: `TextColumn` заменён на `TextInput` в `form()` (Filament 4 compat)
-- `RolePermissionsRelationManager`: кириллические «ёлочки» заменены на обычные кавычки в `heading()`
+- **`AuthorizationContext`** — immutable value object: `panelId` + `contextType` + `contextId`.
+  Методы `withPanel()` / `withContext()` возвращают новый экземпляр.
+- **`AuthorizationContextManager`** — singleton, хранит активный контекст per-panel на время request.
+  Методы: `set()`, `current()`, `has()`, `clear()`, `clearAll()`.
+- **`Contracts/ResolvesContext`** — интерфейс resolver-ов для приложения.
+- **`Contracts/ContextMergeStrategy`** — интерфейс стратегии объединения global + context прав.
+- **`Strategies/GlobalPlusContextStrategy`** — `global ∪ context` (дефолт).
+- **`Strategies/ContextOnlyStrategy`** — только context, global игнорируется.
+- **`Strategies/DenyWithoutContextStrategy`** — пустой set без контекста.
+- **`ContextualRoleGrantSource`** — `implements GrantSource`, приоритет 95,
+  читает таблицу `az_guard_context_roles`.
+- **`Middleware/SetAuthorizationContext`** (`azguard.context`) — запускает resolvers,
+  устанавливает контекст в manager.
+- **`AzGuardContextServiceProvider`** — регистрирует singleton, стратегию, middleware, миграции.
+- **`config/az-guard-context.php`** — `merge_strategy` + `resolvers`.
+- **Миграция** `create_az_guard_context_roles_table` — таблица с индексами и unique-constraint.
+- **`README.md`** для пакета с примером resolver + middleware.
+
+#### `packages/core` — расширение `HasAzGuard`
+
+- **`hasAzPermission(string, string, ?object $context)`** — новый опциональный 3-й аргумент.
+  Duck-typed `$context` с полями `contextType` + `contextId`.
+  Полная обратная совместимость: без `$context` поведение идентично предыдущей версии.
+- **`hasAzPermissionIn(string $contextType, int|string $contextId, string $permission, string $panelId)`** —
+  новый удобный alias для контекстных проверок без изменения глобального состояния.
+- **`checkAzPermission(string, string, ?object $context)`** — проксирует новую сигнатуру.
+- **`Support/AzGuardContextBridge`** (новый) — thin adapter, изолирует зависимость core от packages/context
+  через `class_exists()` guard. Методы: `checkWithContext()`, `checkInContext()`,
+  `resolveWithIsolatedContext()` (идемпотентен, восстанавливает контекст через `try/finally`).
+
+#### Docs
+
+- **`docs/guide/context.md`** — полное руководство по пакету context:
+  быстрый старт, все виды проверок, выдача прав, стратегии, приоритеты, обратная совместимость.
 
 ---
 
-## [0.1.0] — 2026-01-01
+## Sprint 7 — Filament Role Toggle
 
 ### Added
-- Первоначальный релиз AzGuard
-- Code-first RBAC через PHP-классы ролей
-- Multi-panel архитектура с scoped permissions
-- PHP Attributes: `#[CheckPermission]`, `#[GateAbility]`, `#[GuardPolicy]`, `#[RoleOnly]`, `#[SkipGuardCheck]`
-- Policy autodiscovery через `PolicyDiscovery`
-- Artisan-команды: `azguard:doctor`, `azguard:make-panel`, `azguard:make-role`, `azguard:make-permission`, `azguard:make-policy`, `azguard:make-abilities`
-- Middleware: `azguard.roles`, `azguard.panel`, `azguard.check`
-- Trait `HasAzGuard` с in-memory кэшем прав
-- `GuardDoctor` для диагностики конфигурации
+
+- **`RoleResource`**: toggle «Управляется PHP-классом» (`live()`), поле `class_name` (visible по toggle),
+  info-плашка при скрытой вкладке прав.
+- **Колонка «Тип»** в таблице ролей: иконка `code-bracket` (warning) для code roles,
+  `circle-stack` (success) для custom; tooltip показывает FQCN или «права из БД».
+- **`TernaryFilter`** — фильтрация «Все / Code roles / Custom roles».
+
+---
+
+## Sprint 6 — Database Roles & Direct Grants
+
+### Added
+
+- `DatabaseRoleGrantSource` (приоритет 90) — права из таблицы `az_guard_role_permissions`.
+- `DirectGrantSource` (приоритет 80) — прямые гранты из `az_guard_direct_grants`.
+- `HasDirectGrants` trait — `grantAzPermission()`, `revokeAzPermission()`, `syncAzPermissions()`.
+- Миграции: `az_guard_role_permissions`, `az_guard_direct_grants`.
+- Filament: `RolePermissionsRelationManager`, скрывается при `class_name !== null`.
+
+---
+
+## Sprint 1–5 — Core Foundation
+
+### Added
+
+- `packages/core`: `PermissionSet`, `PermissionCatalog`, `EffectivePermissionResolver`,
+  `PermissionResolverCache`, `ClassRoleGrantSource`.
+- `HasAzGuard` trait: `roles()`, `hasAzPermission()`, `hasAzRole()`,
+  `assignRole()`, `removeRole()`, `syncRoles()`.
+- `AzGuardServiceProvider`, конфиг `az-guard.php`, базовые миграции.
+- Filament: `RoleResource`, `AzGuardPlugin`, `PanelAuthorizationMiddleware`.
+- `@azcan` / `@endazcan` Blade-директивы.
