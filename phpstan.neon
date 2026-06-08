@@ -1,16 +1,16 @@
 includes:
-    - vendor/larastan/larastan/extension.neon
+  - vendor/larastan/larastan/extension.neon
 
 parameters:
-    paths:
-        - packages/core/src
+  paths:
+    - packages/core/src
 
-    level: 6
+  level: 6
 
-    checkMissingIterableValueType: false
+  checkModelProperties: true
+  checkPhpDocMissingReturn: true
 
-    ignoreErrors:
-        - '#Call to an undefined method Illuminate\\Contracts\\Auth\\Access\\Authorizable::#'
-
-    excludePaths:
-        - packages/core/src/Support/BaseRole.php
+  ignoreErrors:
+    # Laravel magic methods
+    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+    - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model#'

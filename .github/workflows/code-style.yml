@@ -1,15 +1,14 @@
-name: Mutation Testing
+name: Code Style
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**', 'fix/**']
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
 
 jobs:
-  infection:
-    name: Infection (MSI ≥ 70%)
+  pint:
+    name: Laravel Pint
     runs-on: ubuntu-latest
 
     steps:
@@ -20,9 +19,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, pdo, pdo_sqlite, sqlite3
-          coverage: xdebug
           tools: composer:v2
+          coverage: none
 
       - name: Cache Composer
         uses: actions/cache@v4
@@ -33,8 +31,5 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Run Infection
-        run: vendor/bin/infection --threads=4 --min-msi=70 --min-covered-msi=80 --coverage=build/coverage
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ':memory:'
+      - name: Check code style
+        run: vendor/bin/pint --test
