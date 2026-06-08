@@ -1,10 +1,10 @@
 # Basic Usage
 
-This page walks you through the complete daily workflow: defining roles and permissions, assigning them to users, checking access, and querying users by role or permission.
+This page covers the full daily workflow with AzGuard: defining and assigning roles, checking permissions, querying users by role, and understanding how everything fits together.
 
 ## Add the trait
 
-The only model-level requirement is the `HasAzGuard` trait on your `User` (or any authenticatable model):
+Every model that needs role/permission support must use `HasAzGuard`:
 
 ```php
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -16,9 +16,9 @@ class User extends Authenticatable
 }
 ```
 
-See [Prerequisites](./prerequisites.md) for compatibility requirements and reserved property names.
+## Define a permission
 
-## Define a permission enum
+Permissions in AzGuard are PHP enum cases, not strings in a database. Define one enum per resource:
 
 ```php
 // app/AzGuard/App/Permissions/DocumentsPermission.php
@@ -41,11 +41,11 @@ enum DocumentsPermission: string implements PermissionInterface
 }
 ```
 
-AzGuard registers each `#[GateAbility]` case with Laravel Gate as `{panel}.{value}`, e.g. `app.documents.view`.
-
 See [Permissions](./permissions.md) for the full attribute reference.
 
-## Define a role class
+## Define a role
+
+Roles are PHP classes that declare which permissions they grant:
 
 ```php
 // app/AzGuard/App/Roles/EditorRole.php
@@ -69,99 +69,81 @@ class EditorRole implements RoleInterface
 }
 ```
 
-See [Roles](./roles.md) for the full role API including dynamic (DB-backed) roles.
+See [Roles](./roles.md) for dynamic (DB-backed) roles and level-based hierarchy.
 
-## Assign a role to a user
+## Assign / remove / sync roles
 
 ```php
-// By class
+// Assign one role
 $user->assignRole(EditorRole::class);
+$user->assignRole('editor');                     // by name
+$user->assignRole('editor', panel: 'app');       // explicit panel
 
-// By string name
-$user->assignRole('editor');
-
-// Multiple roles at once
-$user->assignRole([EditorRole::class, ViewerRole::class]);
-```
-
-## Remove a role
-
-```php
+// Remove one role
 $user->removeRole(EditorRole::class);
 $user->removeRole('editor');
-```
 
-## Sync roles (replace all)
-
-`syncRoles` replaces the user's current role set with the given list. Roles not in the list are removed:
-
-```php
-// Replace all roles with editor + viewer
-$user->syncRoles([EditorRole::class, ViewerRole::class]);
+// Sync — replaces ALL current roles with the given list
+$user->syncRoles([EditorRole::class]);
+$user->syncRoles(['editor', 'viewer']);          // by name
 
 // Remove all roles
 $user->syncRoles([]);
 ```
 
+## Check roles
+
+```php
+$user->hasRole('editor');                          // bool
+$user->hasRole(EditorRole::class);                // bool
+$user->hasAnyRole(['editor', 'admin']);            // true if user has at least one
+$user->hasAllRoles(['editor', 'moderator']);       // true only if user has all
+$user->getRoleNames();                             // Collection<string>
+```
+
 ## Check permissions
 
 ```php
-// Via the trait
-$user->hasPermission(DocumentsPermission::View);   // enum case — preferred
-$user->hasPermission('app.documents.view');         // full key string
+// Via the trait — accepts enum case or full string key
+$user->hasPermission(DocumentsPermission::View);
+$user->hasPermission('app.documents.view');
 
-// Via Laravel Gate (requires #[GateAbility])
+// Via Laravel Gate
+use Illuminate\Support\Facades\Gate;
+
 Gate::allows('app.documents.view');
-$this->authorize('app.documents.view');             // throws 403 on failure
+Gate::check('app.documents.view');
 
-// Blade
-@can('app.documents.view')
-    <a href="/documents">Documents</a>
-@endcan
+// In a controller action
+$this->authorize('app.documents.view');
 
-// Route middleware
+// Middleware on a route
 Route::get('/documents', DocumentController::class)
     ->middleware('can:app.documents.view');
 ```
 
-## Check roles
-
-```php
-$user->hasRole(EditorRole::class);                  // bool
-$user->hasRole('editor');                           // bool — string form
-$user->hasAnyRole([EditorRole::class, AdminRole::class]);  // any match
-$user->hasAllRoles([EditorRole::class, ModeratorRole::class]); // must have all
-```
-
-::: warning Prefer permission checks over role checks
-Checking a **permission** is safer than checking a **role**. Roles change — a user might get promoted to a new role with different permissions. Permissions stay semantically stable.
-
-```php
-// Fragile — role name may change or a new role may be introduced
-if ($user->hasRole('editor')) { ... }
-
-// Robust — the permission intent never changes
-if ($user->hasPermission(DocumentsPermission::Edit)) { ... }
-```
+::: tip Always check permissions, not roles
+Prefer `$user->hasPermission(...)` or `Gate::allows(...)` over `$user->hasRole(...)` for access control. Roles change over time; permissions express intent and are stable.
 :::
 
-## Inspect a user's permissions and roles
+## Inspect what a user has
 
 ```php
-// All permissions resolved from all assigned roles (+ any direct grants)
-$user->getAllPermissions();       // Collection of permission strings
+// All permissions resolved across all assigned roles
+$user->getAllPermissions();          // Collection of permission strings
 
-// Only permissions granted directly (not via a role)
-$user->getDirectPermissions();    // Collection of permission strings
+// Only permissions granted directly (not via roles)
+$user->getDirectPermissions();       // Collection — see Direct Grants
 
 // Only permissions coming from roles
-$user->getPermissionsViaRoles();  // Collection of permission strings
+$user->getPermissionsViaRoles();     // Collection
 
-// All role names
-$user->getRoleNames();            // Collection<string>
+// Permission keys as strings
+$user->getPermissionNames();         // Collection<string>
 
-// All role class strings
-$user->getRoles();                // Collection<string>
+// All roles
+$user->getRoles();                   // Collection of role class strings
+$user->getRoleNames();               // Collection<string>
 ```
 
 ## Query users by role or permission
@@ -169,44 +151,66 @@ $user->getRoles();                // Collection<string>
 AzGuard provides Eloquent scopes to filter users:
 
 ```php
-// Users that have the editor role
-User::role(EditorRole::class)->get();
+// Users that have a specific role
 User::role('editor')->get();
+User::role(EditorRole::class)->get();
+User::role(['editor', 'admin'])->get();     // has any of these roles
 
-// Users that do NOT have the editor role
+// Users that do NOT have a specific role
 User::withoutRole('editor')->get();
+User::withoutRole(['editor', 'viewer'])->get();
 
-// Users that have a specific permission (directly or via a role)
-User::permission(DocumentsPermission::Edit)->get();
+// Users that have a specific permission (via any role)
 User::permission('app.documents.edit')->get();
+User::permission(DocumentsPermission::Edit)->get();
 
 // Users that do NOT have a specific permission
 User::withoutPermission('app.documents.delete')->get();
-
-// Scopes accept a string, an array, or a Collection
-User::role(['editor', 'viewer'])->get();
 ```
 
-## Eloquent relationship helpers
+Scopes accept: a string key, an enum case, a role class name, or an array of any of these.
+
+## Useful Eloquent patterns
 
 ```php
-// Eager-load roles with users (avoids N+1)
-$users = User::with('azRoles')->get();
+// Eager-load roles for a user list (avoids N+1)
+User::with('azRoles')->paginate();
 
-// Users who have no roles at all
-$users = User::doesntHave('azRoles')->get();
+// Users with no roles at all
+User::doesntHave('azRoles')->get();
 
 // Count users per role
-User::with('azRoles')
-    ->get()
-    ->groupBy(fn ($u) => $u->getRoleNames()->first() ?? 'no role')
-    ->map->count();
+User::role('editor')->count();
+
+// Users with roles, filter to a specific panel
+User::role('editor')
+    ->where('panel', 'app')
+    ->get();
 ```
 
+## Gate check in Blade
+
+```blade
+@can('app.documents.edit')
+    <a href="{{ route('documents.edit', $document) }}">Edit</a>
+@endcan
+
+@cannot('app.documents.delete')
+    <span class="text-muted">No delete access</span>
+@endcannot
+
+@can('app.documents.create')
+    <a href="{{ route('documents.create') }}">New document</a>
+@else
+    <span>Read-only</span>
+@endcan
+```
+
+See [Blade Directives](./blade-directives.md) for role checks and custom directives.
+
 ::: tip Next steps
-- [Permissions](./permissions.md) — full attribute and enum API
-- [Roles](./roles.md) — static and dynamic roles, role levels
-- [Direct Grants](./direct-grants.md) — per-user permission overrides
-- [HTTP Access](./http-access.md) — middleware and route protection
-- [Blade Directives](./blade-directives.md) — `@can`, `@role`, and custom directives
+- [Permissions](./permissions.md) — defining enums, attributes, TypeScript export
+- [Roles](./roles.md) — static vs dynamic roles, levels, artisan commands
+- [Direct Grants](./direct-grants.md) — per-user permissions without roles
+- [HTTP Access](./http-access.md) — middleware, route groups, policies
 :::
