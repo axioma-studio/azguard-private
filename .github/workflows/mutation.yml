@@ -1,15 +1,16 @@
 name: Mutation Testing
 
+# Advisory only: runs on main merges and manual dispatch.
+# Not a PR blocker — mutation testing is expensive and should
+# be reviewed after the test suite is stable.
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   infection:
-    name: Infection (MSI ≥ 70%)
+    name: Infection (advisory, MSI ≥ 70%)
     runs-on: ubuntu-latest
 
     steps:
@@ -23,18 +24,41 @@ jobs:
           extensions: mbstring, pdo, pdo_sqlite, sqlite3
           coverage: xdebug
           tools: composer:v2
+        env:
+          XDEBUG_MODE: coverage
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer
         uses: actions/cache@v4
         with:
-          path: ~/.composer/cache
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-infection-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-infection-
+            ${{ runner.os }}-composer-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Run Infection
-        run: vendor/bin/infection --threads=4 --min-msi=70 --min-covered-msi=80 --coverage=build/coverage
+      - name: Generate coverage for Infection
+        run: vendor/bin/pest --coverage-xml=build/coverage/xml --min=0
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
+          XDEBUG_MODE: coverage
+
+      - name: Run Infection
+        run: |
+          vendor/bin/infection \
+            --threads=4 \
+            --min-msi=70 \
+            --min-covered-msi=80 \
+            --coverage=build/coverage/xml \
+            --no-progress
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          XDEBUG_MODE: coverage

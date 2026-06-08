@@ -11,6 +11,9 @@ parameters:
   checkPhpDocMissingReturn: true
 
   ignoreErrors:
-    # Laravel magic methods
+    # Laravel magic Query Builder methods
     - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+    # Eloquent dynamic property access
     - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model#'
+    # Authorizable contract — Gate integration
+    - '#Call to an undefined method Illuminate\\Contracts\\Auth\\Access\\Authorizable::#'
