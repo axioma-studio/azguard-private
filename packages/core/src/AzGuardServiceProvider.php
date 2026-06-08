@@ -7,6 +7,7 @@ namespace AzGuard;
 use AzGuard\Auth\PolicyAttributeRegistrar;
 use AzGuard\Commands\DoctorCommand;
 use AzGuard\Commands\ListPermissionsCommand;
+use AzGuard\Commands\ListScopedRolesCommand;
 use AzGuard\Commands\CacheResetCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Commands\MakeGuardAbilitiesCommand;
@@ -71,6 +72,7 @@ final class AzGuardServiceProvider extends ServiceProvider
                 MakeGuardAbilitiesCommand::class,
                 MakeGuardRoleCommand::class,
                 ListPermissionsCommand::class,
+                ListScopedRolesCommand::class,
                 CacheResetCommand::class,
                 SyncRolesCommand::class,
             ]);
