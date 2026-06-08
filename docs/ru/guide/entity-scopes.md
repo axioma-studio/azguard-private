@@ -1,52 +1,44 @@
 # Entity Scopes
 
-Entity Scopes ограничивают видимость данных на уровне запроса к БД — в зависимости от ролей и прав пользователя.
+Entity Scopes позволяют ограничивать права конкретными экземплярами модели — например, пользователь может редактировать только **свои** посты.
 
-## Базовый пример
+## Определение scope
 
 ```php
-use AzGuard\Scopes\AzGuardScope;
+use AzGuard\Contracts\EntityScopeInterface;
 
-class Post extends Model
+class OwnedByUserScope implements EntityScopeInterface
 {
-    protected static function booted(): void
+    public function check(Authenticatable $user, Model $entity): bool
     {
-        static::addGlobalScope(new AzGuardScope(
-            permission: PostsPermission::ViewAll,
-            fallback: fn ($query) => $query->where('author_id', auth()->id()),
-        ));
+        return $entity->user_id === $user->getAuthIdentifier();
     }
 }
 ```
 
-Если у пользователя есть `PostsPermission::ViewAll` — он видит все посты. Иначе — только свои.
-
-## Ручной scope
+## Применение в политике
 
 ```php
-// Только в методах контроллера
-public function index(): Response
+class PostPolicy
 {
-    $posts = Post::query()
-        ->when(
-            !auth()->user()->hasPermission(PostsPermission::ViewAll),
-            fn ($q) => $q->where('author_id', auth()->id())
-        )
-        ->paginate();
-
-    return Inertia::render('Posts/Index', compact('posts'));
+    public function update(User $user, Post $post): bool
+    {
+        return $user->hasPermission(PostsPermission::Edit)
+            && app(OwnedByUserScope::class)->check($user, $post);
+    }
 }
 ```
 
-## Scope по команде
+## В атрибуте
 
 ```php
-Post::query()
-    ->forTeam($user->team_id)  // кастомный scope
-    ->when(
-        $user->hasPermission(PostsPermission::ViewAll),
-        fn ($q) => $q, // без ограничений
-        fn ($q) => $q->where('author_id', $user->id)
-    )
-    ->get();
+#[CheckPermission(
+    permission: PostsPermission::Edit,
+    scope: OwnedByUserScope::class,
+    arguments: ['post']
+)]
+public function update(Request $request, Post $post): Response
+{
+    // Scope проверен автоматически
+}
 ```

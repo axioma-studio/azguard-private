@@ -1,28 +1,29 @@
 # Мягкое переопределение роли
 
-Иногда нужно дать пользователю дополнительное право без изменения его роли — например, временный доступ к разделу.
+Иногда нужно дать пользователю права сверх его роли без изменения самой роли — например, временно выдать право публикации редактору.
 
-## Решение: прямой грант
+## Решение: комбинация роли + прямого гранта
 
 ```php
-// Дать право на 24 часа
-AzGuard::grant($user, AdminPermission::ViewReports, ttl: 86400);
+// Пользователь — редактор, но сегодня может публиковать
+$user->assignRole(EditorRole::class);
+$user->grantPermission(
+    PostsPermission::Publish,
+    expiresAt: Carbon::now()->endOfDay()
+);
 
-// Пользователь с ролью ViewerRole теперь может видеть отчёты
-$user->hasPermission(AdminPermission::ViewReports); // true
-
-// Через 24 часа — автоматически false
+// AzGuard проверяет и роли, и гранты
+$user->hasPermission(PostsPermission::Publish); // true до конца дня
 ```
 
-## Через событие
+## Через Gate::before()
 
 ```php
-// Временный доступ при активации trial-функции
-Event::listen(TrialFeatureActivated::class, function ($event) {
-    AzGuard::grant(
-        $event->user,
-        AnalyticsPermission::Advanced,
-        ttl: $event->trialDays * 86400
-    );
+Gate::before(function (User $user, string $ability) {
+    // Проверяем специальный флаг модели
+    if ($user->has_temporary_publish_access && $ability === 'app.posts.publish') {
+        return true;
+    }
+    return null;
 });
 ```

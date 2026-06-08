@@ -1,25 +1,32 @@
 # Требования
 
-## Системные требования
+## Версии
 
 | Зависимость | Версия |
 |---|---|
 | PHP | ≥ 8.2 |
 | Laravel | 11.x или 12.x |
-| Composer | ≥ 2.0 |
-| Laravel Octane | совместим (stateless) |
+| Composer | 2.x |
 
-## Необходимые расширения PHP
+## PHP-расширения
 
-```bash
-extension=pdo
-extension=pdo_mysql   # или pdo_pgsql / pdo_sqlite
-extension=mbstring
-```
+AzGuard не требует специфических расширений — достаточно стандартного набора Laravel:
 
-## Трейт HasAzGuard
+- `mbstring`
+- `pdo` + нужный PDO-драйвер (`pdo_mysql`, `pdo_pgsql`, и т.д.)
+- `openssl`
 
-Добавьте трейт в вашу модель User (или любую другую модель, которой нужны роли):
+## Laravel Octane
+
+AzGuard **совместим с Octane** (Swoole и RoadRunner). Пакет не хранит глобального состояния между запросами — каждая проверка разрешения работает с данными конкретного запроса.
+
+::: warning
+Если вы используете `AzGuardFacade` в статических инициализаторах (например, в `AppServiceProvider::boot()`) — убедитесь, что контекст не разделяется между воркерами.
+:::
+
+## Модель User
+
+Ваша модель User (или любая аутентифицируемая модель) должна использовать трейт `HasAzGuard`:
 
 ```php
 use AzGuard\Concerns\HasAzGuard;
@@ -30,6 +37,9 @@ class User extends Authenticatable
 }
 ```
 
-::: tip Octane
-AzGuard не хранит глобального состояния. Полностью совместим с Laravel Octane и Kubernetes.
-:::
+Трейт добавляет методы:
+- `hasPermission(PermissionInterface|string $permission): bool`
+- `hasRole(string $role): bool`
+- `assignRole(string $roleClass): void`
+- `revokeRole(string $roleClass): void`
+- `grantPermission(PermissionInterface $permission, ?Carbon $expiresAt = null): void`

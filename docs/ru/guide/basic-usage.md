@@ -1,77 +1,70 @@
-# Обзор основ
+# Обзор
 
-Этот раздел охватывает ежедневную работу с AzGuard: проверка прав, назначение ролей, интеграция с Laravel Gate.
+Eта страница — быстрый справочник по всем основным операциям AzGuard. Подробности — в отдельных разделах.
 
 ## Проверка прав
 
 ```php
-// Через enum-кейс (рекомендуется — IDE-совместимо)
+// Enum-кейс (рекомендуется — IDE автодополняет)
 $user->hasPermission(PostsPermission::Edit);   // true / false
 
-// Через строковый ключ
+// Строка (полный ключ с панелью)
 $user->hasPermission('app.posts.edit');         // то же самое
 
-// Laravel Gate
-Gate::allows('app.posts.edit');                 // ✅
-$this->authorize('update', $post);              // ✅ через Policy
-
-// Blade
-@can('app.posts.edit')
-    <a href="...">Редактировать</a>
-@endcan
+// Laravel Gate — работает везде, где работает Gate
+Gate::allows('app.posts.edit');                 // true / false
+$this->authorize('app.posts.edit');             // бросает исключение
 ```
 
-## Назначение и отзыв ролей
+## Работа с ролями
 
 ```php
 // Назначить роль
 $user->assignRole(EditorRole::class);
 
-// Назначить несколько ролей
-$user->assignRoles([EditorRole::class, ModeratorRole::class]);
-
-// Отозвать роль
+// Отозвать
 $user->revokeRole(EditorRole::class);
 
-// Проверить наличие роли
-$user->hasRole(EditorRole::class);  // true / false
+// Проверить
+$user->hasRole('editor');  // true / false
 
-// Все роли пользователя
-$user->roles(); // Collection<RoleInterface>
+// Получить все роли
+$user->roles;  // коллекция
 ```
 
-## Проверка через атрибут PHP 8
+## Blade
+
+```blade
+@can('app.posts.edit')
+    <a href="{{ route('posts.edit', $post) }}">Редактировать</a>
+@endcan
+
+@role('editor')
+    <span class="badge">Редактор</span>
+@endrole
+
+@hasanypermission(['app.posts.edit', 'app.posts.delete'])
+    <div class="actions">...</div>
+@endhasanypermission
+```
+
+## Middleware
 
 ```php
-use AzGuard\Attributes\CheckPermission;
+// routes/web.php
+Route::middleware('azguard:app.posts.edit')->group(function () {
+    Route::put('/posts/{post}', [PostController::class, 'update']);
+});
+```
 
-class PostController extends Controller
+## Атрибут на контроллере
+
+```php
+#[CheckPermission(PostsPermission::Edit)]
+public function update(Request $request, Post $post): Response
 {
-    #[CheckPermission(PostsPermission::View)]
-    public function index(): Response
-    {
-        return Inertia::render('Posts/Index');
-    }
-
-    #[CheckPermission(permission: PostsPermission::Edit, arguments: ['post'])]
-    public function update(UpdatePostRequest $request, Post $post): Response
-    {
-        $post->update($request->validated());
-        return back();
-    }
+    // Доступ автоматически проверен до входа в метод
 }
 ```
 
-::: tip
-Атрибут `#[CheckPermission]` виден в инспекции маршрутов и работает через `Gate::authorize()` под капотом.
-:::
-
-## Query Scopes
-
-```php
-// Пользователи с определённой ролью
-User::role(EditorRole::class)->where('active', true)->get();
-
-// Пользователи с определённым правом
-User::permission(PostsPermission::Delete)->get();
-```
+→ [Права](/ru/guide/permissions) · [Роли](/ru/guide/roles) · [Прямые гранты](/ru/guide/direct-grants)

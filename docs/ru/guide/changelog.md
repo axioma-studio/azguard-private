@@ -1,14 +1,21 @@
 # Список изменений
 
-## v2.0.0
+Полный changelog доступен на [GitHub Releases](https://github.com/axioma-studio/azguard-private/releases).
 
-- **BREAKING:** `assignRole()` принимает FQCN вместо строки
-- **BREAKING:** обязательный `azguard.panels` в конфиге
-- Добавлена поддержка UUID / ULID
-- Добавлен `azguard:doctor` для диагностики конфигурации
-- Прямые гранты с TTL (`DirectGrant`)
-- Поддержка контекста (tenant, team, project)
+## [Unreleased]
 
-## v1.x
+- i18n: документация на русском языке
+- Улучшенная структура навигации
 
-Смотрите полный список изменений на [GitHub Releases](https://github.com/axioma-studio/azguard-private/releases).
+## [1.0.0] — 2026
+
+### Добавлено
+- Code-first RBAC: права как PHP enum, роли как PHP-классы
+- Мультипанельная изоляция (`app.*`, `admin.*`, `api.*`)
+- Прямые гранты с TTL
+- Контекстные проверки (tenant, team, project)
+- Интеграция с Laravel Gate через `Gate::before()`
+- Атрибут `#[CheckPermission]` для контроллеров
+- Команды `azguard:doctor` и `azguard:sync-roles`
+- Поддержка UUID/ULID
+- Интеграция с Filament

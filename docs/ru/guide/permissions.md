@@ -1,8 +1,8 @@
 # Разрешения
 
-В AzGuard разрешения — это **PHP enum-кейсы**, реализующие `PermissionInterface`. Никаких magic-строк.
+В AzGuard разрешение — это **PHP enum-кейс**, реализующий `PermissionInterface`. Никаких строк, никакого риска опечаток.
 
-## Объявление разрешений
+## Определение enum разрешений
 
 ```php
 // app/AzGuard/App/Permissions/PostsPermission.php
@@ -21,74 +21,66 @@ enum PostsPermission: string implements PermissionInterface
 }
 ```
 
-### Полный ключ разрешения
+Атрибут `#[GateAbility]` регистрирует кейс в Laravel Gate с полным ключом `{panel}.{value}`. Кейсы **без** атрибута доступны только через `hasPermission()`, но не через Gate.
 
-Ключ в Gate формируется как `{panel}.{enum_value}`:
-- Панель `app` + `posts.view` → `app.posts.view`
-- Панель `admin` + `posts.view` → `admin.posts.view`
+## Структура ключа
 
-## Атрибут GateAbility
+```
+app.posts.view
+│   │     │
+│   │     └─ значение enum-кейса
+│   └─────── namespace из enum (имя файла/папки)
+└─────────── название панели
+```
 
-Только кейсы с `#[GateAbility]` автоматически регистрируются в `Gate::before()`. Кейсы без атрибута доступны только через `hasPermission()`.
+## Проверка прав
 
 ```php
-enum ReportsPermission: string implements PermissionInterface
+// Через трейт — предпочтительный способ
+$user->hasPermission(PostsPermission::View);
+
+// Через Gate
+Gate::allows('app.posts.view');
+
+// В политиках
+public function update(User $user, Post $post): bool
 {
-    #[GateAbility]
-    case View   = 'reports.view';    // доступно через Gate::allows()
-    case Export = 'reports.export';  // только $user->hasPermission()
+    return $user->hasPermission(PostsPermission::Edit);
+}
+
+// В Blade
+@can('app.posts.edit') ... @endcan
+```
+
+## Несколько панелей
+
+Каждая панель имеет собственное пространство имён:
+
+```php
+// admin-панель
+enum AdminUsersPermission: string implements PermissionInterface
+{
+    case View   = 'users.view';    // → admin.users.view
+    case Delete = 'users.delete';  // → admin.users.delete
+}
+
+// app-панель
+enum AppUsersPermission: string implements PermissionInterface
+{
+    case ViewOwn = 'users.view-own';  // → app.users.view-own
 }
 ```
 
-## Группировка по домену
-
-Рекомендуемая структура:
-
-```
-app/AzGuard/
-├── App/
-│   ├── Permissions/
-│   │   ├── PostsPermission.php
-│   │   ├── CommentsPermission.php
-│   │   └── UsersPermission.php
-│   └── Roles/
-├── Admin/
-│   ├── Permissions/
-│   └── Roles/
-└── Api/
-    ├── Permissions/
-    └── Roles/
-```
-
-## Проверка разрешений
-
-```php
-// Enum-кейс (рекомендуется)
-$user->hasPermission(PostsPermission::Edit);  // ✅ type-safe
-
-// Строка (для обратной совместимости)
-$user->hasPermission('app.posts.edit');
-
-// Laravel Gate
-Gate::allows('app.posts.edit');
-
-// Blade
-@can('app.posts.edit') ... @endcan
-
-// В тестах
-$this->actingAs($user)->assertTrue(
-    $user->hasPermission(PostsPermission::Edit)
-);
-```
+`admin.users.view` и `app.users.view-own` — полностью независимые разрешения.
 
 ## Статический анализ
 
-Поскольку разрешения — это enum-кейсы, PHPStan и Psalm находят опечатки на этапе проверки типов:
+Поскольку права — это enum-кейсы, PHPStan и IDE понимают их:
 
 ```php
-// PHPStan ошибка: PostsPermission::Edut не существует
-$user->hasPermission(PostsPermission::Edut);
-
-// ✅ OK
+// ✅ IDE автодополняет, PHPStan проверяет типы
 $user->hasPermission(PostsPermission::Edit);
+
+// ❌ Строка — нет автодополнения, нет проверки
+$user->hasPermission('app.posts.edi');  // опечатка незаметна до рантайма
 ```

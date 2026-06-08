@@ -1,38 +1,33 @@
 # Multi-Tenant роли
 
-## Контекстные роли по тенанту
+В SaaS-приложении пользователь может иметь разные роли в разных тенантах.
+
+## Через контекст
 
 ```php
-// Назначить роль в контексте конкретного тенанта
-$user->assignRole(EditorRole::class, context: ['tenant_id' => $tenant->id]);
+// Назначение роли в контексте тенанта
+$user->assignRole(EditorRole::class, context: "tenant-{$tenant->id}");
 
-// Проверка
-AzGuard::setContext(['tenant_id' => $tenant->id]);
-$user->hasPermission(PostsPermission::Edit); // true только для этого тенанта
+// Проверка с тем же контекстом
+AzGuard::withContext("tenant-{$tenant->id}")
+    ->hasPermission($user, PostsPermission::Edit); // true
+
+// В другом тенанте
+AzGuard::withContext("tenant-999")
+    ->hasPermission($user, PostsPermission::Edit); // false
 ```
 
-## Middleware для установки тенанта
+## Middleware для тенантов
 
 ```php
-class SetTenantContext
+// app/Http/Middleware/SetTenantContext.php
+public function handle(Request $request, Closure $next): Response
 {
-    public function handle(Request $request, Closure $next): Response
-    {
-        $tenant = Tenant::fromSubdomain($request->getHost());
-        AzGuard::setContext(['tenant_id' => $tenant->id]);
-        return $next($request);
-    }
+    $tenantId = $request->header('X-Tenant-ID')
+        ?? auth()->user()?->tenant_id;
+
+    AzGuard::setContext("tenant-{$tenantId}");
+
+    return $next($request);
 }
-```
-
-## Изоляция через панели
-
-Альтернатива: создать отдельную панель для каждого тенанта (только для небольшого числа тенантов):
-
-```php
-// config/azguard.php
-'panels' => [
-    'tenant_1' => App\AzGuard\Tenant1\TenantPanel::class,
-    'tenant_2' => App\AzGuard\Tenant2\TenantPanel::class,
-],
 ```

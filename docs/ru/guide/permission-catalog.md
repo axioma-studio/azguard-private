@@ -1,55 +1,64 @@
 # Каталог разрешений
 
-Каталог — это полный реестр всех enum-разрешений, зарегистрированных в AzGuard.
+Каталог разрешений — это реестр всех enum-классов разрешений вашего приложения. AzGuard читает его при инициализации.
 
-## Просмотр
+## Структура каталога
 
-```bash
-# Все разрешения
-php artisan azguard:list-permissions
-
-# По панели
-php artisan azguard:list-permissions --panel=admin
-
-# В формате JSON (для экспорта)
-php artisan azguard:list-permissions --json
+```
+app/AzGuard/
+├── App/                    ← панель 'app'
+│   ├── AppPanel.php
+│   ├── Permissions/
+│   │   ├── PostsPermission.php
+│   │   ├── CommentsPermission.php
+│   │   └── ReportsPermission.php
+│   └── Roles/
+│       ├── EditorRole.php
+│       └── ViewerRole.php
+├── Admin/                  ← панель 'admin'
+│   ├── AdminPanel.php
+│   ├── Permissions/
+│   │   └── UsersPermission.php
+│   └── Roles/
+│       └── AdminRole.php
+└── Api/                    ← панель 'api'
+    ├── ApiPanel.php
+    ├── Permissions/
+    │   └── ApiPermission.php
+    └── Roles/
+        └── ApiConsumerRole.php
 ```
 
-## Программный доступ
+## Регистрация в Panel
 
 ```php
-use AzGuard\Facades\AzGuard;
-
-// Все зарегистрированные разрешения
-$permissions = AzGuard::permissions(); // Collection
-
-// По панели
-$adminPerms = AzGuard::permissions(panel: 'admin');
-
-// Проверить, существует ли разрешение
-AzGuard::hasPermission('app.posts.edit'); // bool
-```
-
-## Рекомендации по структуре каталога
-
-```php
-// Единый файл-реестр для документирования
-// app/AzGuard/PermissionCatalog.php
-
-class PermissionCatalog
+// app/AzGuard/App/AppPanel.php
+class AppPanel implements PanelInterface
 {
-    /**
-     * Возвращает все enum-классы разрешений приложения.
-     * @return class-string<PermissionInterface>[]
-     */
-    public static function all(): array
+    public function getName(): string { return 'app'; }
+
+    public function getPermissions(): array
     {
         return [
             PostsPermission::class,
             CommentsPermission::class,
-            UsersPermission::class,
-            // ...
+            ReportsPermission::class,
+        ];
+    }
+
+    public function getRoles(): array
+    {
+        return [
+            EditorRole::class,
+            ViewerRole::class,
         ];
     }
 }
+```
+
+## Просмотр каталога
+
+```bash
+php artisan azguard:list-permissions
+php artisan azguard:list-roles
 ```

@@ -1,6 +1,6 @@
 # Несколько Guards
 
-AzGuard поддерживает несколько auth guards — каждый панель может работать со своим guard.
+AzGuard поддерживает несколько Laravel Guards — например, `web` для пользователей и `admin` для администраторов.
 
 ## Конфигурация
 
@@ -15,27 +15,34 @@ return [
 ];
 ```
 
+## Переключение контекста
+
 ```php
-// config/auth.php
-'guards' => [
-    'web'   => ['driver' => 'session', 'provider' => 'users'],
-    'admin' => ['driver' => 'session', 'provider' => 'admins'],
-    'api'   => ['driver' => 'sanctum',  'provider' => 'users'],
-],
+// Проверка в контексте конкретной панели
+AzGuard::forPanel('admin')->hasPermission($user, AdminPermission::ManageUsers);
+
+// Или через Guard
+Gate::guard('admin')->allows('admin.users.manage');
 ```
 
-## Проверка в контексте guard
+## Middleware по Guard
 
 ```php
-// Явное указание guard
-$user->forGuard('admin')->hasPermission(AdminPermission::ManageUsers);
-
-// В middleware
-Route::middleware(['auth:admin', 'azguard:admin'])->group(function () {
-    Route::get('/admin/users', AdminUsersController::class);
-});
+// routes/admin.php
+Route::middleware(['auth:admin', 'azguard:admin.users.view'])
+    ->group(function () {
+        Route::get('/admin/users', [AdminUserController::class, 'index']);
+    });
 ```
 
 ## Изоляция пространств имён
 
-`app.posts.edit` и `admin.posts.edit` — разные права, даже если enum-значение одинаковое. Пользователь с ролью `app/EditorRole` не получит доступ к admin-маршрутам автоматически.
+Пользователь может иметь роль `editor` в панели `app` и роль `viewer` в панели `admin` — они полностью независимы:
+
+```php
+$user->assignRole(EditorRole::class, panel: 'app');
+$user->assignRole(ViewerRole::class, panel: 'admin');
+
+$user->hasPermission(PostsPermission::Edit);       // app — true
+$user->hasPermission(AdminUsersPermission::Delete); // admin — false
+```

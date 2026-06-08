@@ -1,66 +1,53 @@
-# Сидирование БД
+# Сидирование базы данных
 
-## Базовый сидер ролей
+## Базовый сидер
 
 ```php
-// database/seeders/RoleSeeder.php
-use AzGuard\Facades\AzGuard;
+// database/seeders/RolesAndPermissionsSeeder.php
+use App\AzGuard\App\Roles\{EditorRole, ViewerRole};
+use App\AzGuard\Admin\Roles\AdminRole;
 
-class RoleSeeder extends Seeder
+class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        $roles = [
-            EditorRole::class,
-            ModeratorRole::class,
-            ViewerRole::class,
-        ];
+        // Синхронизируем роли с БД
+        Artisan::call('azguard:sync-roles');
 
-        foreach ($roles as $roleClass) {
-            AzGuard::registerRole($roleClass);
-        }
+        // Назначаем роли конкретным пользователям
+        $admin = User::where('email', 'admin@example.com')->first();
+        $admin?->assignRole(AdminRole::class);
 
-        $this->command->info('Роли зарегистрированы: ' . count($roles));
+        $editor = User::where('email', 'editor@example.com')->first();
+        $editor?->assignRole(EditorRole::class);
     }
 }
 ```
 
-## Назначение ролей пользователям
+## Сидирование в тестах
 
 ```php
-class UserSeeder extends Seeder
+public function test_seeder_assigns_correct_roles(): void
 {
-    public function run(): void
-    {
-        // Администратор
-        $admin = User::factory()->create(['email' => 'admin@example.com']);
-        $admin->assignRole(AdminRole::class);
+    $this->seed(RolesAndPermissionsSeeder::class);
 
-        // Редакторы
-        User::factory(5)->create()->each(function ($user) {
-            $user->assignRole(EditorRole::class);
-        });
-
-        // Читатели
-        User::factory(20)->create()->each(function ($user) {
-            $user->assignRole(ViewerRole::class);
-        });
-    }
+    $admin = User::where('email', 'admin@example.com')->first();
+    $this->assertTrue($admin->hasRole('admin'));
+    $this->assertTrue($admin->hasPermission(UsersPermission::Manage));
 }
 ```
 
-## Идемпотентный сидер
+## Фабрики с ролями
 
 ```php
-public function run(): void
+// database/factories/UserFactory.php
+public function editor(): static
 {
-    $admin = User::firstOrCreate(
-        ['email' => 'admin@example.com'],
-        User::factory()->make()->toArray(),
-    );
-
-    if (!$admin->hasRole(AdminRole::class)) {
-        $admin->assignRole(AdminRole::class);
-    }
+    return $this->afterCreating(function (User $user) {
+        $user->assignRole(EditorRole::class);
+    });
 }
+
+// В тесте
+$editor = User::factory()->editor()->create();
 ```

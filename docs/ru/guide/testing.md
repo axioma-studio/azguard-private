@@ -2,82 +2,94 @@
 
 ## Настройка
 
+AzGuard предоставляет вспомогательные трейты для тестов:
+
 ```php
-use AzGuard\Testing\AzGuardFake;
+use AzGuard\Testing\WithAzGuard;
 
 class PostControllerTest extends TestCase
 {
+    use WithAzGuard;
+
     protected function setUp(): void
     {
         parent::setUp();
-        // Используем in-memory SQLite — быстро и изолированно
+        $this->setUpAzGuard(); // применяет миграции и чистит кеш
     }
 }
 ```
 
-## Назначение ролей в тестах
+## Пользователи с ролями
 
 ```php
-/** @test */
-public function editor_can_update_post(): void
+public function test_editor_can_edit_posts(): void
 {
     $user = User::factory()->create();
     $user->assignRole(EditorRole::class);
+
     $post = Post::factory()->create();
 
     $this->actingAs($user)
-        ->put(route('posts.update', $post), ['title' => 'Новый заголовок'])
-        ->assertOk();
+         ->put("/posts/{$post->id}", ['title' => 'Новый заголовок'])
+         ->assertOk();
 }
 
-/** @test */
-public function viewer_cannot_update_post(): void
+public function test_viewer_cannot_edit_posts(): void
 {
     $user = User::factory()->create();
     $user->assignRole(ViewerRole::class);
+
     $post = Post::factory()->create();
 
     $this->actingAs($user)
-        ->put(route('posts.update', $post), ['title' => 'Новый заголовок'])
-        ->assertForbidden();
+         ->put("/posts/{$post->id}", ['title' => 'Новый заголовок'])
+         ->assertForbidden();
 }
 ```
 
-## Pest-хелперы
+## Хелперы withRole и withPermission
 
 ```php
-use AzGuard\Testing\InteractsWithAzGuard;
+// Быстрое создание пользователя с ролью
+$editor = $this->userWithRole(EditorRole::class);
 
-uses(InteractsWithAzGuard::class);
+// Пользователь с прямым грантом
+$user = $this->userWithPermission(ReportsPermission::Export);
 
-it('позволяет редактору редактировать посты', function () {
-    $user = asEditor(); // создаёт User + assignRole(EditorRole::class)
-    $post = Post::factory()->create();
-
-    actingAs($user)
-        ->put(route('posts.update', $post), [])
-        ->assertOk();
-});
-
-it('запрещает просматривающему удалять посты', function () {
-    $user = asViewer();
-    $post = Post::factory()->create();
-
-    actingAs($user)
-        ->delete(route('posts.destroy', $post))
-        ->assertForbidden();
-});
+// Пользователь без прав (по умолчанию)
+$guest = User::factory()->create();
 ```
 
-## Fake-разрешения
+## Мокирование AzGuard
 
 ```php
-// Дать конкретное право без создания роли
-AzGuardFake::grantPermission($user, PostsPermission::Delete);
+public function test_without_real_db_permissions(): void
+{
+    $user = User::factory()->create();
 
-// Запретить право принудительно
-AzGuardFake::denyPermission($user, PostsPermission::Edit);
+    // Мокируем через Gate
+    Gate::shouldReceive('allows')
+        ->with('app.posts.edit')
+        ->andReturn(true);
 
-// Сбросить все
-AzGuardFake::reset();
+    $this->actingAs($user)
+         ->put('/posts/1', ['title' => 'Test'])
+         ->assertOk();
+}
+```
+
+## Тестирование Blade-директив
+
+```php
+public function test_blade_shows_edit_button_for_editor(): void
+{
+    $user = User::factory()->create();
+    $user->assignRole(EditorRole::class);
+
+    $html = $this->actingAs($user)
+                 ->get('/posts/1')
+                 ->getContent();
+
+    $this->assertStringContainsString('Редактировать', $html);
+}
 ```

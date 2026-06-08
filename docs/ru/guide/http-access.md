@@ -1,20 +1,37 @@
 # HTTP и Middleware
 
-## Встроенный middleware
+## Регистрация middleware
 
-AzGuard регистрирует middleware `azguard` автоматически через Service Provider.
+AzGuard автоматически регистрирует middleware `azguard` через Service Provider. В Laravel 11+ он добавляется в `bootstrap/app.php` автоматически.
 
 ```php
-// routes/web.php
-Route::middleware(['auth', 'azguard:app.posts.edit'])
-    ->put('/posts/{post}', [PostController::class, 'update']);
-
-// Несколько прав (AND)
-Route::middleware(['auth', 'azguard:app.posts.edit,app.posts.publish'])
-    ->post('/posts/{post}/publish', ...);
+// Для Laravel 10 и старше — вручную в Kernel.php
+protected $routeMiddleware = [
+    'azguard' => \AzGuard\Http\Middleware\CheckPermission::class,
+];
 ```
 
-## Атрибут #[CheckPermission]
+## Использование в маршрутах
+
+```php
+// Одно разрешение
+Route::middleware('azguard:app.posts.edit')
+    ->put('/posts/{post}', [PostController::class, 'update']);
+
+// Несколько разрешений (И — требуются все)
+Route::middleware('azguard:app.posts.edit,app.posts.publish')
+    ->post('/posts/{post}/publish', [PostController::class, 'publish']);
+
+// Группа маршрутов
+Route::middleware(['auth', 'azguard:app.admin.access'])
+    ->prefix('/admin')
+    ->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'index']);
+        Route::resource('/users', AdminUserController::class);
+    });
+```
+
+## Атрибут CheckPermission
 
 ```php
 use AzGuard\Attributes\CheckPermission;
@@ -27,39 +44,23 @@ class PostController extends Controller
     #[CheckPermission(PostsPermission::Create)]
     public function store(StorePostRequest $request): Response { ... }
 
-    // С model binding — маршрутится через Policy
+    // С model binding — автоматически передаётся в Policy
     #[CheckPermission(permission: PostsPermission::Edit, arguments: ['post'])]
-    public function update(UpdatePostRequest $request, Post $post): Response { ... }
+    public function update(Request $request, Post $post): Response { ... }
 }
 ```
 
-## Обработка 403
+## Ответ на отказ в доступе
 
-По умолчанию AzGuard бросает `AzGuard\Exceptions\UnauthorizedException`. Обработайте её глобально:
-
-```php
-// bootstrap/app.php
-->withExceptions(function (Exceptions $exceptions) {
-    $exceptions->render(function (UnauthorizedException $e, Request $request) {
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-        return redirect()->route('home')->with('error', 'Доступ запрещён');
-    });
-})
-```
-
-## Inertia + SharedData
+По умолчанию возвращается `403 Forbidden`. Переопределите поведение:
 
 ```php
-// app/Http/Middleware/HandleInertiaRequests.php
-public function share(Request $request): array
+// app/Exceptions/Handler.php
+protected function unauthenticated($request, AuthenticationException $exception): Response
 {
-    return [
-        ...parent::share($request),
-        'abilities' => fn () => $request->user()
-            ? $request->user()->abilities()   // массив активных прав
-            : [],
-    ];
+    if ($request->expectsJson()) {
+        return response()->json(['message' => 'Доступ запрещён.'], 403);
+    }
+    return redirect()->route('login');
 }
 ```

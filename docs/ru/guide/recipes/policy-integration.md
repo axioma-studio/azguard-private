@@ -1,59 +1,51 @@
 # Интеграция с Policy
 
-## Совместное использование AzGuard и Policy
+Как совместить AzGuard с Laravel Policy для тонкого контроля доступа.
+
+## Базовая интеграция
 
 ```php
 // app/Policies/PostPolicy.php
 class PostPolicy
 {
+    // Просто делегируем AzGuard
     public function viewAny(User $user): bool
     {
         return $user->hasPermission(PostsPermission::View);
     }
 
+    // Комбинируем право + бизнес-логику
     public function update(User $user, Post $post): bool
     {
         if (!$user->hasPermission(PostsPermission::Edit)) {
             return false;
         }
-        // Дополнительная бизнес-логика: редактор может редактировать только свои посты
-        return $user->hasRole(AdminRole::class) || $user->id === $post->author_id;
+
+        // Редактор может изменять только свои посты
+        // Администратор — любые
+        return $user->hasRole('admin') || $post->user_id === $user->id;
     }
 
     public function delete(User $user, Post $post): bool
     {
         return $user->hasPermission(PostsPermission::Delete)
-            && !$post->isLocked();
-    }
-
-    public function forceDelete(User $user, Post $post): bool
-    {
-        return $user->hasRole(SuperAdminRole::class);
+            && !$post->is_published; // нельзя удалить опубликованный
     }
 }
 ```
 
-## Регистрация
+## Before-хук в Policy
 
 ```php
-// app/Providers/AuthServiceProvider.php
-protected $policies = [
-    Post::class => PostPolicy::class,
-];
-```
-
-## Использование в контроллере
-
-```php
-class PostController extends Controller
+class PostPolicy
 {
-    public function __construct()
+    public function before(User $user, string $ability): ?bool
     {
-        $this->authorizeResource(Post::class, 'post');
+        // Супер-admin обходит все проверки Policy
+        if ($user->is_super_admin) {
+            return true;
+        }
+        return null;
     }
-
-    // authorizeResource автоматически вызывает Policy-методы:
-    // index -> viewAny, show -> view, create -> create,
-    // update -> update, destroy -> delete
 }
 ```

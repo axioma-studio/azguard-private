@@ -1,63 +1,58 @@
-# Контекст (опционально)
+# Контекст (опциональный)
 
-Контекст позволяет привязать проверку прав к конкретной сущности — тенанту, команде, проекту.
+Контекст позволяет проверять права с учётом дополнительного условия — например, tenant, команды или проекта.
 
-## Установка контекста
+## Включение контекста
 
 ```php
-use AzGuard\Facades\AzGuard;
+// config/azguard.php
+'context' => [
+    'enabled'  => true,
+    'resolver' => App\AzGuard\Context\TenantContextResolver::class,
+],
+```
 
-// Установить глобальный контекст для текущего запроса
-AzGuard::setContext(['tenant_id' => $tenant->id]);
+## Resolver
 
-// Через middleware
-class SetTenantContext
+```php
+use AzGuard\Contracts\ContextResolverInterface;
+
+class TenantContextResolver implements ContextResolverInterface
 {
-    public function handle(Request $request, Closure $next): Response
+    public function resolve(Request $request): ?string
     {
-        AzGuard::setContext([
-            'tenant_id' => $request->user()->tenant_id,
-        ]);
-        return $next($request);
+        // Возвращаем строковый ключ контекста или null
+        return $request->header('X-Tenant-ID')
+            ?? auth()->user()?->tenant_id;
     }
 }
 ```
 
-## Проверка с контекстом
+## Использование
 
 ```php
-// hasPermission учитывает текущий контекст автоматически
-$user->hasPermission(ProjectPermission::Edit); // проверяет с tenant_id из контекста
+// AzGuard автоматически добавляет контекст к каждой проверке
+$user->hasPermission(ProjectsPermission::Edit); // учитывает текущий tenant
 
-// Явная передача контекста
-$user->hasPermission(ProjectPermission::Edit, context: ['project_id' => 42]);
+// Явное указание контекста
+AzGuard::withContext('tenant-42')
+    ->hasPermission($user, ProjectsPermission::Edit);
 
-// Грант с контекстом
-AzGuard::grant($user, ProjectPermission::Edit, context: ['project_id' => 42]);
+// Без контекста
+AzGuard::withoutContext()
+    ->hasPermission($user, ProjectsPermission::Edit);
 ```
 
-## Контекстные роли
+## Назначение ролей с контекстом
 
 ```php
-class ProjectManagerRole implements RoleInterface
-{
-    public function permissions(): array
-    {
-        return [
-            ProjectPermission::View,
-            ProjectPermission::Edit,
-            ProjectPermission::ManageMembers,
-        ];
-    }
+// Роль только в рамках конкретного tenant
+$user->assignRole(EditorRole::class, context: 'tenant-42');
 
-    // Роль действует только в контексте проекта
-    public function contextKey(): string
-    {
-        return 'project_id';
-    }
-}
+// Проверка с тем же контекстом
+AzGuard::withContext('tenant-42')
+    ->hasPermission($user, PostsPermission::Edit); // true
+
+AzGuard::withContext('tenant-99')
+    ->hasPermission($user, PostsPermission::Edit); // false
 ```
-
-::: tip
-Контекст не влияет на производительность, когда не используется — нулевой оверхед по умолчанию.
-:::

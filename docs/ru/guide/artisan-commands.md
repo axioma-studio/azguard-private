@@ -2,7 +2,7 @@
 
 ## azguard:doctor
 
-Диагностика конфигурации и целостности данных:
+Диагностирует конфигурацию и находит типичные проблемы:
 
 ```bash
 php artisan azguard:doctor
@@ -10,39 +10,36 @@ php artisan azguard:doctor
 
 Проверяет:
 - Корректность `config/azguard.php`
-- Наличие всех классов ролей из БД
-- Устаревшие записи в `azguard_user_roles`
-- Правильность регистрации панелей
+- Существование классов панелей
+- Наличие всех миграций
+- Соответствие ролей в БД и PHP-классов
+- Наличие трейта `HasAzGuard` на моделях
 
 ## azguard:sync-roles
 
-Синхронизирует PHP-классы ролей с записями в базе данных:
+Синхронизирует PHP-классы ролей с таблицей `azguard_user_roles`:
 
 ```bash
 php artisan azguard:sync-roles
-
-# Только для определённой панели
-php artisan azguard:sync-roles --panel=admin
-
-# Dry run — показать что изменится без применения
-php artisan azguard:sync-roles --dry-run
 ```
+
+Полезно после:
+- Переименования классов ролей
+- Перемещения классов в другое пространство имён
+- Удаления старых ролей
 
 ## azguard:prune-grants
 
-Удаляет просроченные прямые гранты:
+Удаляет истёкшие прямые гранты:
 
 ```bash
 php artisan azguard:prune-grants
-
-# С подтверждением количества удалённых записей
-php artisan azguard:prune-grants -v
 ```
 
-Добавьте в планировщик в `bootstrap/app.php`:
+Добавьте в планировщик:
 
 ```php
-$schedule->command('azguard:prune-grants')->daily();
+$schedule->command('azguard:prune-grants')->dailyAt('03:00');
 ```
 
 ## azguard:list-permissions
@@ -52,4 +49,14 @@ $schedule->command('azguard:prune-grants')->daily();
 ```bash
 php artisan azguard:list-permissions
 php artisan azguard:list-permissions --panel=app
+php artisan azguard:list-permissions --panel=admin
+```
+
+## azguard:list-roles
+
+Выводит все роли с их разрешениями:
+
+```bash
+php artisan azguard:list-roles
+php artisan azguard:list-roles --role=EditorRole
 ```

@@ -1,69 +1,55 @@
 # Inertia + права
 
-## Передача прав через SharedData
+Как передать права пользователя во Vue/React-компоненты через Inertia.js.
+
+## Глобальный share через middleware
 
 ```php
-// app/Http/Middleware/HandleInertiaRequests.php
-public function share(Request $request): array
+// app/Http/Middleware/ShareAzGuardData.php
+public function handle(Request $request, Closure $next): Response
 {
-    return [
-        ...parent::share($request),
-        'abilities' => fn () => $request->user()
-            ? $request->user()->abilities()
-            : [],
-    ];
+    if ($user = $request->user()) {
+        Inertia::share([
+            'auth' => [
+                'user'        => $user->only('id', 'name', 'email'),
+                'permissions' => $user->getPermissionKeys(),
+                'roles'       => $user->getRoleNames(),
+            ],
+        ]);
+    }
+    return $next($request);
 }
 ```
 
-## Vue 3 + TypeScript
+## Vue composable
 
-```typescript
-// types/inertia.d.ts
-export interface SharedProps {
-    abilities: string[]
-}
-
-// composables/usePermissions.ts
+```js
+// resources/js/composables/useAuth.js
 import { usePage } from '@inertiajs/vue3'
-import type { SharedProps } from '@/types/inertia'
+import { computed } from 'vue'
 
-export function useCan() {
-    const { abilities } = usePage<SharedProps>().props
-    return (permission: string) => abilities.includes(permission)
+export function useAuth() {
+    const page = usePage()
+
+    const can = (permission) =>
+        page.props.auth.permissions.includes(permission)
+
+    const hasRole = (role) =>
+        page.props.auth.roles.includes(role)
+
+    return { can, hasRole, user: computed(() => page.props.auth.user) }
 }
 ```
 
 ```vue
-<script setup lang="ts">
-import { useCan } from '@/composables/usePermissions'
-const can = useCan()
+<script setup>
+import { useAuth } from '@/composables/useAuth'
+const { can } = useAuth()
 </script>
 
 <template>
-  <div class="post-actions">
-    <a v-if="can('app.posts.edit')" :href="editUrl">Редактировать</a>
-    <button v-if="can('app.posts.delete')" @click="deletePost">Удалить</button>
-  </div>
+  <button v-if="can('app.posts.edit')" @click="edit">
+    Редактировать
+  </button>
 </template>
-```
-
-## React + TypeScript
-
-```tsx
-import { usePage } from '@inertiajs/react'
-
-function usePermissions() {
-    const { abilities } = usePage<{ abilities: string[] }>().props
-    return { can: (p: string) => abilities.includes(p) }
-}
-
-export function PostActions({ post }: { post: Post }) {
-    const { can } = usePermissions()
-    return (
-        <div>
-            {can('app.posts.edit') && <EditButton post={post} />}
-            {can('app.posts.delete') && <DeleteButton post={post} />}
-        </div>
-    )
-}
 ```

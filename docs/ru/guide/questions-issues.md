@@ -1,17 +1,21 @@
 # Вопросы и проблемы
 
-## Задать вопрос
+## Поддержка
 
-Откройте [GitHub Discussion](https://github.com/axioma-studio/azguard-private/discussions) — это лучшее место для вопросов об использовании.
+- **GitHub Issues** — для баг-репортов и запросов функций: [github.com/axioma-studio/azguard-private/issues](https://github.com/axioma-studio/azguard-private/issues)
+- **Discussions** — для вопросов по использованию: [github.com/axioma-studio/azguard-private/discussions](https://github.com/axioma-studio/azguard-private/discussions)
 
-## Сообщить об ошибке
+## Перед тем как открыть issue
 
-Если вы нашли баг, создайте [GitHub Issue](https://github.com/axioma-studio/azguard-private/issues) и укажите:
+1. Запустите `php artisan azguard:doctor` — он диагностирует большинство типичных проблем
+2. Проверьте раздел [Исключения](/ru/guide/exceptions)
+3. Убедитесь, что трейт `HasAzGuard` подключён к модели
+4. Убедитесь, что миграции выполнены: `php artisan migrate:status`
 
-- Версию AzGuard и Laravel
-- Минимальный воспроизводящий пример
-- Ожидаемое и фактическое поведение
+## Шаблон баг-репорта
 
-## Безопасность
-
-Об уязвимостях сообщайте **не через публичные Issues**, а напрямую: security@axioma.studio
+При создании issue укажите:
+- Версию AzGuard (`composer show axioma-studio/azguard`)
+- Версию PHP и Laravel
+- Минимальный воспроизводимый пример
+- Полный стек ошибки

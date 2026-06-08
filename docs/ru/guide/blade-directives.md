@@ -1,66 +1,72 @@
 # Blade-директивы
 
-AzGuard регистрирует стандартные директивы Laravel — никакого нового API учить не нужно.
+AzGuard регистрирует собственные Blade-директивы поверх стандартных `@can` / `@cannot` Laravel.
 
-## Основные директивы
+## Стандартные директивы Gate (работают без изменений)
 
 ```blade
-{{-- Проверка права --}}
+{{-- Одно разрешение --}}
 @can('app.posts.edit')
     <a href="{{ route('posts.edit', $post) }}">Редактировать</a>
 @endcan
 
-{{-- Через enum-кейс (Laravel 10+) --}}
-@can(\App\AzGuard\App\Permissions\PostsPermission::Edit->fullKey())
-    <button>Редактировать</button>
-@endcan
-
-{{-- Отрицание --}}
 @cannot('app.posts.delete')
-    <span>Недостаточно прав для удаления</span>
+    <span class="text-muted">Удаление недоступно</span>
 @endcannot
 
-{{-- Проверка роли --}}
-@role(\App\AzGuard\App\Roles\AdminRole::class)
-    <nav class="admin-nav">...</nav>
-@endrole
-
-{{-- Проверка нескольких ролей --}}
-@hasanyrole([AdminRole::class, ModeratorRole::class])
-    <div class="mod-tools">...</div>
-@endhasanyrole
+{{-- С моделью (через Policy) --}}
+@can('update', $post)
+    <button>Сохранить</button>
+@endcan
 ```
 
-## @canany / @else
+## Директивы AzGuard
+
+### @role / @endrole
 
 ```blade
-@canany(['app.posts.edit', 'app.posts.delete'])
-    <div class="post-actions">
+@role('editor')
+    <span class="badge badge-editor">Редактор</span>
+@endrole
+
+@role('admin')
+    <a href="/admin">Панель администратора</a>
+@else
+    <span>Нет доступа</span>
+@endrole
+```
+
+### @hasanypermission / @endhasanypermission
+
+```blade
+@hasanypermission(['app.posts.edit', 'app.posts.delete'])
+    <div class="actions">
         @can('app.posts.edit')
-            <a href="...">Изменить</a>
+            <a href="...">Ред.</a>
         @endcan
         @can('app.posts.delete')
             <button>Удалить</button>
         @endcan
     </div>
-@endcanany
+@endhasanypermission
 ```
 
-## С моделью (Policy)
+### @hasallpermissions / @endhasallpermissions
 
 ```blade
-@can('update', $post)
-    <a href="{{ route('posts.edit', $post) }}">Редактировать</a>
-@endcan
-
-@can('delete', $post)
-    <form method="POST" action="{{ route('posts.destroy', $post) }}">
-        @csrf @method('DELETE')
-        <button>Удалить</button>
-    </form>
-@endcan
+@hasallpermissions(['app.reports.view', 'app.reports.export'])
+    <a href="/reports/export">Экспорт отчёта</a>
+@endhasallpermissions
 ```
 
-::: warning
-Директива `@role` — собственная директива AzGuard. `@can` / `@cannot` — стандартные Laravel, проксирующие через Gate.
-:::
+### @unlessrole / @endunlessrole
+
+```blade
+@unlessrole('admin')
+    <p>Расширенные настройки доступны только администраторам.</p>
+@endunlessrole
+```
+
+## Производительность
+
+Все директивы используют кешированные данные из `hasPermission()`. Многократный вызов в одном шаблоне не порождает лишних запросов к БД.

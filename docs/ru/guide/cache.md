@@ -1,4 +1,6 @@
-# Кэш
+# Кеш
+
+AzGuard использует двухуровневое кеширование: **in-memory** (на время запроса) и опциональный **persistent cache** (Redis/Memcached).
 
 ## Конфигурация
 
@@ -6,52 +8,40 @@
 // config/azguard.php
 'cache' => [
     'enabled' => true,
-    'ttl'     => 300,     // секунды (5 минут)
-    'store'   => 'redis', // null = default cache store
-    'prefix'  => 'azguard',
+    'store'   => env('AZGUARD_CACHE_STORE', 'redis'),
+    'ttl'     => env('AZGUARD_CACHE_TTL', 300), // секунд
+    'prefix'  => 'azguard_',
 ],
 ```
 
-## Инвалидация
-
-Кэш автоматически инвалидируется при:
-- `assignRole()` / `revokeRole()`
-- `grant()` / `revoke()`
-- `syncRoles()`
-
-Ручная инвалидация:
+## Сброс кеша
 
 ```php
-use AzGuard\Facades\AzGuard;
-
-// Для конкретного пользователя
+// Сброс для конкретного пользователя
 AzGuard::clearCache($user);
 
-// Для конкретной панели
-AzGuard::clearCache($user, panel: 'admin');
-
-// Полная очистка
+// Сброс всего кеша
 AzGuard::clearAllCache();
+
+// Через Artisan
+php artisan azguard:clear-cache
+php artisan azguard:clear-cache --user=42
 ```
 
-## Инвалидация через Events
+## Автоматический сброс
+
+Кеш автоматически сбрасывается при:
+- `assignRole()` / `revokeRole()`
+- `grantPermission()` / `revokeGrantedPermission()`
+
+## Кеш в Octane
+
+In-memory кеш AzGuard **не** переживает между запросами в Octane — это ожидаемое поведение. Persistent cache (Redis) сохраняется.
 
 ```php
-// При обновлении роли из UI — сбросьте кэш всех затронутых пользователей
-Event::listen(RoleUpdated::class, function (RoleUpdated $event) {
-    User::role($event->roleClass)->each(function ($user) {
-        AzGuard::clearCache($user);
-    });
-});
-```
-
-## Octane
-
-При использовании Octane кэш в памяти живёт только в рамках одного воркера. Используйте Redis-кэш для консистентности между воркерами:
-
-```php
+// Для Octane: используйте короткий TTL
 'cache' => [
-    'enabled' => true,
-    'store'   => 'redis',
+    'store' => 'redis',
+    'ttl'   => 60, // 1 минута достаточно при Octane
 ],
 ```

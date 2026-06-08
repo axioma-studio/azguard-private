@@ -1,12 +1,11 @@
-# UUID и ULID
+# UUID / ULID
 
-AzGuard поддерживает модели с UUID и ULID первичными ключами без дополнительной конфигурации.
+AzGuard поддерживает UUID и ULID как первичные ключи для модели User.
 
 ## UUID
 
 ```php
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use AzGuard\Concerns\HasAzGuard;
 
 class User extends Authenticatable
 {
@@ -14,16 +13,17 @@ class User extends Authenticatable
 }
 ```
 
-Миграция pivot-таблицы для UUID:
+Миграция:
 
 ```php
+// Pivot-таблица azguard_user_roles
 Schema::create('azguard_user_roles', function (Blueprint $table) {
     $table->uuid('user_id');
     $table->string('role_class');
-    $table->string('panel')->default('app');
+    $table->string('panel')->nullable();
     $table->timestamps();
+
     $table->primary(['user_id', 'role_class', 'panel']);
-    $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
 });
 ```
 
@@ -31,7 +31,6 @@ Schema::create('azguard_user_roles', function (Blueprint $table) {
 
 ```php
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use AzGuard\Concerns\HasAzGuard;
 
 class User extends Authenticatable
 {
@@ -39,12 +38,12 @@ class User extends Authenticatable
 }
 ```
 
-## Morph Maps
+## Morph Map
 
-При использовании полиморфных таблиц зарегистрируйте morph map:
+Если вы используете полиморфные связи:
 
 ```php
-// AppServiceProvider
+// app/Providers/AppServiceProvider.php
 Relation::morphMap([
     'user' => App\Models\User::class,
 ]);

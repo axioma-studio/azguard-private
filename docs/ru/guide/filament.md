@@ -1,59 +1,77 @@
 # Интеграция с Filament
 
-## Установка
+AzGuard интегрируется с Filament v3 через панельный провайдер.
 
-```bash
-composer require axioma-studio/azguard-filament
-```
-
-## Конфигурация панели
+## Настройка
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
-use AzGuard\Filament\AzGuardPlugin;
-
 public function panel(Panel $panel): Panel
 {
     return $panel
-        ->plugin(AzGuardPlugin::make()->panel('admin'));
+        ->authMiddleware([
+            \AzGuard\Http\Middleware\CheckPermission::class,
+        ]);
 }
 ```
 
-## Защита ресурсов
+## Проверка прав в ресурсах
 
 ```php
-use AzGuard\Filament\Concerns\HasAzGuardPermissions;
+use App\AzGuard\Admin\Permissions\UsersPermission;
 
-class PostResource extends Resource
+class UserResource extends Resource
 {
-    use HasAzGuardPermissions;
-
-    protected static string $permissionEnum = PostsPermission::class;
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasPermission(UsersPermission::View) ?? false;
+    }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasPermission(PostsPermission::Create);
+        return auth()->user()?->hasPermission(UsersPermission::Create) ?? false;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return auth()->user()->hasPermission(PostsPermission::Edit);
+        return auth()->user()?->hasPermission(UsersPermission::Edit) ?? false;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->hasPermission(PostsPermission::Delete);
+        return auth()->user()?->hasPermission(UsersPermission::Delete) ?? false;
     }
 }
 ```
 
-## Управление ролями через UI
-
-Плагин добавляет страницу «Роли и права» в вашу Filament-панель:
+## Навигация по ролям
 
 ```php
-AzGuardPlugin::make()
-    ->panel('admin')
-    ->showRolesPage()      // страница управления ролями
-    ->showGrantsPage();    // страница прямых грантов
+use Filament\Navigation\NavigationItem;
+
+NavigationItem::make('Пользователи')
+    ->visible(fn () => auth()->user()?->hasPermission(UsersPermission::View))
+    ->url(UserResource::getUrl());
+```
+
+## Пример: AdminPanel
+
+```php
+// app/AzGuard/Admin/AdminPanel.php
+namespace App\AzGuard\Admin;
+
+use AzGuard\Contracts\PanelInterface;
+
+class AdminPanel implements PanelInterface
+{
+    public function getName(): string { return 'admin'; }
+
+    public function getRoles(): array
+    {
+        return [
+            Roles\AdminRole::class,
+            Roles\ModeratorRole::class,
+        ];
+    }
+}
 ```

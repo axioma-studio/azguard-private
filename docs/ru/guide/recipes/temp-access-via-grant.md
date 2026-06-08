@@ -1,42 +1,43 @@
 # Временный доступ через грант
 
-## Сценарий: доступ на время отпуска коллеги
+Класический сценарий: дать пользователю доступ к функции на N часов.
+
+## Реализация
 
 ```php
-// Передать права на время отсутствия
-AzGuard::grant(
-    user: $deputyUser,
-    permission: FinancePermission::ApproveInvoices,
-    expiresAt: $colleague->returnDate,
+// Выдать доступ на 2 часа
+app(GrantTemporaryAccess::class)->execute(
+    user: $user,
+    permission: ReportsPermission::Export,
+    hours: 2
 );
 
-// Уведомление
-Mail::to($deputyUser)->send(new TemporaryAccessGranted(
-    permission: FinancePermission::ApproveInvoices,
-    expiresAt: $colleague->returnDate,
-));
+// Сервис
+class GrantTemporaryAccess
+{
+    public function execute(User $user, PermissionInterface $permission, int $hours): void
+    {
+        $user->grantPermission(
+            $permission,
+            expiresAt: Carbon::now()->addHours($hours)
+        );
+
+        event(new TemporaryAccessGranted($user, $permission, $hours));
+    }
+}
 ```
 
-## Сценарий: бета-функция для группы пользователей
+## Уведомление пользователя
 
 ```php
-$betaUsers = User::where('beta_tester', true)->get();
-
-$betaUsers->each(function ($user) {
-    AzGuard::grant(
-        $user,
-        AnalyticsPermission::BetaDashboard,
-        ttl: 30 * 24 * 3600 // 30 дней
-    );
-});
-```
-
-## Отслеживание активных грантов
-
-```php
-// Все активные временные гранты
-$activeGrants = DirectGrant::active()
-    ->with('user')
-    ->where('permission', FinancePermission::ApproveInvoices->fullKey())
-    ->get();
+// Listener
+class NotifyUserOfTemporaryAccess
+{
+    public function handle(TemporaryAccessGranted $event): void
+    {
+        $event->user->notify(
+            new TemporaryAccessNotification($event->permission, $event->hours)
+        );
+    }
+}
 ```

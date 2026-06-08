@@ -1,39 +1,37 @@
-# Супер-admin через wildcard
+# Супер-admin Wildcard
 
-## Через Gate::before
+Супер-администратор должен проходить **все** проверки прав без явного перечисления.
+
+## Через Gate::before()
 
 ```php
-// AppServiceProvider
-Gate::before(function ($user, $ability) {
-    if ($user->hasRole(SuperAdminRole::class)) {
-        return true;
-    }
+// app/Providers/AppServiceProvider.php
+Gate::before(function (User $user, string $ability): ?bool {
+    return $user->is_super_admin ? true : null;
 });
 ```
 
-## Через WildcardRole
+## Через роль с WildcardPermission
 
 ```php
 class SuperAdminRole implements RoleInterface
 {
+    public function getName(): string { return 'super-admin'; }
+
     public function permissions(): array
     {
-        return ['*']; // все текущие и будущие права
+        return [WildcardPermission::All]; // AzGuard возвращает true для любой проверки
     }
 }
+
+// Назначение
+$user->assignRole(SuperAdminRole::class);
+
+// Теперь любая проверка возвращает true
+$user->hasPermission(PostsPermission::Delete); // true
+$user->hasPermission(AdminPermission::Nuke);   // true
 ```
 
 ::: danger
-Wildcard даёт доступ ко **всем** правам включая будущие. Используйте только для системных аккаунтов.
+Назначайте роль супер-администратора только через сидеры или CLI. Никогда не давайте UI для самоназначения.
 :::
-
-## Ограниченный супер-admin
-
-```php
-Gate::before(function ($user, $ability) {
-    // Суперадмин не может удалять аудит-логи
-    if (str_starts_with($ability, 'audit.')) return null;
-
-    if ($user->hasRole(SuperAdminRole::class)) return true;
-});
-```

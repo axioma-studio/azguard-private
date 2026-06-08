@@ -1,59 +1,56 @@
 # Права на фронтенде
 
-Передача прав пользователя на клиент для условного рендеринга в Vue/React/Inertia.
+AzGuard может передавать права текущего пользователя на фронтенд — для условного рендеринга в Vue, React или Inertia.
 
-## Через Inertia SharedData
+## С Inertia.js
 
 ```php
-// app/Http/Middleware/HandleInertiaRequests.php
-public function share(Request $request): array
+// app/Http/Middleware/SharePermissions.php
+public function handle(Request $request, Closure $next): Response
 {
-    return [
-        ...parent::share($request),
-        'abilities' => fn () => $request->user()
-            ? $request->user()->abilities()
-            : [],
-    ];
+    if ($user = $request->user()) {
+        Inertia::share([
+            'permissions' => $user->getPermissionKeys(), // ['app.posts.view', ...]
+            'roles'       => $user->getRoleNames(),      // ['editor']
+        ]);
+    }
+    return $next($request);
 }
 ```
 
-## Vue 3 composable
-
-```typescript
-// composables/usePermissions.ts
+```js
+// resources/js/composables/usePermissions.js
 import { usePage } from '@inertiajs/vue3'
 
 export function usePermissions() {
-    const abilities = computed(() => usePage().props.abilities as string[])
+    const { permissions } = usePage().props
 
-    const can = (permission: string) => abilities.value.includes(permission)
-    const canAny = (permissions: string[]) =>
-        permissions.some(p => abilities.value.includes(p))
-
-    return { can, canAny }
-}
-```
-
-```vue
-<script setup>
-import { usePermissions } from '@/composables/usePermissions'
-const { can } = usePermissions()
-</script>
-
-<template>
-    <button v-if="can('app.posts.edit')">Редактировать</button>
-</template>
-```
-
-## React хук
-
-```typescript
-import { usePage } from '@inertiajs/react'
-
-export function usePermissions() {
-    const { abilities } = usePage<{ abilities: string[] }>().props
     return {
-        can: (permission: string) => abilities.includes(permission),
+        can: (permission) => permissions.includes(permission),
+        hasRole: (role) => usePage().props.roles.includes(role),
     }
 }
+
+// В компоненте
+const { can } = usePermissions()
+// <button v-if="can('app.posts.edit')">Редактировать</button>
 ```
+
+## С Livewire
+
+```php
+// В Livewire-компоненте
+public function render(): View
+{
+    return view('livewire.post-actions', [
+        'canEdit'   => auth()->user()->hasPermission(PostsPermission::Edit),
+        'canDelete' => auth()->user()->hasPermission(PostsPermission::Delete),
+    ]);
+}
+```
+
+## Безопасность
+
+::: warning
+Передача прав на фронтенд — только для UI. Всегда проверяйте права на сервере в контроллерах или Gate.
+:::

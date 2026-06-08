@@ -1,36 +1,31 @@
 # PhpStorm
 
-## Автодополнение enum-прав
+## Автодополнение enum
 
-PhpStorm автоматически подсказывает enum-кейсы при вводе `PostsPermission::`.
+PhpStorm автоматически понимает `PermissionInterface` — IDE предлагает enum-кейсы при вводе `hasPermission(`.
 
 ## Laravel Idea
 
-Плагин [Laravel Idea](https://plugins.jetbrains.com/plugin/13441-laravel-idea) добавляет поддержку:
-- Автодополнение в `#[CheckPermission(...)]`
-- Переход к объявлению права по Ctrl+Click
-- Подсветка несуществующих кейсов
+Плагин [Laravel Idea](https://laravel-idea.com/) добавляет:
+- Автодополнение для `assignRole()` — предлагает зарегистрированные классы ролей
+- Навигацию по ролям: `Ctrl+Click` на имя роли
+- Инспекции для проверки существования ролей
 
 ## .phpstorm.meta.php
-
-Для дополнительных подсказок создайте файл:
 
 ```php
 // .phpstorm.meta.php
 namespace PHPSTORM_META {
-    override(\AzGuard\Facades\AzGuard::grant(0, 1), map([
-        '' => \App\AzGuard\App\Permissions\,
-    ]));
+    expectedArguments(
+        \AzGuard\Concerns\HasAzGuard::assignRole(),
+        0,
+        \App\AzGuard\App\Roles\EditorRole::class,
+        \App\AzGuard\App\Roles\ViewerRole::class,
+        \App\AzGuard\Admin\Roles\AdminRole::class,
+    );
 }
 ```
 
-## Xdebug + тесты
+## Xdebug и проверки прав
 
-```xml
-<!-- phpunit.xml -->
-<php>
-    <env name="XDEBUG_MODE" value="coverage"/>
-    <env name="DB_CONNECTION" value="sqlite"/>
-    <env name="DB_DATABASE" value=":memory:"/>
-</php>
-```
+При отладке AzGuard через Xdebug установите точку останова в `HasAzGuard::hasPermission()` — это позволит видеть полный стек проверки.

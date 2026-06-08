@@ -1,68 +1,72 @@
 # Прямые гранты
 
-Прямой грант — это право доступа, выданное конкретному пользователю **без привязки к роли**, с опциональным TTL (временем истечения).
+Прямой грант — это разрешение, выданное **конкретному пользователю** напрямую, без роли. Опционально с TTL (временем жизни).
 
 ## Когда использовать
 
 - Временный доступ к бета-функции
-- Разовый экспорт данных
-- Переопределение роли для одного пользователя
-- Доступ во время отпуска коллеги
+- Экстренный доступ на N часов
+- Переопределение для одного пользователя без изменения роли
 
 ## Выдача гранта
 
 ```php
-use AzGuard\Facades\AzGuard;
+use Carbon\Carbon;
 
 // Бессрочный грант
-AzGuard::grant($user, PostsPermission::Delete);
+$user->grantPermission(ReportsPermission::Export);
 
-// Грант на 1 час
-AzGuard::grant($user, PostsPermission::Delete, ttl: 3600);
+// С TTL — истекает через 24 часа
+$user->grantPermission(
+    ReportsPermission::Export,
+    expiresAt: Carbon::now()->addHours(24)
+);
 
-// Грант до конкретной даты
-AzGuard::grant($user, PostsPermission::Delete, expiresAt: now()->addDays(7));
-
-// Грант с контекстом (только для этого проекта)
-AzGuard::grant($user, PostsPermission::Edit, context: ['project_id' => 42]);
+// С точной датой
+$user->grantPermission(
+    ReportsPermission::Export,
+    expiresAt: Carbon::parse('2026-12-31 23:59:59')
+);
 ```
 
 ## Отзыв гранта
 
 ```php
-// Отозвать конкретное право
-AzGuard::revoke($user, PostsPermission::Delete);
+// Отозвать конкретный грант
+$user->revokeGrantedPermission(ReportsPermission::Export);
 
-// Отозвать все прямые гранты пользователя
-AzGuard::revokeAll($user);
+// Отозвать все гранты пользователя
+$user->revokeAllGrantedPermissions();
 ```
 
 ## Проверка
 
+Прямые гранты проверяются автоматически через `hasPermission()` и Gate — никакого специального кода не нужно:
+
 ```php
-// hasPermission() учитывает прямые гранты автоматически
-$user->hasPermission(PostsPermission::Delete); // true, если есть активный грант
-
-// Проверить только прямые гранты
-AzGuard::hasDirectGrant($user, PostsPermission::Delete); // bool
-
-// Посмотреть все активные гранты
-$user->directGrants(); // Collection<DirectGrant>
+$user->hasPermission(ReportsPermission::Export); // учитывает и роли, и гранты
+Gate::allows('app.reports.export');              // то же самое
 ```
 
-## Автоматическое истечение
+## Истёкшие гранты
 
-Просроченные гранты фильтруются при каждой проверке. Для очистки БД запустите:
+Истёкшие гранты не удаляются автоматически. Запускайте очистку:
 
 ```bash
 php artisan azguard:prune-grants
 ```
 
-Или добавьте в планировщик:
+Либо в планировщике:
 
 ```php
-// bootstrap/app.php
-->withSchedule(function (Schedule $schedule) {
-    $schedule->command('azguard:prune-grants')->daily();
-})
+// app/Console/Kernel.php
+$schedule->command('azguard:prune-grants')->daily();
 ```
+
+## Таблица `azguard_direct_grants`
+
+| Колонка | Тип | Описание |
+|---|---|---|
+| `user_id` | bigint | ID пользователя |
+| `permission` | string | Полный ключ разрешения |
+| `expires_at` | timestamp\|null | Время истечения (null = бессрочно) |

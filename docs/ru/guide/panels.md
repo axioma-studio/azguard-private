@@ -1,8 +1,8 @@
 # Панели
 
-Панели — это изолированные пространства имён AzGuard. Каждое приложение имеет одну или несколько панелей: `app`, `admin`, `api`.
+Панель — это изолированное пространство имён для разрешений и ролей. Типичное приложение имеет три панели: `app`, `admin`, `api`.
 
-## Объявление панели
+## Класс панели
 
 ```php
 // app/AzGuard/App/AppPanel.php
@@ -12,51 +12,48 @@ use AzGuard\Contracts\PanelInterface;
 
 class AppPanel implements PanelInterface
 {
-    public function name(): string
+    public function getName(): string
     {
-        return 'app';
+        return 'app'; // префикс для всех прав: app.posts.view
     }
 
-    public function roles(): array
-    {
-        return [
-            Roles\EditorRole::class,
-            Roles\ModeratorRole::class,
-            Roles\ViewerRole::class,
-        ];
-    }
-
-    public function permissions(): array
+    public function getPermissions(): array
     {
         return [
             Permissions\PostsPermission::class,
             Permissions\CommentsPermission::class,
+            Permissions\ReportsPermission::class,
+        ];
+    }
+
+    public function getRoles(): array
+    {
+        return [
+            Roles\EditorRole::class,
+            Roles\ViewerRole::class,
+            Roles\ModeratorRole::class,
         ];
     }
 }
 ```
 
-## Регистрация
+## Регистрация в конфиге
 
 ```php
 // config/azguard.php
-return [
-    'panels' => [
-        'app'   => App\AzGuard\App\AppPanel::class,
-        'admin' => App\AzGuard\Admin\AdminPanel::class,
-        'api'   => App\AzGuard\Api\ApiPanel::class,
-    ],
-];
+'panels' => [
+    'app'   => App\AzGuard\App\AppPanel::class,
+    'admin' => App\AzGuard\Admin\AdminPanel::class,
+    'api'   => App\AzGuard\Api\ApiPanel::class,
+],
 ```
 
-## Изоляция панелей
+## Изоляция прав
 
-Пользователь может иметь роль `EditorRole` в панели `app` и роль `ViewerRole` в панели `admin` — они полностью независимы:
+Права между панелями не пересекаются:
 
 ```php
-$user->assignRole(EditorRole::class, panel: 'app');
-$user->assignRole(ViewerRole::class, panel: 'admin');
-
-$user->hasPermission(PostsPermission::Edit);         // true (app)
-$user->hasPermission(AdminPermission::ManageUsers);  // false (admin)
+// app.users.view и admin.users.view — разные права
+$user->hasPermission('app.users.view');   // false — нет роли в app
+$user->hasPermission('admin.users.view'); // true  — есть роль в admin
 ```

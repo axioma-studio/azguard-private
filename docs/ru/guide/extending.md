@@ -1,69 +1,66 @@
 # Расширение
 
-## Кастомный драйвер хранилища
+## Кастомный PermissionChecker
 
 ```php
-use AzGuard\Contracts\PermissionStorageInterface;
+use AzGuard\Contracts\PermissionCheckerInterface;
 
-class RedisPermissionStorage implements PermissionStorageInterface
+class TenantPermissionChecker implements PermissionCheckerInterface
 {
-    public function getUserPermissions(int $userId, string $panel): array
+    public function check(Authenticatable $user, PermissionInterface $permission): bool
     {
-        return Cache::tags(['azguard', "user:{$userId}"])
-            ->remember("permissions:{$panel}", 300, function () use ($userId, $panel) {
-                return DB::table('azguard_user_roles')
-                    ->where('user_id', $userId)
-                    ->where('panel', $panel)
-                    ->pluck('role_class')
-                    ->flatMap(fn ($class) => (new $class)->permissions())
-                    ->toArray();
-            });
+        // Кастомная логика: например, учитываем tenant
+        $tenantId = app(TenantContext::class)->getCurrentTenantId();
+
+        return DB::table('azguard_user_roles')
+            ->where('user_id', $user->getAuthIdentifier())
+            ->where('tenant_id', $tenantId)
+            ->exists();
+    }
+}
+
+// Регистрация в ServiceProvider
+$this->app->bind(PermissionCheckerInterface::class, TenantPermissionChecker::class);
+```
+
+## Кастомный RoleResolver
+
+```php
+use AzGuard\Contracts\RoleResolverInterface;
+
+class CachedRoleResolver implements RoleResolverInterface
+{
+    public function resolve(Authenticatable $user): array
+    {
+        return Cache::remember(
+            "azguard_roles_{$user->getAuthIdentifier()}",
+            300,
+            fn () => $user->azguardRoles()->get()->toArray()
+        );
     }
 }
 ```
 
-```php
-// AppServiceProvider
-public function register(): void
-{
-    $this->app->bind(PermissionStorageInterface::class, RedisPermissionStorage::class);
-}
-```
-
-## Кастомный Guard
+## Расширение трейта
 
 ```php
-use AzGuard\Contracts\GuardInterface;
-
-class TenantGuard implements GuardInterface
+trait HasCustomAzGuard
 {
-    public function check(User $user, string $permission, array $context = []): bool
+    use HasAzGuard;
+
+    public function hasAnyRole(array $roles): bool
     {
-        $tenantId = $context['tenant_id'] ?? null;
-        // Дополнительная проверка по тенанту
-        return $user->hasPermission($permission) && $this->tenantAllows($user, $tenantId);
-    }
-}
-```
-
-## Свои Artisan-команды поверх AzGuard
-
-```php
-class ImportRolesCommand extends Command
-{
-    protected $signature = 'roles:import {file}';
-
-    public function handle(): void
-    {
-        $data = json_decode(File::get($this->argument('file')), true);
-        foreach ($data['users'] as $item) {
-            $user = User::findOrFail($item['id']);
-            $user->syncRoles(array_map(
-                fn ($r) => "App\\AzGuard\\App\\Roles\\{$r}Role",
-                $item['roles']
-            ));
+        foreach ($roles as $role) {
+            if ($this->hasRole($role)) return true;
         }
-        $this->info('Роли импортированы.');
+        return false;
+    }
+
+    public function canAccessPanel(string $panel): bool
+    {
+        return $this->azguardRoles()
+            ->where('panel', $panel)
+            ->exists();
     }
 }
 ```

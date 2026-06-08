@@ -1,53 +1,46 @@
 # Производительность
 
-## Кэширование прав пользователя
+## Кеширование
 
-AzGuard кэширует права пользователя в памяти в рамках одного запроса. Для кэширования между запросами:
+AzGuard кеширует права пользователя в памяти на время запроса. Запросов к БД на каждую проверку нет.
+
+Для кеширования между запросами настройте Redis-кеш:
 
 ```php
 // config/azguard.php
 'cache' => [
     'enabled' => true,
-    'ttl'     => 300, // секунды
     'store'   => 'redis',
+    'ttl'     => 300, // секунд
 ],
 ```
 
 ## Избегайте N+1 в циклах
 
 ```php
-// ❌ N+1 — запрос к БД для каждого пользователя
+// ❌ Плохо — отдельный запрос для каждого пользователя
 foreach ($users as $user) {
     if ($user->hasPermission(PostsPermission::Edit)) { ... }
 }
 
-// ✅ Загрузите роли заранее
+// ✅ Хорошо — eager load ролей
 $users = User::with('azguardRoles')->get();
 foreach ($users as $user) {
     if ($user->hasPermission(PostsPermission::Edit)) { ... }
 }
 ```
 
-## Gate::allows vs hasPermission
+## hasPermission vs Gate::allows
 
-```php
-// hasPermission() — напрямую через AzGuard, быстрее
-$user->hasPermission(PostsPermission::Edit);
+| | `hasPermission()` | `Gate::allows()` |
+|---|---|---|
+| Прямой вызов | ✅ | ✅ |
+| Проходит `Gate::before()` | ❌ | ✅ |
+| Учитывает super-admin | ❌ | ✅ |
+| Быстрее | немного | — |
 
-// Gate::allows() — проходит через весь стек Gate (before, policies)
-// Используйте когда нужна Policy-логика
-Gate::allows('app.posts.edit');
-```
+Используйте `Gate::allows()` как основной метод — он учитывает super-admin и `Gate::before()` хуки.
 
-## Preload разрешений для Inertia
+## Octane
 
-```php
-// Загружайте abilities один раз в HandleInertiaRequests
-// не вызывайте hasPermission() отдельно для каждого компонента
-public function share(Request $request): array
-{
-    return [
-        'abilities' => fn () => $request->user()?->abilities() ?? [],
-    ];
-}
-```
+AzGuard stateless — нет глобального состояния между запросами. Работает с Octane без дополнительной настройки.
