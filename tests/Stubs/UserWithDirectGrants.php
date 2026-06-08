@@ -2,18 +2,13 @@
 
 namespace AzGuard\Tests\Stubs;
 
-use AzGuard\Concerns\HasAzGuard;
 use AzGuard\Concerns\HasDirectGrants;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
  * User-стаб с подключённым HasDirectGrants для тестов DirectGrant.
+ * Наследует Stubs\User, чтобы factory() работал через Orchestra Testbench.
  */
-class UserWithDirectGrants extends Authenticatable
+class UserWithDirectGrants extends User
 {
-    use HasAzGuard, HasDirectGrants;
-
-    protected $table = 'users';
-
-    protected $fillable = ['name', 'email', 'password'];
+    use HasDirectGrants;
 }

@@ -15,7 +15,7 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function () {
     $this->manager = app(AuthorizationContextManager::class);
-    $this->user    = User::factory()->create();
+    $this->user = User::factory()->create();
 });
 
 afterEach(function () {
@@ -50,14 +50,14 @@ it('returns permissions from DB when context matches', function () {
     $this->manager->set(new AuthorizationContext('app', 'workspace', 42));
 
     DB::table('az_guard_context_roles')->insert([
-        'model_type'     => User::class,
-        'model_id'       => $this->user->getAuthIdentifier(),
-        'context_type'   => 'workspace',
-        'context_id'     => 42,
-        'panel_id'       => 'app',
+        'model_type' => User::class,
+        'model_id' => $this->user->getAuthIdentifier(),
+        'context_type' => 'workspace',
+        'context_id' => 42,
+        'panel_id' => 'app',
         'permission_key' => 'app.posts.edit',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $source = new ContextualRoleGrantSource(
@@ -75,14 +75,14 @@ it('wildcard permission grants everything', function () {
     $this->manager->set(new AuthorizationContext('app', 'workspace', 42));
 
     DB::table('az_guard_context_roles')->insert([
-        'model_type'     => User::class,
-        'model_id'       => $this->user->getAuthIdentifier(),
-        'context_type'   => 'workspace',
-        'context_id'     => 42,
-        'panel_id'       => 'app',
+        'model_type' => User::class,
+        'model_id' => $this->user->getAuthIdentifier(),
+        'context_type' => 'workspace',
+        'context_id' => 42,
+        'panel_id' => 'app',
         'permission_key' => '*',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $source = new ContextualRoleGrantSource(
@@ -99,14 +99,14 @@ it('does not return permissions for different contextId', function () {
     $this->manager->set(new AuthorizationContext('app', 'workspace', 99));
 
     DB::table('az_guard_context_roles')->insert([
-        'model_type'     => User::class,
-        'model_id'       => $this->user->getAuthIdentifier(),
-        'context_type'   => 'workspace',
-        'context_id'     => 42,
-        'panel_id'       => 'app',
+        'model_type' => User::class,
+        'model_id' => $this->user->getAuthIdentifier(),
+        'context_type' => 'workspace',
+        'context_id' => 42,
+        'panel_id' => 'app',
         'permission_key' => 'app.posts.edit',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $source = new ContextualRoleGrantSource(
@@ -123,14 +123,14 @@ it('does not return permissions for different contextType', function () {
     $this->manager->set(new AuthorizationContext('app', 'project', 42));
 
     DB::table('az_guard_context_roles')->insert([
-        'model_type'     => User::class,
-        'model_id'       => $this->user->getAuthIdentifier(),
-        'context_type'   => 'workspace',
-        'context_id'     => 42,
-        'panel_id'       => 'app',
+        'model_type' => User::class,
+        'model_id' => $this->user->getAuthIdentifier(),
+        'context_type' => 'workspace',
+        'context_id' => 42,
+        'panel_id' => 'app',
         'permission_key' => 'app.posts.edit',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $source = new ContextualRoleGrantSource(

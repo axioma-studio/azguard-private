@@ -51,7 +51,7 @@ it('clearAll() removes all contexts', function () {
 });
 
 it('set() overwrites previous context for same panelId', function () {
-    $first  = new AuthorizationContext('app', 'workspace', 1);
+    $first = new AuthorizationContext('app', 'workspace', 1);
     $second = new AuthorizationContext('app', 'workspace', 2);
 
     $this->manager->set($first);
@@ -61,7 +61,7 @@ it('set() overwrites previous context for same panelId', function () {
 });
 
 it('contexts for different panels are independent', function () {
-    $app   = new AuthorizationContext('app', 'workspace', 1);
+    $app = new AuthorizationContext('app', 'workspace', 1);
     $admin = new AuthorizationContext('admin', 'org', 2);
 
     $this->manager->set($app);

@@ -11,7 +11,7 @@ uses(AzGuard\Tests\TestCase::class);
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 it('returns empty set when user has no DB roles', function () {
-    $user   = User::factory()->create();
+    $user = User::factory()->create();
     $source = app(DatabaseRoleGrantSource::class);
 
     $result = $source->permissionsFor($user, 'app');
@@ -24,11 +24,11 @@ it('returns permissions assigned to user via DB role', function () {
     $role = Role::create(['name' => 'editor', 'panel_id' => 'app']);
 
     DB::table(config('az-guard.table_names.role_permissions'))->insert([
-        'role_id'        => $role->getKey(),
-        'panel_id'       => 'app',
+        'role_id' => $role->getKey(),
+        'panel_id' => 'app',
         'permission_key' => 'app.posts.edit',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $user->assignRole('editor');
@@ -42,7 +42,7 @@ it('returns permissions assigned to user via DB role', function () {
 });
 
 it('aggregates permissions across multiple DB roles', function () {
-    $user   = User::factory()->create();
+    $user = User::factory()->create();
     $editor = Role::create(['name' => 'editor', 'panel_id' => 'app']);
     $viewer = Role::create(['name' => 'viewer', 'panel_id' => 'app']);
 
@@ -68,11 +68,11 @@ it('wildcard role grants all permissions', function () {
     $role = Role::create(['name' => 'superadmin', 'panel_id' => 'app']);
 
     DB::table(config('az-guard.table_names.role_permissions'))->insert([
-        'role_id'        => $role->getKey(),
-        'panel_id'       => 'app',
+        'role_id' => $role->getKey(),
+        'panel_id' => 'app',
         'permission_key' => '*',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $user->assignRole('superadmin');
@@ -89,11 +89,11 @@ it('does not return permissions for other panels', function () {
     $role = Role::create(['name' => 'admin-editor', 'panel_id' => 'admin']);
 
     DB::table(config('az-guard.table_names.role_permissions'))->insert([
-        'role_id'        => $role->getKey(),
-        'panel_id'       => 'admin',
+        'role_id' => $role->getKey(),
+        'panel_id' => 'admin',
         'permission_key' => 'admin.users.delete',
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $user->assignRole('admin-editor');

@@ -13,7 +13,7 @@ it('stores all fields correctly', function () {
 });
 
 it('withPanel() returns new instance with changed panelId', function () {
-    $ctx     = new AuthorizationContext('app', 'workspace', 42);
+    $ctx = new AuthorizationContext('app', 'workspace', 42);
     $updated = $ctx->withPanel('admin');
 
     expect($updated->panelId)->toBe('admin')
@@ -23,7 +23,7 @@ it('withPanel() returns new instance with changed panelId', function () {
 });
 
 it('withContext() returns new instance with changed type and id', function () {
-    $ctx     = new AuthorizationContext('app', 'workspace', 42);
+    $ctx = new AuthorizationContext('app', 'workspace', 42);
     $updated = $ctx->withContext('project', 99);
 
     expect($updated->contextType)->toBe('project')
