@@ -31,7 +31,6 @@ use AzGuard\Http\Middleware\CheckDirectGrant;
 use AzGuard\Http\Middleware\LoadAzGuardRoles;
 use AzGuard\Http\Middleware\SetCurrentPanel;
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
-use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Resolver\PermissionResolverCache;
@@ -165,22 +164,22 @@ final class AzGuardServiceProvider extends ServiceProvider
     }
 
     /**
-     * Регистрирует Blade-директивы.
+     * Blade directives.
      *
-     * @azcan   / @endazcan   — проверка через роли
-     * @azrole  / @endazrole  — проверка наличия роли
-     * @azdirect / @endazdirect — проверка direct grant
+     * @azcan    / @endazcan    — permission check
+     * @azrole   / @endazrole   — role check
+     * @azdirect / @endazdirect — direct grant check
      */
     protected function registerBladeDirectives(): void
     {
         Blade::directive('azcan', function (string $expression): string {
-            return "<?php if (auth()->check() && auth()->user()->hasAzPermission({$expression})): ?>";
+            return "<?php if (auth()->check() && auth()->user()->hasPermission({$expression})): ?>";
         });
 
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
 
         Blade::directive('azrole', function (string $expression): string {
-            return "<?php if (auth()->check() && auth()->user()->hasAzRole({$expression})): ?>";
+            return "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>";
         });
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
