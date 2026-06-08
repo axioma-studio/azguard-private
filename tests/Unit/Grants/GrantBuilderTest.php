@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit\Grants;
+
+use AzGuard\Events\GrantGiven;
+use AzGuard\Events\GrantRevoked;
+use AzGuard\Grants\GrantBuilder;
+use AzGuard\Models\DirectGrant;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
+use Tests\TestCase;
+
+class GrantBuilderTest extends TestCase
+{
+    private Authenticatable $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = $this->createUser();
+    }
+
+    // ─── give ─────────────────────────────────────────────────────────────────
+
+    public function test_give_creates_grant_without_ttl(): void
+    {
+        Event::fake();
+
+        $grant = (new GrantBuilder($this->user))
+            ->on('app')
+            ->give('app.documents.export');
+
+        $this->assertInstanceOf(DirectGrant::class, $grant);
+        $this->assertNull($grant->expires_at);
+        $this->assertDatabaseHas('az_direct_grants', [
+            'permission_key' => 'app.documents.export',
+            'panel_id'       => 'app',
+            'expires_at'     => null,
+        ]);
+
+        Event::assertDispatched(GrantGiven::class);
+    }
+
+    public function test_give_creates_grant_with_ttl(): void
+    {
+        Event::fake();
+        Carbon::setTestNow(Carbon::parse('2025-01-01 12:00:00'));
+
+        $grant = (new GrantBuilder($this->user))
+            ->on('app')
+            ->ttl(3600)
+            ->give('app.documents.export');
+
+        $this->assertNotNull($grant->expires_at);
+        $this->assertTrue($grant->expires_at->eq(Carbon::parse('2025-01-01 13:00:00')));
+    }
+
+    public function test_give_is_idempotent_and_updates_expires_at(): void
+    {
+        $builder = (new GrantBuilder($this->user))->on('app');
+        $builder->ttl(null)->give('app.documents.export');  // бессрочно
+        $builder->ttl(7200)->give('app.documents.export'); // обновляем TTL
+
+        $this->assertDatabaseCount('az_direct_grants', 1);
+    }
+
+    // ─── revoke ───────────────────────────────────────────────────────────────
+
+    public function test_revoke_deletes_grant_and_dispatches_event(): void
+    {
+        Event::fake();
+
+        $builder = (new GrantBuilder($this->user))->on('app');
+        $builder->give('app.documents.export');
+
+        $deleted = $builder->revoke('app.documents.export');
+
+        $this->assertSame(1, $deleted);
+        $this->assertDatabaseMissing('az_direct_grants', [
+            'permission_key' => 'app.documents.export',
+        ]);
+
+        Event::assertDispatched(GrantRevoked::class);
+    }
+
+    public function test_revoke_returns_zero_if_not_found(): void
+    {
+        $deleted = (new GrantBuilder($this->user))
+            ->on('app')
+            ->revoke('app.does.not.exist');
+
+        $this->assertSame(0, $deleted);
+    }
+
+    public function test_revoke_all_removes_all_panel_grants(): void
+    {
+        Event::fake();
+
+        $builder = (new GrantBuilder($this->user))->on('app');
+        $builder->give('app.documents.export');
+        $builder->give('app.documents.view');
+
+        $deleted = $builder->revokeAll();
+
+        $this->assertSame(2, $deleted);
+        $this->assertDatabaseCount('az_direct_grants', 0);
+
+        Event::assertDispatched(GrantRevoked::class, function (GrantRevoked $e): bool {
+            return $e->permissionKey === '*';
+        });
+    }
+
+    // ─── list ─────────────────────────────────────────────────────────────────
+
+    public function test_list_returns_only_active_grants(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2025-06-01 12:00:00'));
+
+        $builder = (new GrantBuilder($this->user))->on('app');
+
+        // Активный
+        $builder->ttl(null)->give('app.a');
+        // Истёкший — вставим напрямую
+        DirectGrant::create([
+            'grantable_type'  => $this->user::class,
+            'grantable_id'    => $this->user->getAuthIdentifier(),
+            'panel_id'        => 'app',
+            'permission_key'  => 'app.b',
+            'expires_at'      => Carbon::parse('2025-01-01'),
+        ]);
+
+        $list = $builder->list();
+
+        $this->assertInstanceOf(Collection::class, $list);
+        $this->assertCount(1, $list);
+        $this->assertSame('app.a', $list->first()->permission_key);
+    }
+
+    public function test_on_is_required_throws_without_panel(): void
+    {
+        $this->expectException(\RuntimeException::class);
+
+        (new GrantBuilder($this->user))->give('app.x');
+    }
+}

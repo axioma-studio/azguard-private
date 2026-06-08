@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AzGuard\Contracts;
 
+use AzGuard\Grants\GrantBuilder;
+use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
 use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Контракт для AzGuardManager.
@@ -13,6 +17,8 @@ use Closure;
  */
 interface AzGuardManagerInterface
 {
+    // ─── Panels ───────────────────────────────────────────────────────────────
+
     /**
      * Регистрирует панель через замыкание.
      */
@@ -46,4 +52,46 @@ interface AzGuardManagerInterface
      * @throws \RuntimeException если панель не зарегистрирована
      */
     public function permission(string $panelId, string|\UnitEnum $permission): string;
+
+    // ─── Grants API ───────────────────────────────────────────────────────────
+
+    /**
+     * Возвращает fluent GrantBuilder для пользователя.
+     *
+     * AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x');
+     */
+    public function forUser(Authenticatable $user): GrantBuilder;
+
+    /**
+     * Короткий хелпер: выдать direct grant.
+     *
+     * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
+     */
+    public function grantDirect(
+        Authenticatable $user,
+        string $permissionKey,
+        string $panelId,
+        ?int $ttl,
+    ): DirectGrant;
+
+    /**
+     * Короткий хелпер: отозвать direct grant.
+     *
+     * @return int  Количество удалённых записей.
+     */
+    public function revokeDirect(
+        Authenticatable $user,
+        string $permissionKey,
+        string $panelId,
+    ): int;
+
+    /**
+     * Короткий хелпер: список активных grants пользователя в панели.
+     *
+     * @return Collection<int, DirectGrant>
+     */
+    public function activeGrants(
+        Authenticatable $user,
+        string $panelId,
+    ): Collection;
 }

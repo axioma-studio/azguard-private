@@ -11,8 +11,9 @@ return [
     | Модели, используемые AzGuard. Можно заменить своими классами.
     */
     'models' => [
-        'role'  => \AzGuard\Models\Role::class,
-        'scope' => \AzGuard\Models\ModelHasScope::class,
+        'role'         => \AzGuard\Models\Role::class,
+        'scope'        => \AzGuard\Models\ModelHasScope::class,
+        'direct_grant' => \AzGuard\Models\DirectGrant::class,
     ],
 
     /*
@@ -33,6 +34,7 @@ return [
         'roles'            => 'roles',
         'model_has_roles'  => 'model_has_roles',
         'model_has_scopes' => 'model_has_scopes',
+        'direct_grants'    => 'az_direct_grants',
     ],
 
     /*
@@ -91,6 +93,7 @@ return [
         'wildcard_permission' => false, // Wildcards типа 'admin.*'
         'teams'               => false, // Multi-team/tenant изоляция
         'audit_log'           => false, // Логирование назначений/отзывов ролей
+        'direct_grants'       => true,  // Direct grants (HasDirectGrants + az_direct_grants)
     ],
 
     /*

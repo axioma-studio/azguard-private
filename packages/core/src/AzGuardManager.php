@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace AzGuard;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Grants\GrantBuilder;
+use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
 use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Collection;
 
 final class AzGuardManager implements AzGuardManagerInterface
 {
@@ -14,6 +18,8 @@ final class AzGuardManager implements AzGuardManagerInterface
     protected array $panels = [];
 
     protected ?Panel $currentPanel = null;
+
+    // ─── Panels ───────────────────────────────────────────────────────────────
 
     public function registerPanel(Closure $panel): void
     {
@@ -53,5 +59,57 @@ final class AzGuardManager implements AzGuardManagerInterface
         }
 
         return $panel->resolvePermission(permission: $permission);
+    }
+
+    // ─── Grants API ───────────────────────────────────────────────────────────
+
+    /**
+     * Возвращает fluent GrantBuilder для пользователя.
+     *
+     * Пример:
+     *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
+     */
+    public function forUser(Authenticatable $user): GrantBuilder
+    {
+        return new GrantBuilder(user: $user);
+    }
+
+    /**
+     * Короткий хелпер: выдать direct grant.
+     *
+     * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
+     */
+    public function grantDirect(
+        Authenticatable $user,
+        string $permissionKey,
+        string $panelId = 'app',
+        ?int $ttl = null,
+    ): DirectGrant {
+        return $this->forUser($user)->on($panelId)->ttl($ttl)->give($permissionKey);
+    }
+
+    /**
+     * Короткий хелпер: отозвать direct grant.
+     *
+     * @return int  Количество удалённых записей.
+     */
+    public function revokeDirect(
+        Authenticatable $user,
+        string $permissionKey,
+        string $panelId = 'app',
+    ): int {
+        return $this->forUser($user)->on($panelId)->revoke($permissionKey);
+    }
+
+    /**
+     * Короткий хелпер: список активных grants пользователя в панели.
+     *
+     * @return Collection<int, DirectGrant>
+     */
+    public function activeGrants(
+        Authenticatable $user,
+        string $panelId = 'app',
+    ): Collection {
+        return $this->forUser($user)->on($panelId)->list();
     }
 }
