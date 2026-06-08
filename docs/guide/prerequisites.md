@@ -7,7 +7,7 @@ Before installing AzGuard, make sure your environment meets the following requir
 | Requirement | Minimum version |
 |---|---|
 | PHP | 8.2 |
-| Laravel | 10.x or 11.x |
+| Laravel | 10.x, 11.x, 12.x |
 | Database | MySQL 8 / PostgreSQL 14 / SQLite 3.35+ |
 
 ## PHP extensions
@@ -20,101 +20,125 @@ AzGuard uses standard Laravel infrastructure. No uncommon extensions are needed 
 
 ## The `HasAzGuard` trait
 
-Your `User` model (or any authenticatable model) must use the `HasAzGuard` trait **and** implement the `Authorizable` contract (which `Illuminate\Foundation\Auth\User` already does). Without `Authorizable`, Laravel's `can()`, `authorize()`, and `@can` will not work:
+Your `User` model (or any authenticatable model) must use the `HasAzGuard` trait:
 
 ```php
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use AzGuard\Traits\HasAzGuard;
 
 class User extends Authenticatable
 {
     use HasAzGuard;
-
-    // ...
 }
 ```
 
-::: warning Reserved property / method names
-Do **not** define any of the following on your User model (or any model that uses `HasAzGuard`). These names are used internally by the trait, and overriding them will break AzGuard:
+### Authorizable contract required
 
-- `role` — as a property, database column, relation, or method
-- `roles` — as a property, database column, relation, or method
-- `permission` — as a property, database column, relation, or method
-- `permissions` — as a property, database column, relation, or method
+AzGuard integrates with Laravel's `Gate` layer. For `$user->can()`, `$this->authorize()`, and policy checks to work correctly, your User model must implement the `Authorizable` contract. Laravel's default `Authenticatable` base class already includes this — if you use a custom base class, make sure it also extends `Illuminate\Foundation\Auth\User` or manually implements `Illuminate\Contracts\Auth\Access\Authorizable`.
 
-If your existing model already has any of these, rename the conflicting member before installing AzGuard.
+```php
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use AzGuard\Traits\HasAzGuard;
+
+class User extends Authenticatable  // <-- Authorizable is included here
+{
+    use HasAzGuard;
+}
+```
+
+::: warning Do not skip this step
+If your model doesn't implement `Authorizable`, calls to `$user->can()` and `$this->authorize()` will either throw errors or always return `false`.
 :::
 
-## Config file
+## Reserved property and relation names
 
-AzGuard publishes `config/azguard.php` during installation. If you already have a file with that name (from a previous installation or a custom config), you must merge them manually:
+The `HasAzGuard` trait defines several methods and relationships on your model. If your model — or any of its traits — defines any of the following, you will get unexpected behavior or fatal errors:
+
+**Do not define these as database columns, model properties, Eloquent relations, or methods:**
+
+| Name | Why it's reserved |
+|---|---|
+| `roles` | Used internally by `HasAzGuard` for role resolution |
+| `permissions` | Used internally for permission collection access |
+| `hasRole` | Method defined by trait |
+| `hasPermission` | Method defined by trait |
+| `assignRole` | Method defined by trait |
+| `removeRole` | Method defined by trait |
+| `syncRoles` | Method defined by trait |
+| `getRoles` | Method defined by trait |
+| `getAllPermissions` | Method defined by trait |
+
+If you have an existing `roles` or `permissions` column on your users table (e.g., a legacy JSON column), you must rename it before installing AzGuard.
+
+## Configuration file
+
+AzGuard publishes `config/azguard.php` during installation. If a file with that name already exists in your project, the installer will skip publishing it. In that case, run:
 
 ```bash
-# Publish without overwriting:
-php artisan vendor:publish --tag=azguard-config
-
-# If the file already exists, use --force to overwrite (backup first):
 php artisan vendor:publish --tag=azguard-config --force
 ```
 
-See [Configuration](./configuration.md) for all available options.
+Then manually merge any custom values from your old file.
 
-## Database schema requirements
+## Database schema
 
-AzGuard creates several tables during migration. A common issue on **MySQL with `utf8mb4` charset** is:
+AzGuard creates several tables prefixed with `az_guard_`. By default these use standard `unsignedBigInteger` foreign keys referencing your `users.id` column.
+
+### MySQL: key length limitation
+
+On MySQL with `utf8mb4` charset, you may see:
 
 ```
-PDOException: SQLSTATE[42000]: Syntax error or access violation:
-1071 Specified key was too long; max key length is 767 bytes
+Illuminate\Database\QueryException: Specified key was too long;
+max key length is 767 bytes
 ```
 
-This happens when the default InnoDB row format is `COMPACT` instead of `DYNAMIC`. Fix it with one of these approaches:
+Fix options (choose one):
 
-**Option A — Set InnoDB row format to DYNAMIC (recommended):**
-
-Add this to your `AppServiceProvider::boot()`:
-
+**Option A — Set InnoDB row format (recommended):**
 ```php
+// AppServiceProvider::boot()
 use Illuminate\Support\Facades\Schema;
 
-public function boot(): void
-{
-    Schema::defaultStringLength(191);
-}
+Schema::defaultStringLength(191);
 ```
 
-**Option B — Use MySQL 8+ with `innodb_default_row_format=DYNAMIC`:**
-
-Set `innodb_default_row_format = DYNAMIC` in `my.cnf`. Modern MySQL 8 installs usually have this by default.
-
-**Option C — Reduce string lengths in AzGuard migrations:**
-
-Publish the migrations and manually reduce the `name` column length from `255` to `125`:
-
-```bash
-php artisan vendor:publish --tag=azguard-migrations
+**Option B — Add to `config/database.php`:**
+```php
+'mysql' => [
+    // ...
+    'engine' => 'InnoDB ROW_FORMAT=DYNAMIC',
+]
 ```
 
-Then edit the published migration files before running `php artisan migrate`.
+**Option C — Use MariaDB 10.3+ or MySQL 8.0.17+**, which use Dynamic row format by default.
 
-::: tip PostgreSQL and SQLite
-Neither PostgreSQL nor SQLite has this limitation. The issue only affects MySQL/MariaDB.
+### Foreign keys
+
+AzGuard migrations include foreign key constraints to `users.id` by default. If you are running without foreign key support (e.g., SQLite in testing), this is handled automatically by the migrations via a config flag:
+
+```php
+// config/azguard.php
+'use_foreign_keys' => env('AZGUARD_FK', true),
+```
+
+Set `AZGUARD_FK=false` in your `.env` for environments where FK constraints are not supported.
+
+When a user is deleted from `users`, AzGuard pivot records (role assignments, direct grants) are **not** automatically cascade-deleted unless foreign keys are enabled. With foreign keys on, the `ON DELETE CASCADE` constraint handles cleanup automatically. Without foreign keys, call:
+
+```php
+AzGuard::forUser($user)->cleanup();
+```
+...before deleting the user, or handle cleanup in an `Eloquent::deleting` observer.
+
+## UUID / ULID primary keys
+
+By default, AzGuard assumes integer (`bigint`) primary keys on your users table. If you use **UUID, ULID, or any other string-based primary key**, you must adjust both the migrations and the config before running `migrate`.
+
+See [UUID / ULID Support](./uuid-ulid.md) for a step-by-step guide.
+
+::: danger Run before migrate
+Changing the key type after migration requires dropping and recreating AzGuard tables. Always configure this before the first `php artisan migrate`.
 :::
-
-## UUID / ULID / GUID primary keys
-
-By default, AzGuard assumes integer (`bigint`) primary keys on all models. If your `users` table (or any other model using `HasAzGuard`) uses string-based primary keys (UUID, ULID, NANOID, etc.), you must update the published migrations and the `azguard.php` config before running `php artisan migrate`.
-
-See [UUID / ULID](./uuid-ulid.md) for the full setup guide.
-
-## Foreign key constraints
-
-AzGuard's pivot tables (`az_guard_user_roles`, `az_guard_role_permissions`, etc.) include foreign key constraints by default. If your setup does not support foreign keys (e.g., MyISAM tables, some SQLite configurations), you can disable them in the published migration files.
-
-When a user or role is deleted via AzGuard's provided methods (`removeRole()`, `syncRoles([])`, `DynamicRole::delete()`), pivot records are cleaned up automatically. However, if you delete records directly via Eloquent (e.g., `$user->delete()`), you must either:
-
-- Rely on `ON DELETE CASCADE` from the foreign key constraints, or
-- Call `$user->syncRoles([])` before deleting.
 
 ## Multi-guard apps
 
