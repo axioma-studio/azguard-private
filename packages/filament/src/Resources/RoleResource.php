@@ -8,19 +8,28 @@ use AzGuard\Filament\Resources\RoleResource\Pages\CreateRole;
 use AzGuard\Filament\Resources\RoleResource\Pages\EditRole;
 use AzGuard\Filament\Resources\RoleResource\Pages\ListRoles;
 use AzGuard\Models\Role;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 /**
  * Filament Resource для управления DB-ролями.
  *
- * Отображает: список ролей, создание, редактирование.
- * На странице EditRole расположены две вкладки:
- * «Права» (дерево чекбоксов) и «Пользователи».
+ * Поддерживает два режима:
+ *
+ *  «Custom role»  — права хранятся в az_guard_role_permissions,
+ *                   редактируются через RolePermissionsRelationManager.
+ *
+ *  «Code role»    — права определяет PHP-класс (class_name != null);
+ *                   вкладка «Права» скрыта (см. RolePermissionsRelationManager::canViewForRecord).
  */
 final class RoleResource extends Resource
 {
@@ -41,21 +50,58 @@ final class RoleResource extends Resource
                 ->label('Название')
                 ->required()
                 ->maxLength(128)
-                ->unique(ignoreRecord: true),
+                ->unique(ignoreRecord: true)
+                ->columnSpan('full'),
 
             TextInput::make('level')
-                ->label('Уровень')
+                ->label('Уровень приоритета')
                 ->integer()
                 ->default(0)
                 ->minValue(0)
-                ->helperText('Чем выше — больше приоритет при объединении прав.'),
+                ->helperText('Чем выше — тем больше приоритет при объединении прав.'),
 
+            // ── Переключатель режима ─────────────────────────────────────────────
+            Toggle::make('is_code_role')
+                ->label('Управляется PHP-классом (code role)')
+                ->helperText('Включите, если права роли определяет PHP-класс, а не БД.')
+                ->default(false)
+                ->live()
+                ->afterStateHydrated(function (Toggle $component, $state, $record): void {
+                    // При загрузке существующей записи — выставляем toggle по наличию class_name.
+                    if ($record !== null) {
+                        $component->state((bool) $record->class_name);
+                    }
+                })
+                ->dehydrated(false) // не сохраняем в БД напрямую
+                ->columnSpan('full'),
+
+            // ── Code-role: поле класса ────────────────────────────────────────────
             TextInput::make('class_name')
-                ->label('PHP-класс логики')
-                ->nullable()
+                ->label('FQCN PHP-класса')
                 ->placeholder('App\\Roles\\EditorRole')
-                ->helperText('Опционально. Если заполнено — права берутся из класса, а не из БД.'),
-        ]);
+                ->helperText('Полное имя класса, реализующего getAzPermissions().')
+                ->nullable()
+                ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
+                ->columnSpan('full'),
+
+            // ── Code-role: информационный placeholder ─────────────────────────────
+            Placeholder::make('code_role_info')
+                ->label('')
+                ->content(fn () => new HtmlString(
+                    '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;'
+                    . 'background:oklch(0.96 0.02 220);border:1px solid oklch(0.88 0.04 220);'
+                    . 'border-radius:6px;font-size:0.875rem;color:oklch(0.35 0.08 220);">' 
+                    . '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" '
+                    . 'viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">'
+                    . '<path stroke-linecap="round" stroke-linejoin="round" '
+                    . 'd="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>'
+                    . '</svg>'
+                    . 'Права этой роли определяет PHP-класс. Вкладка «Права» в режиме редактирования скрыта.'
+                    . '</div>'
+                ))
+                ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
+                ->columnSpan('full'),
+        ])->columns(2);
     }
 
     public static function table(Table $table): Table
@@ -72,19 +118,29 @@ final class RoleResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                // Тип роли: Code / Custom
+                IconColumn::make('is_code_role')
+                    ->label('Тип')
+                    ->state(fn (Role $record): bool => $record->class_name !== null)
+                    ->boolean()
+                    ->trueIcon('heroicon-o-code-bracket')
+                    ->falseIcon('heroicon-o-circle-stack')
+                    ->trueColor('warning')
+                    ->falseColor('success')
+                    ->tooltip(fn (Role $record): string => $record->class_name !== null
+                        ? 'Code role: ' . $record->class_name
+                        : 'Custom role: права из БД'
+                    ),
+
                 TextColumn::make('level')
                     ->label('Уровень')
                     ->sortable(),
 
-                TextColumn::make('class_name')
-                    ->label('PHP-класс')
-                    ->placeholder('— DB-роль —')
-                    ->toggleable(),
-
                 TextColumn::make('dbPermissions_count')
-                    ->label('Прав')
+                    ->label('Прав (DB)')
                     ->counts('dbPermissions')
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—'),
 
                 TextColumn::make('created_at')
                     ->label('Создана')
@@ -92,7 +148,17 @@ final class RoleResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_code_role')
+                    ->label('Тип роли')
+                    ->placeholder('Все')
+                    ->trueLabel('Code roles')
+                    ->falseLabel('Custom roles')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('class_name'),
+                        false: fn ($query) => $query->whereNull('class_name'),
+                    ),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
