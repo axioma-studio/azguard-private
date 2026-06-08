@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AzGuard\Contracts;
 
 use AzGuard\Grants\GrantBuilder;
+use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Контракт для AzGuardManager.
@@ -15,6 +17,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 interface AzGuardManagerInterface
 {
+    // ─── Panels ───────────────────────────────────────────────────────────────
+
     /**
      * Регистрирует панель через замыкание.
      */
@@ -49,45 +53,45 @@ interface AzGuardManagerInterface
      */
     public function permission(string $panelId, string|\UnitEnum $permission): string;
 
-    // -------------------------------------------------------------------------
-    // Fluent Grants API (Phase 5)
-    // -------------------------------------------------------------------------
+    // ─── Grants API ───────────────────────────────────────────────────────────
 
     /**
-     * Получить fluent builder для управления grants пользователя.
+     * Возвращает fluent GrantBuilder для пользователя.
      *
-     * AzGuard::forUser($user)->on('app')->give('app.x.view');
+     * AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x');
      */
     public function forUser(Authenticatable $user): GrantBuilder;
 
     /**
-     * Выдать direct grant (короткий способ).
+     * Короткий хелпер: выдать direct grant.
      *
-     * AzGuard::grantDirect($user, 'app.x.view', 'app', ttl: 3600);
+     * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
      */
     public function grantDirect(
         Authenticatable $user,
-        string          $permissionKey,
-        string          $panelId = 'app',
-        ?int            $ttl = null,
-    ): \AzGuard\Models\DirectGrant;
+        string $permissionKey,
+        string $panelId,
+        ?int $ttl,
+    ): DirectGrant;
 
     /**
-     * Отозвать direct grant (короткий способ). Возвращает количество удалённых записей.
+     * Короткий хелпер: отозвать direct grant.
+     *
+     * @return int  Количество удалённых записей.
      */
     public function revokeDirect(
         Authenticatable $user,
-        string          $permissionKey,
-        string          $panelId = 'app',
+        string $permissionKey,
+        string $panelId,
     ): int;
 
     /**
-     * Вернуть все активные direct grants пользователя для панели.
+     * Короткий хелпер: список активных grants пользователя в панели.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, \AzGuard\Models\DirectGrant>
+     * @return Collection<int, DirectGrant>
      */
     public function activeGrants(
         Authenticatable $user,
-        string          $panelId = 'app',
-    ): \Illuminate\Database\Eloquent\Collection;
+        string $panelId,
+    ): Collection;
 }
