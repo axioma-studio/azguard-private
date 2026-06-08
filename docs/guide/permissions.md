@@ -1,34 +1,30 @@
 # Permissions
 
-A permission is a **backed string enum** that implements `PermissionInterface`. Enum cases are your single source of truth — no database rows, no string literals scattered across the codebase.
+Permissions in AzGuard are **PHP enum cases**, not database records. They live in your codebase, get reviewed in PRs, and are always in sync with your app logic.
 
 ## Naming convention
 
+Every permission key follows the pattern `{panel}.{resource}.{action}`:
+
 ```
-{domain}.{action}           →  documents.view
-{domain}.{sub}.{action}     →  documents.versions.create
-{domain}.workflow.{action}  →  documents.workflow.publish
-{domain}.view               →  dashboard.view   (UI section)
+app.documents.view
+app.documents.create
+admin.users.delete
+api.reports.export
 ```
 
-Keep names lowercase, dot-separated, no panel prefix — AzGuard resolves the panel prefix at runtime.
+The panel prefix (`app.`) is added automatically by AzGuard based on the panel the enum is registered in. Inside your enum you only write `documents.view`.
 
-## Creating a permission enum
-
-```bash
-php artisan azguard:make-permission App DocumentsPermission
-```
+## Defining permissions
 
 ```php
-namespace App\Guards\App\Permissions;
-
 use AzGuard\Contracts\PermissionInterface;
 use AzGuard\Attributes\GateAbility;
 use AzGuard\Attributes\RoleOnly;
 
 enum DocumentsPermission: string implements PermissionInterface
 {
-    // Registered with Gate — policy method called on Gate::allows()
+    // Registered as a Gate ability — usable with Gate::allows(), @can, policies
     #[GateAbility]
     case View   = 'documents.view';
 
@@ -38,48 +34,88 @@ enum DocumentsPermission: string implements PermissionInterface
     #[GateAbility]
     case Edit   = 'documents.edit';
 
-    #[GateAbility]
-    case Delete = 'documents.delete';
-
-    // Checked only via hasAzPermission() — no Gate policy needed
+    // Not registered as a Gate ability — only checked via hasPermission()
+    // Use for internal checks that should not be exposed to Gate
     #[RoleOnly]
-    case Export = 'documents.export';
+    case Delete = 'documents.delete';
 }
 ```
 
-## Resolved permissions
+## Attributes
 
-The resolved form is `{panel}.{case-value}`. Use `AppGuard::permission()` inside role definitions to get it:
+| Attribute | Effect |
+|---|---|
+| `#[GateAbility]` | Registers the permission with Laravel Gate as `{panel}.{value}` |
+| `#[RoleOnly]` | Permission exists in the catalog but is **not** registered with Gate |
+| _(none)_ | Same as `#[GateAbility]` — explicit is better |
 
-```php
-AppGuard::permission(DocumentsPermission::View)
-// returns: "app.documents.view"
+## Generate via Artisan
+
+```bash
+php artisan azguard:make-permission {Panel} {ClassName}
+
+# Example:
+php artisan azguard:make-permission App DocumentsPermission
+php artisan azguard:make-permission Admin UsersPermission
 ```
 
-Never hardcode the resolved string in roles — always go through the guard helper.
+The command creates the file in `app/AzGuard/{Panel}/Permissions/` and reminds you to register it in your panel provider.
 
-## Permission table
+## Checking permissions
 
-| Type | Raw value | Resolved (panel=app) |
-|---|---|---|
-| CRUD | `documents.view` | `app.documents.view` |
-| Nested action | `documents.versions.create` | `app.documents.versions.create` |
-| Workflow | `documents.workflow.publish` | `app.documents.workflow.publish` |
-| UI section | `dashboard.view` | `app.dashboard.view` |
-| Role-only | `documents.export` | `app.documents.export` |
+```php
+// Via HasAzGuard trait
+$user->hasPermission(DocumentsPermission::View);      // enum case
+$user->hasPermission('app.documents.view');            // full key string
 
-## `#[RoleOnly]` — no Gate policy
+// Via Gate (requires #[GateAbility])
+Gate::allows('app.documents.view');
+$this->authorize('app.documents.view');
 
-Permissions marked `#[RoleOnly]` are **not** registered with Gate. They are checked exclusively via `$user->hasAzPermission()`. Use for non-model checks (dashboard access, feature flags, UI sections) where a full policy would be overkill.
+// Blade
+@can('app.documents.view')
+    ...
+@endcan
+
+// Silent check (never throws, useful in conditions)
+$user->checkPermission(DocumentsPermission::View);    // false instead of exception
+```
 
 ## TypeScript export
 
-If your front-end is TypeScript, add `#[TypeScript]` to the enum in your application. The enum values become a TypeScript union type via [`typescript-transformer`](https://github.com/spatie/laravel-typescript-transformer):
+AzGuard can export all registered permissions to a TypeScript constants file for use in your frontend:
 
-```typescript
-type DocumentsPermission = 'documents.view' | 'documents.create' | 'documents.edit' | 'documents.delete';
+```bash
+php artisan azguard:export-ts
+# outputs: resources/js/permissions.ts
 ```
 
-::: info
-AzGuard ships only the PHP attribute. The TypeScript generation is handled by your application's transformer pipeline.
-:::
+```typescript
+// resources/js/permissions.ts (auto-generated, do not edit)
+export const Permissions = {
+  app: {
+    documents: {
+      view:   'app.documents.view',
+      create: 'app.documents.create',
+      edit:   'app.documents.edit',
+      delete: 'app.documents.delete',
+    },
+  },
+} as const;
+```
+
+See [Frontend Abilities](/guide/abilities-frontend) for how to use this with Inertia/Vue/React.
+
+## Listing all permissions
+
+```bash
+php artisan azguard:list-permissions
+php artisan azguard:list-permissions --panel=app
+```
+
+## Best practices
+
+- **One enum per resource.** `DocumentsPermission`, `UsersPermission`, `ReportsPermission` — not one giant `AppPermission` enum.
+- **CRUD as the default actions.** `view`, `create`, `edit`, `delete`. Add only what you need: `export`, `publish`, `approve`.
+- **Use `#[GateAbility]` explicitly.** Even if it's the default, it makes intent clear during code review.
+- **Never hardcode string keys.** Always reference enum cases: `DocumentsPermission::View`, not `'app.documents.view'`.
