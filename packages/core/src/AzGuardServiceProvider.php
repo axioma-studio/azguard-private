@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace AzGuard;
 
 use AzGuard\Auth\PolicyAttributeRegistrar;
+use AzGuard\Commands\CacheResetCommand;
+use AzGuard\Commands\CatalogListCommand;
+use AzGuard\Commands\CatalogValidateCommand;
 use AzGuard\Commands\DoctorCommand;
 use AzGuard\Commands\ListPermissionsCommand;
 use AzGuard\Commands\ListScopedRolesCommand;
-use AzGuard\Commands\CacheResetCommand;
-use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Commands\MakeGuardAbilitiesCommand;
 use AzGuard\Commands\MakeGuardPanelCommand;
 use AzGuard\Commands\MakeGuardPermissionCommand;
 use AzGuard\Commands\MakeGuardPolicyCommand;
 use AzGuard\Commands\MakeGuardRoleCommand;
+use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Guard\GuardDoctor;
 use AzGuard\Guard\Authorizer;
@@ -85,6 +87,8 @@ final class AzGuardServiceProvider extends ServiceProvider
                 ListScopedRolesCommand::class,
                 CacheResetCommand::class,
                 SyncRolesCommand::class,
+                CatalogListCommand::class,
+                CatalogValidateCommand::class,
             ]);
         }
     }
@@ -98,14 +102,10 @@ final class AzGuardServiceProvider extends ServiceProvider
      */
     protected function registerRegistryBindings(): void
     {
-        // Кэш resolver — singleton, живёт один request (Octane сбрасывает через событие)
         $this->app->singleton(PermissionResolverCache::class, fn (): PermissionResolverCache => new PermissionResolverCache);
 
-        // GrantSource: ClassRoleGrantSource — Фаза 1
-        // Фаза 3 добавит: DatabaseRoleGrantSource, DirectGrantSource
         $this->app->singleton(ClassRoleGrantSource::class, fn (): ClassRoleGrantSource => new ClassRoleGrantSource);
 
-        // PermissionCatalog: lazy-build при первом обращении
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
             $manager = $this->app->make(AzGuardManager::class);
@@ -123,7 +123,6 @@ final class AzGuardServiceProvider extends ServiceProvider
             );
         });
 
-        // EffectivePermissionResolver
         $this->app->singleton(
             EffectivePermissionResolver::class,
             function (): EffectivePermissionResolver {
@@ -137,13 +136,11 @@ final class AzGuardServiceProvider extends ServiceProvider
             }
         );
 
-        // Интерфейс GrantSource — тегируем для возможного extend в пакетах
         $this->app->tag([ClassRoleGrantSource::class], [GrantSource::class]);
     }
 
     /**
      * Octane: сбрасываем per-request кэш после каждого запроса.
-     * Listener регистрируется только если Octane установлен.
      */
     protected function registerOctaneListeners(): void
     {
