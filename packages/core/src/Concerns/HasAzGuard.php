@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AzGuard\Concerns;
 
+use AzGuard\Events\RoleAttached;
+use AzGuard\Events\RoleDetached;
+use AzGuard\Models\Role;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
 /**
@@ -11,13 +15,14 @@ use Illuminate\Support\Collection;
  * - связи roles() и azScopes()
  * - проверку прав hasAzPermission() и hasAzRole()
  * - кэширование прав (in-memory + опционально cross-request через cache store)
+ * - API управления ролями: assignRole, removeRole, syncRoles, getRoleNames
  */
 trait HasAzGuard
 {
-    /** @var \Illuminate\Support\Collection<int, string>|null */
+    /** @var Collection<int, string>|null */
     private ?Collection $azPermissionsCache = null;
 
-    public function roles()
+    public function roles(): MorphToMany
     {
         return $this->morphToMany(
             config('az-guard.models.role'),
@@ -48,11 +53,10 @@ trait HasAzGuard
             return true;
         }
 
-        // Wildcard-паттерны (если включены)
         if (config('az-guard.features.wildcard_permission', false)) {
             foreach ($permissions as $p) {
                 if (str_contains($p, '*')) {
-                    $regex = '/^' . str_replace(['.', '*'], ['\.', '.*'], $p) . '$/';
+                    $regex = '/^' . str_replace(['.', '*'], ['\\.', '.*'], $p) . '$/';
                     if (preg_match($regex, $permission)) {
                         return true;
                     }
@@ -64,10 +68,97 @@ trait HasAzGuard
     }
 
     /**
+     * Назначить одну или несколько ролей модели.
+     *
+     * @param  string|Role  ...$roles  Имя роли или экземпляр Role
+     */
+    public function assignRole(string|Role ...$roles): static
+    {
+        foreach ($roles as $role) {
+            $roleModel = $this->resolveRole($role);
+
+            if ($roleModel === null) {
+                continue;
+            }
+
+            $this->roles()->syncWithoutDetaching([$roleModel->getKey()]);
+            $this->clearAzPermissionsCache();
+            event(new RoleAttached($this, $roleModel));
+        }
+
+        $this->unsetRelation('roles');
+
+        return $this;
+    }
+
+    /**
+     * Отозвать одну или несколько ролей у модели.
+     *
+     * @param  string|Role  ...$roles  Имя роли или экземпляр Role
+     */
+    public function removeRole(string|Role ...$roles): static
+    {
+        foreach ($roles as $role) {
+            $roleModel = $this->resolveRole($role);
+
+            if ($roleModel === null) {
+                continue;
+            }
+
+            $this->roles()->detach($roleModel->getKey());
+            $this->clearAzPermissionsCache();
+            event(new RoleDetached($this, $roleModel));
+        }
+
+        $this->unsetRelation('roles');
+
+        return $this;
+    }
+
+    /**
+     * Синхронизировать набор ролей (удаляет старые, добавляет новые).
+     *
+     * @param  array<string|Role>  $roles
+     */
+    public function syncRoles(array $roles): static
+    {
+        $currentRoles = $this->roles()->get();
+
+        foreach ($currentRoles as $currentRole) {
+            $this->roles()->detach($currentRole->getKey());
+            event(new RoleDetached($this, $currentRole));
+        }
+
+        foreach ($roles as $role) {
+            $roleModel = $this->resolveRole($role);
+            if ($roleModel === null) {
+                continue;
+            }
+            $this->roles()->attach($roleModel->getKey());
+            event(new RoleAttached($this, $roleModel));
+        }
+
+        $this->clearAzPermissionsCache();
+        $this->unsetRelation('roles');
+
+        return $this;
+    }
+
+    /**
+     * Получить имена всех ролей пользователя.
+     *
+     * @return Collection<int, string>
+     */
+    public function getRoleNames(): Collection
+    {
+        return $this->roles->pluck('name');
+    }
+
+    /**
      * Загружает и кэширует все разрешения пользователя.
      * Использует cross-request кэш, если store != 'array'.
      *
-     * @return \Illuminate\Support\Collection<int, string>
+     * @return Collection<int, string>
      */
     public function getAzPermissions(): Collection
     {
@@ -110,7 +201,7 @@ trait HasAzGuard
     /**
      * Непосредственная загрузка прав из ролей пользователя.
      *
-     * @return \Illuminate\Support\Collection<int, string>
+     * @return Collection<int, string>
      */
     protected function loadAzPermissions(): Collection
     {
@@ -119,10 +210,24 @@ trait HasAzGuard
             ->filter()
             ->flatMap(function ($roleLogic): array {
                 $permissions = $roleLogic->permissions();
-
                 return is_array($permissions) ? $permissions : [];
             })
             ->unique()
             ->values();
+    }
+
+    /**
+     * Разрешает Role-объект из строки (по имени) или экземпляра Role.
+     */
+    protected function resolveRole(string|Role $role): ?Role
+    {
+        if ($role instanceof Role) {
+            return $role;
+        }
+
+        /** @var class-string<Role> $roleClass */
+        $roleClass = config('az-guard.models.role');
+
+        return $roleClass::query()->where('name', $role)->first();
     }
 }
