@@ -1,6 +1,6 @@
 # Permissions
 
-Permissions in AzGuard are **PHP enum cases**, not database records. They live in your codebase, get reviewed in PRs, and are always in sync with your app logic.
+Permissions in AzGuard are **PHP enum cases**, not database records. They live in your codebase, are reviewed in PRs, and are always in sync with your application logic.
 
 ## Naming convention
 
@@ -13,19 +13,18 @@ admin.users.delete
 api.reports.export
 ```
 
-The panel prefix (`app.`) is added automatically by AzGuard based on the panel the enum is registered in. Inside your enum you only write `documents.view`.
+The panel prefix (`app.`) is added automatically by AzGuard based on the panel the enum is registered in. Inside your enum you only declare `documents.view`.
 
 ## Defining permissions
 
 ```php
-// app/AzGuard/App/Permissions/DocumentsPermission.php
 use AzGuard\Contracts\PermissionInterface;
 use AzGuard\Attributes\GateAbility;
 use AzGuard\Attributes\RoleOnly;
 
 enum DocumentsPermission: string implements PermissionInterface
 {
-    // Registered as a Gate ability — usable with Gate::allows(), @can, policies
+    // Registered with Laravel Gate — usable via Gate::allows(), @can, policies
     #[GateAbility]
     case View   = 'documents.view';
 
@@ -35,8 +34,8 @@ enum DocumentsPermission: string implements PermissionInterface
     #[GateAbility]
     case Edit   = 'documents.edit';
 
-    // Not registered as a Gate ability — only checked via hasPermission()
-    // Use for internal checks that should not be exposed to the Gate
+    // Not registered with Gate — checked only via hasPermission()
+    // Use for internal checks that should not be exposed through Gate
     #[RoleOnly]
     case Delete = 'documents.delete';
 }
@@ -48,14 +47,13 @@ enum DocumentsPermission: string implements PermissionInterface
 |---|---|
 | `#[GateAbility]` | Registers the permission with Laravel Gate as `{panel}.{value}` |
 | `#[RoleOnly]` | Permission exists in the catalog but is **not** registered with Gate |
-| _(none)_ | Same as `#[GateAbility]` — explicit is better |
+| _(none)_ | Same as `#[GateAbility]` — explicit is always better |
 
 ## Generate via Artisan
 
 ```bash
 php artisan azguard:make-permission {Panel} {ClassName}
 
-# Examples:
 php artisan azguard:make-permission App DocumentsPermission
 php artisan azguard:make-permission Admin UsersPermission
 ```
@@ -65,59 +63,94 @@ The command creates the file in `app/AzGuard/{Panel}/Permissions/` and reminds y
 ## Checking permissions
 
 ```php
-// Via HasAzGuard trait — preferred, enum case
+// Via HasAzGuard trait — accepts enum case or full string key
 $user->hasPermission(DocumentsPermission::View);
-
-// Full key string also accepted
 $user->hasPermission('app.documents.view');
 
 // Via Gate (requires #[GateAbility])
 Gate::allows('app.documents.view');
-$this->authorize('app.documents.view');    // throws 403 on failure
+$this->authorize('app.documents.view');
 
 // Blade
 @can('app.documents.view')
     ...
 @endcan
 
-// Silent check (returns false instead of throwing)
+// Silent check — returns false instead of throwing, useful in conditions
 $user->checkPermission(DocumentsPermission::View);
 ```
 
-## Inspecting a user's permissions
+## Inspecting what a user has
 
 ```php
-// All permissions the user has (via roles + direct grants)
-$user->getAllPermissions();       // Collection of permission key strings
+// All permissions from all roles + direct grants
+$user->getAllPermissions();           // Collection of permission strings
 
-// Only permissions coming from roles
-$user->getPermissionsViaRoles();  // Collection of permission key strings
+// Only permissions from roles (not direct grants)
+$user->getPermissionsViaRoles();      // Collection
 
-// Only permissions granted directly (not via a role)
-$user->getDirectPermissions();    // Collection of permission key strings (requires HasDirectGrants)
+// Only direct grants
+$user->getDirectPermissions();        // Collection (requires HasDirectGrants)
 
-// All full permission keys
-$user->getAllPermissions()->toArray();
-// ["app.documents.view", "app.documents.create", ...]
+// Permission keys as plain strings
+$user->getPermissionNames();          // Collection<string>
+
+// Check if a specific permission is in the collection
+$user->getAllPermissions()->contains('app.documents.view');
 ```
 
-## Query users by permission
+## Assigning permissions to a role
+
+In static roles, permissions are declared directly in code:
 
 ```php
-// Users who have a specific permission (via any role or direct grant)
-User::permission(DocumentsPermission::Edit)->get();
-User::permission('app.documents.edit')->get();
-
-// Users who do NOT have a specific permission
-User::withoutPermission('app.documents.delete')->get();
-
-// Accepts a string, array, or Collection
-User::permission(['app.documents.view', 'app.documents.edit'])->get();
+public function permissions(): array
+{
+    return [
+        DocumentsPermission::View,
+        DocumentsPermission::Create,
+        DocumentsPermission::Edit,
+    ];
+}
 ```
+
+For dynamic (DB-backed) roles, use the model API:
+
+```php
+use AzGuard\Models\DynamicRole;
+
+$role = DynamicRole::where('name', 'editor')->first();
+
+// Add permissions
+$role->givePermissions([
+    DocumentsPermission::View,
+    DocumentsPermission::Create,
+]);
+
+// Sync permissions (replaces existing list)
+$role->syncPermissions([
+    DocumentsPermission::View,
+    DocumentsPermission::Edit,
+]);
+
+// Remove a single permission
+$role->revokePermission(DocumentsPermission::Create);
+
+// Get all permissions on this role
+$role->getPermissions();  // Collection
+```
+
+## Gotchas
+
+**Permission keys are panel-scoped.** `documents.view` and `app.documents.view` are the same permission if the enum is registered under the `app` panel. Using the string form requires the full key including the panel prefix.
+
+**`#[RoleOnly]` permissions don't work with `Gate::allows()`.** They are only resolvable via `$user->hasPermission(...)`. If you try to use them in a policy or `@can`, Gate will not find them.
+
+**Don't mix string keys and enum cases carelessly.** Always use enum cases in code (`DocumentsPermission::View`), and reserve string keys for places where enums aren't available (e.g., config files, migrations, Artisan commands).
 
 ## TypeScript export
 
-AzGuard can export all registered permissions to a TypeScript constants file for use in your frontend:
+AzGuard exports all registered permissions to a TypeScript constants file for your frontend:
 
 ```bash
 php artisan azguard:export-ts
@@ -138,7 +171,7 @@ export const Permissions = {
 } as const;
 ```
 
-See [Frontend Abilities](./abilities-frontend.md) for how to use this with Inertia / Vue / React.
+See [Frontend Abilities](./abilities-frontend.md) for Inertia/Vue/React integration.
 
 ## Listing all permissions
 
@@ -150,7 +183,7 @@ php artisan azguard:list-permissions --panel=app
 ## Best practices
 
 - **One enum per resource.** `DocumentsPermission`, `UsersPermission`, `ReportsPermission` — not one giant `AppPermission` enum.
-- **CRUD as the default action set.** `view`, `create`, `edit`, `delete`. Add only what you need: `export`, `publish`, `approve`.
-- **Use `#[GateAbility]` explicitly.** Even if it is the default, it makes intent clear during code review.
-- **Never hardcode string keys.** Always reference enum cases: `DocumentsPermission::View`, not `'app.documents.view'`. The enum is your source of truth.
-- **Prefer permission checks over role checks.** `$user->hasPermission(X)` stays correct when roles are reorganized; `$user->hasRole('editor')` breaks when the role is renamed or its permission set changes.
+- **CRUD as the default set.** `view`, `create`, `edit`, `delete`. Add extras only as needed: `export`, `publish`, `approve`.
+- **Always use `#[GateAbility]` explicitly**, even though it's the default. It makes intent clear during code review.
+- **Never hardcode string keys in PHP.** Always reference enum cases: `DocumentsPermission::View`, not `'app.documents.view'`.
+- **Keep enum cases descriptive but terse.** `case Export` is fine; `case ExportToCsvForExternalTeams` is not.
