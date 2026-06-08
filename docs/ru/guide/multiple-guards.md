@@ -1,48 +1,52 @@
 # Несколько Guards
 
-AzGuard поддерживает несколько Laravel Guards — например, `web` для пользователей и `admin` для администраторов.
+AzGuard поддерживает несколько Laravel-гардов одновременно, каждый со своими панелями AzGuard.
 
 ## Конфигурация
 
 ```php
 // config/azguard.php
-return [
-    'panels' => [
-        'app'   => App\AzGuard\App\AppPanel::class,
-        'admin' => App\AzGuard\Admin\AdminPanel::class,
-        'api'   => App\AzGuard\Api\ApiPanel::class,
-    ],
-];
+'panels' => [
+    'app'   => App\AzGuard\App\AppPanel::class,
+    'admin' => App\AzGuard\Admin\AdminPanel::class,
+    'api'   => App\AzGuard\Api\ApiPanel::class,
+],
 ```
 
-## Переключение контекста
+Каждый Panel-класс импортирует свои роли и разрешения.
+
+## Проверка в рамках guard
 
 ```php
-// Проверка в контексте конкретной панели
-AzGuard::forPanel('admin')->hasPermission($user, AdminPermission::ManageUsers);
+// Текущий guard Laravel (определяется роутом)
+$user->hasPermission(AdminPermission::ManageUsers);   // panel из namespace
 
-// Или через Guard
-Gate::guard('admin')->allows('admin.users.manage');
+// Явная указка панели
+$user->forPanel('admin')->hasPermission(AdminPermission::ManageUsers);
 ```
 
-## Middleware по Guard
+## Middleware для разных guard
 
 ```php
 // routes/admin.php
-Route::middleware(['auth:admin', 'azguard:admin.users.view'])
+Route::middleware(['auth:admin', 'azguard.panel:admin'])
     ->group(function () {
-        Route::get('/admin/users', [AdminUserController::class, 'index']);
+        Route::get('/users', [UserController::class, 'index']);
+    });
+
+// routes/api.php
+Route::middleware(['auth:api', 'azguard.panel:api'])
+    ->group(function () {
+        Route::get('/me/permissions', [ProfileController::class, 'permissions']);
     });
 ```
 
-## Изоляция пространств имён
-
-Пользователь может иметь роль `editor` в панели `app` и роль `viewer` в панели `admin` — они полностью независимы:
+## Filament с несколькими панелями
 
 ```php
-$user->assignRole(EditorRole::class, panel: 'app');
-$user->assignRole(ViewerRole::class, panel: 'admin');
-
-$user->hasPermission(PostsPermission::Edit);       // app — true
-$user->hasPermission(AdminUsersPermission::Delete); // admin — false
+// app/Providers/Filament/AdminPanelProvider.php
+->authGuard('admin')
+->plugin(AzGuardFilamentPlugin::make()->panel('admin'))
 ```
+
+→ [Панели](/ru/guide/panels) · [HTTP и Middleware](/ru/guide/http-access)

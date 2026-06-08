@@ -1,72 +1,67 @@
 # Прямые гранты
 
-Прямой грант — это разрешение, выданное **конкретному пользователю** напрямую, без роли. Опционально с TTL (временем жизни).
-
-## Когда использовать
-
-- Временный доступ к бета-функции
-- Экстренный доступ на N часов
-- Переопределение для одного пользователя без изменения роли
+Прямой грант — это разрешение, выданное **конкретному пользователю** без присвоения роли. Опционально ограничено по времени (TTL).
 
 ## Выдача гранта
 
 ```php
-use Carbon\Carbon;
-
 // Бессрочный грант
 $user->grantPermission(ReportsPermission::Export);
 
-// С TTL — истекает через 24 часа
+// С TTL
 $user->grantPermission(
-    ReportsPermission::Export,
-    expiresAt: Carbon::now()->addHours(24)
+    permission: ReportsPermission::Export,
+    expiresAt: now()->addHours(24),
 );
 
-// С точной датой
+// С опциональным замечанием
 $user->grantPermission(
-    ReportsPermission::Export,
-    expiresAt: Carbon::parse('2026-12-31 23:59:59')
+    permission: ReportsPermission::Export,
+    expiresAt: now()->addHour(),
+    note: 'Бета-доступ, выдан через админпанель',
 );
 ```
 
 ## Отзыв гранта
 
 ```php
-// Отозвать конкретный грант
-$user->revokeGrantedPermission(ReportsPermission::Export);
+$user->revokePermission(ReportsPermission::Export);
 
-// Отозвать все гранты пользователя
-$user->revokeAllGrantedPermissions();
+// Отзвать все гранты
+$user->revokeAllDirectPermissions();
 ```
 
-## Проверка
-
-Прямые гранты проверяются автоматически через `hasPermission()` и Gate — никакого специального кода не нужно:
+## Проверка и получение
 
 ```php
-$user->hasPermission(ReportsPermission::Export); // учитывает и роли, и гранты
-Gate::allows('app.reports.export');              // то же самое
+// Был ли грант выдан?
+$user->hasDirectPermission(ReportsPermission::Export);  // true / false
+
+// Список всех действующих грантов
+$user->directPermissions();  // Collection
 ```
 
-## Истёкшие гранты
+## TTL и автоматическая очистка
 
-Истёкшие гранты не удаляются автоматически. Запускайте очистку:
+Истёкшие гранты не влияют на `hasPermission()` автоматически. Для регулярной очистки используйте Artisan-команду:
 
 ```bash
-php artisan azguard:prune-grants
+php artisan azguard:purge-expired-grants
 ```
 
-Либо в планировщике:
+Или запланируйте через планировщик:
 
 ```php
 // app/Console/Kernel.php
-$schedule->command('azguard:prune-grants')->daily();
+$schedule->command('azguard:purge-expired-grants')->hourly();
 ```
 
-## Таблица `azguard_direct_grants`
+## Приоритет проверки
 
-| Колонка | Тип | Описание |
-|---|---|---|
-| `user_id` | bigint | ID пользователя |
-| `permission` | string | Полный ключ разрешения |
-| `expires_at` | timestamp\|null | Время истечения (null = бессрочно) |
+`hasPermission()` возвращает `true`, если право предоставляется **хотя бы одним** из:
+
+1. Роль пользователя (RoleInterface::permissions)
+2. Действующий прямой грант (expiresAt ещё не наступил)
+3. Super-admin (если настроен)
+
+→ [Рецепт: временный доступ](/ru/guide/recipes/temp-access-via-grant)

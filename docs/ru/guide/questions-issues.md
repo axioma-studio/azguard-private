@@ -1,22 +1,43 @@
 # Вопросы и проблемы
 
-## Нашли баг?
+## Сообщить об ошибке
 
-[Откройте issue](https://github.com/axioma-studio/azguard-private/issues) на GitHub. Укажите:
+Если вы обнаружили баг, создайте issue на GitHub:
 
-- Версию AzGuard (`composer show axioma-studio/azguard`)
+→ [github.com/axioma-studio/azguard/issues](https://github.com/axioma-studio/azguard-private/issues)
+
+Пожалуйста, включите:
+- Версию AzGuard (`composer show axioma-studio/azguard | grep versions`)
 - Версии PHP и Laravel
-- Минимальный пример воспроизведения или падающий тест
-- Полный stack trace, если было исключение
+- Минимальный воспроизводящий пример
+- Текст исключения и stack trace (если применимо)
 
-## Есть вопрос?
+## Задать вопрос
 
-Для вопросов по использованию откройте [GitHub Discussion](https://github.com/axioma-studio/azguard-private/discussions). Прежде поищите в существующих issues и discussions — ваш вопрос может уже быть разобран.
+Для общих вопросов используйте [GitHub Discussions](https://github.com/axioma-studio/azguard-private/discussions).
 
-## Уязвимости безопасности
+## Частые проблемы
 
-**Не открывайте** публичный GitHub issue для уязвимостей. Напишите на **security@axioma.studio** с описанием и шагами воспроизведения. Мы ответим в течение 48 часов.
+### `hasPermission()` всегда возвращает `false`
 
-## Участие в разработке
+Проверьте:
+1. Трейт `HasAzGuard` добавлен в модель User
+2. Роль синхронизирована с БД: `php artisan azguard:sync-roles`
+3. Пользователю назначена роль: `$user->assignRole(EditorRole::class)`
+4. Кэш сброшен: `php artisan azguard:cache-clear`
 
-См. [CONTRIBUTING.md](https://github.com/axioma-studio/azguard-private/blob/main/CONTRIBUTING.md).
+### Конфликт с существующей реализацией Gate
+
+AzGuard регистрируется через `Gate::before()`. Если у вас уже есть `Gate::before()` в `AuthServiceProvider`, убедитесь что AzGuard не перезаписывает его. Используйте `Gate::after()` для вашей логики или настройте порядок в конфиге.
+
+### Ошибка миграции: таблица уже существует
+
+```bash
+php artisan migrate:status
+```
+
+Если миграции AzGuard уже применены, не запускайте `--force` без необходимости.
+
+### Проблемы с Laravel Octane
+
+См. раздел [Требования → Octane](/ru/guide/prerequisites#laravel-octane-kubernetes).

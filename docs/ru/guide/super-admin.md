@@ -1,56 +1,61 @@
 # Супер-администратор
 
-Супер-администратор обходит все проверки разрешений. AzGuard реализует это через `Gate::before()`.
+Супер-админ — пользователь, который **автоматически имеет все права** без явного перечисления.
 
-## Через Gate::before()
+## Настройка
 
-```php
-// app/Providers/AppServiceProvider.php
-public function boot(): void
-{
-    Gate::before(function (User $user, string $ability): ?bool {
-        if ($user->isSuperAdmin()) {
-            return true;  // пропустить все дальнейшие проверки
-        }
-        return null;  // продолжить обычную проверку
-    });
-}
-```
-
-## Через роль с wildcard
+### Через роль (c SuperAdminInterface)
 
 ```php
-class SuperAdminRole implements RoleInterface
-{
-    public function getName(): string { return 'super-admin'; }
+// app/AzGuard/App/Roles/SuperAdminRole.php
+use AzGuard\Contracts\RoleInterface;
+use AzGuard\Contracts\SuperAdminInterface;
 
+class SuperAdminRole implements RoleInterface, SuperAdminInterface
+{
     public function permissions(): array
     {
-        // Возвращаем wildcard — AzGuard трактует его как «всё разрешено»
-        return [WildcardPermission::All];
+        return [];  // игнорируется: super-admin проходит любую проверку
     }
 }
 ```
 
-## Через атрибут модели
+### Через Gate::before()
 
 ```php
-// В миграции добавьте колонку
-$table->boolean('is_super_admin')->default(false);
+// app/Providers/AppServiceProvider.php
+use Illuminate\Support\Facades\Gate;
 
-// В Gate::before()
-Gate::before(fn (User $user) => $user->is_super_admin ?: null);
+public function boot(): void
+{
+    Gate::before(function ($user, $ability) {
+        if ($user->hasRole(SuperAdminRole::class)) {
+            return true;  // пропустить любой Gate-чек
+        }
+    });
+}
 ```
 
-::: warning Безопасность
-Назначайте роль супер-администратора только в сидерах или через миграции. Никогда не создавайте UI для самоназначения.
+::: warning
+Используйте `SuperAdminInterface`, если хотите чтобы AzGuard-события и `azguard:doctor` распознавали роль супер-админа.
 :::
 
-::: tip Тестирование
-В тестах используйте `actingAs($superAdmin)` и проверяйте, что права действительно обходятся:
+## Назначение
+
 ```php
-$this->actingAs($superAdmin)
-     ->get('/admin/settings')
-     ->assertOk();
+$user->assignRole(SuperAdminRole::class);
 ```
+
+## Blade
+
+```blade
+@role(SuperAdminRole::class)
+    <a href="/admin/danger-zone">Опасная зона</a>
+@endrole
+```
+
+::: tip
+Рекомендуется использовать `SuperAdminInterface` вместо `Gate::before()`, чтобы логика супер-админа была инкапсулирована в пакете.
 :::
+
+→ [Рецепт: super-admin wildcard](/ru/guide/recipes/super-admin-wildcard)

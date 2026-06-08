@@ -1,36 +1,61 @@
 # Обновление
 
-## С v0.x на v1.0
+## С версии 0.x до 1.0
 
-Version 1.0 вводит несколько ломающих изменений в API трейта.
+::: warning
+Версия 1.0 содержит breaking changes в структуре конфигурации и именовании миграций.
+:::
 
-### Переименования методов `HasAzGuard`
-
-| v0.x | v1.0 |
-|---|---|
-| `hasAzPermission()` | `hasPermission()` |
-| `giveAzPermission()` | `HasDirectGrants::directGrant()` |
-| `revokeAzPermission()` | `HasDirectGrants::revokeDirectGrant()` |
-| `clearAzPermissionsCache()` | `flushPermissions()` |
-
-### Поиск и замена
-
-Выполните в корне проекта:
+### 1. Обновите Composer-зависимость
 
 ```bash
-grep -r 'hasAzPermission' . --include='*.php'
-grep -r 'giveAzPermission' . --include='*.php'
-grep -r 'clearAzPermissionsCache' . --include='*.php'
+composer require axioma-studio/azguard:^1.0
 ```
 
-### Изменения конфига
+### 2. Обновите конфигурацию
 
-Ключи конфига не переименовывались в v1.0. Ваш `config/az-guard.php` остаётся совместим.
+Опубликуйте новую версию конфига:
 
-### Изменения миграций
+```bash
+php artisan vendor:publish --tag=azguard-config --force
+```
 
-Новых миграций в v1.0 нет. Миграции от v0.x остаются валидными.
+Сравните `config/azguard.php` с предыдущей версией. Ключевые изменения:
 
-## Миграция с Spatie Permission
+| Старый ключ | Новый ключ |
+|---|---|
+| `panels.default` | `panels.app` |
+| `cache.driver` | `cache.store` |
+| `role_namespace` | *(удалён, теперь из конфига панели)* |
 
-Если вы переходите с Spatie `laravel-permission`, см. [Сравнение с другими библиотеками](/ru/guide/comparison) и раздел рецептов.
+### 3. Обновите миграции
+
+```bash
+php artisan vendor:publish --tag=azguard-migrations --force
+php artisan migrate
+```
+
+### 4. Обновите пространства имён ролей
+
+Если вы использовали `AzGuard\Role` как базовый класс — замените на `AzGuard\Contracts\RoleInterface`:
+
+```php
+// До
+class EditorRole extends \AzGuard\Role { ... }
+
+// После
+class EditorRole implements \AzGuard\Contracts\RoleInterface { ... }
+```
+
+### 5. Сбросьте кэш
+
+```bash
+php artisan cache:clear
+php artisan azguard:cache-clear
+```
+
+## Совместимость между патч-версиями
+
+Внутри одной мажорной версии (1.x) AzGuard следует SemVer. Обновления патч-версий (1.0.x → 1.0.y) не требуют изменений кода.
+
+→ [Список изменений](/ru/guide/changelog)

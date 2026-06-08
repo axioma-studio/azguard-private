@@ -1,54 +1,33 @@
 # Список изменений
 
-Все значимые изменения документируются здесь. AzGuard следует [Semantic Versioning](https://semver.org/).
+Все значимые изменения в AzGuard документируются здесь.
 
-## 0.x (dev)
+Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/).
+Проект следует [Semantic Versioning](https://semver.org/lang/ru/).
 
-> Предрелизная разработка. API стабилен внутри спринта, но между спринтами возможны ломающие изменения до `1.0.0`.
+---
 
-### Sprint 9 — Документация
-- Реструктурирована навигация: Introduction / Basic Usage / Best Practices / Advanced
-- Новые страницы: `quick-start`, `panels`, `permission-catalog`, `artisan-commands`, `configuration`
-- Переписаны: `roles`, `permissions`, `policies-and-gates`, `http-access`, `abilities-frontend`, `comparison`, `filament`, `why-azguard`, `entity-scopes`
-- Рецепты вынесены на отдельные страницы
+## [Unreleased]
 
-### Sprint 8 — CI / Качество
-- Pint + PHPStan level 8 в CI
-- Рефакторинг `UserWithDirectGrants`
-- Тестовый набор: 7 файлов
+### Добавлено
+- Поддержка UUID/ULID для первичных ключей
+- Интеграция с PhpStorm через `.phpstorm.meta.php`
+- Русскоязычная документация
 
-### Sprint 7 — Пользовательские роли
-- Модель `AzRole` для создания ролей в runtime
-- `RoleResource` в Filament: создание/редактирование/удаление ролей, выбор разрешений
-- `assignRole($azRoleInstance)` в `HasAzGuard`
+---
 
-### Sprint 6 — Direct Grants
-- Модель `AzDirectGrant` с `expires_at` и `revoked_at`
-- `DirectGrantResource` в Filament
-- `giveAzPermission()` / `revokeAzPermission()` на User
-- `artisan azguard:grant`
+## [1.0.0] — 2026-01-01
 
-### Sprint 5 — Интеграция с Filament
-- Пакет `azguard/filament`
-- `AzGuardPlugin`, базовый класс `AzGuardResource`
-- Привязка панелей через `forPanel()`
+### Добавлено
+- Code-first RBAC: роли как PHP-классы, права как PHP enum
+- Мультипанельная изоляция (`app.*`, `admin.*`, `api.*`)
+- Прямые гранты с TTL
+- Нативная интеграция с Laravel Gate (`Gate::before()`)
+- Поддержка PHP 8 Attributes: `#[CheckPermission]`, `#[GateAbility]`, `#[SkipGuardCheck]`
+- Artisan-команды: `azguard:sync-roles`, `azguard:doctor`, `azguard:cache-clear`
+- Контекстные проверки (tenant, team, project)
+- Entity Scopes для ресурсных ограничений
+- Интеграция с Filament v3
+- Полное покрытие тестами (Pest)
 
-### Sprint 4 — Entity Scopes
-- Трейт `InteractsWithAzScopes`
-- `assignScopedRole()`, `removeScopedRole()`, `hasScopedRole()`
-- `hasScopedPermission()` с порядком разрешения: wildcard → global → scoped
-
-### Sprint 3 — Контекст
-- `AzGuardContext` для проверок с учётом tenant/team
-- `withContext()`, нулевые накладные расходы когда не используется
-
-### Sprint 2 — Тестирование
-- Pest-хелперы: `actingAsWithRole()`, `assertCanAzPermission()`, `assertCannotAzPermission()`
-- Стаб `UserWithDirectGrants`
-
-### Sprint 1 — Ядро
-- Трейт `HasAzGuard`
-- Система панелей с `PanelProviderInterface`
-- Аттрибуты `#[GateAbility]`, `#[CheckPermission]`, `#[RoleOnly]`, `#[SkipGuardCheck]`
-- Интеграция `Gate::before`
-- `azguard:doctor`, `azguard:sync-roles`, `azguard:cache-reset`
+→ [Полный список на GitHub](https://github.com/axioma-studio/azguard-private/releases)

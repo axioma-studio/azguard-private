@@ -1,62 +1,59 @@
 # Artisan-команды
 
-## azguard:doctor
+AzGuard предоставляет несколько Artisan-команд для синхронизации, диагностики и обслуживания.
 
-Диагностирует конфигурацию и находит типичные проблемы:
+## `azguard:sync-roles`
+
+Синхронизирует PHP-классы ролей с таблицей `roles` в БД.
+
+```bash
+php artisan azguard:sync-roles
+
+# С выводом деталей
+php artisan azguard:sync-roles --verbose
+```
+
+Запускайте при деплое или в миграциях.
+
+## `azguard:doctor`
+
+Проверяет и сообщает о проблемах конфигурации:
 
 ```bash
 php artisan azguard:doctor
 ```
 
-Проверяет:
-- Корректность `config/azguard.php`
-- Существование классов панелей
-- Наличие всех миграций
-- Соответствие ролей в БД и PHP-классов
-- Наличие трейта `HasAzGuard` на моделях
+Что проверяет:
+- Осиротевшие записи user → role (роль удалена из кода)
+- Несоответствие namespace панелей
+- Истёкшие прямые гранты
+- Enum-кейсы, не реализующие `PermissionInterface`
 
-## azguard:sync-roles
-
-Синхронизирует PHP-классы ролей с таблицей `azguard_user_roles`:
+## `azguard:cache-clear`
 
 ```bash
-php artisan azguard:sync-roles
+php artisan azguard:cache-clear
+
+# Сброс кэша конкретного пользователя
+php artisan azguard:cache-clear --user=42
 ```
 
-Полезно после:
-- Переименования классов ролей
-- Перемещения классов в другое пространство имён
-- Удаления старых ролей
-
-## azguard:prune-grants
-
-Удаляет истёкшие прямые гранты:
+## `azguard:purge-expired-grants`
 
 ```bash
-php artisan azguard:prune-grants
+php artisan azguard:purge-expired-grants
 ```
 
-Добавьте в планировщик:
+Удаляет истёкшие прямые гранты из таблицы. Добавьте в расписание:
 
 ```php
-$schedule->command('azguard:prune-grants')->dailyAt('03:00');
+$schedule->command('azguard:purge-expired-grants')->hourly();
 ```
 
-## azguard:list-permissions
-
-Выводит все зарегистрированные разрешения:
-
-```bash
-php artisan azguard:list-permissions
-php artisan azguard:list-permissions --panel=app
-php artisan azguard:list-permissions --panel=admin
-```
-
-## azguard:list-roles
-
-Выводит все роли с их разрешениями:
+## `azguard:list-roles`
 
 ```bash
 php artisan azguard:list-roles
-php artisan azguard:list-roles --role=EditorRole
 ```
+
+Выводит таблицу всех зарегистрированных ролей с количеством пользователей и списком прав.

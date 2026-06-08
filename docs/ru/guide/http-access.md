@@ -1,66 +1,65 @@
 # HTTP и Middleware
 
-## Регистрация middleware
+## Доступные Middleware
 
-AzGuard автоматически регистрирует middleware `azguard` через Service Provider. В Laravel 11+ он добавляется в `bootstrap/app.php` автоматически.
+| Middleware | Описание |
+|---|---|
+| `azguard.permission` | Проверка одного права |
+| `azguard.role` | Проверка одной роли |
+| `azguard.panel` | Устанавливает активную панель для запроса |
+
+## Примеры применения
 
 ```php
-// Для Laravel 10 и старше — вручную в Kernel.php
-protected $routeMiddleware = [
-    'azguard' => \AzGuard\Http\Middleware\CheckPermission::class,
-];
+// routes/web.php
+Route::get('/reports/export', [ReportController::class, 'export'])
+    ->middleware('azguard.permission:app.reports.export');
+
+Route::get('/admin', [AdminController::class, 'index'])
+    ->middleware(['auth', 'azguard.role:' . AdminRole::class]);
+
+// Группа роутов с общим middleware
+Route::middleware(['auth', 'azguard.panel:admin'])->group(function () {
+    Route::resource('users', UserController::class);
+});
 ```
 
-## Использование в маршрутах
+## Атрибут `#[CheckPermission]` вс контроллере
 
 ```php
-// Одно разрешение
-Route::middleware('azguard:app.posts.edit')
-    ->put('/posts/{post}', [PostController::class, 'update']);
-
-// Несколько разрешений (И — требуются все)
-Route::middleware('azguard:app.posts.edit,app.posts.publish')
-    ->post('/posts/{post}/publish', [PostController::class, 'publish']);
-
-// Группа маршрутов
-Route::middleware(['auth', 'azguard:app.admin.access'])
-    ->prefix('/admin')
-    ->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'index']);
-        Route::resource('/users', AdminUserController::class);
-    });
-```
-
-## Атрибут CheckPermission
-
-```php
-use AzGuard\Attributes\CheckPermission;
-
 class PostController extends Controller
 {
     #[CheckPermission(PostsPermission::View)]
-    public function index(): Response { ... }
+    public function index(): Response
+    {
+        return response()->json(Post::paginate());
+    }
 
-    #[CheckPermission(PostsPermission::Create)]
-    public function store(StorePostRequest $request): Response { ... }
-
-    // С model binding — автоматически передаётся в Policy
     #[CheckPermission(permission: PostsPermission::Edit, arguments: ['post'])]
-    public function update(Request $request, Post $post): Response { ... }
+    public function update(UpdatePostRequest $request, Post $post): Response
+    {
+        $post->update($request->validated());
+        return response()->json($post);
+    }
 }
 ```
 
-## Ответ на отказ в доступе
-
-По умолчанию возвращается `403 Forbidden`. Переопределите поведение:
+## Обработка 403
 
 ```php
 // app/Exceptions/Handler.php
-protected function unauthenticated($request, AuthenticationException $exception): Response
+public function register(): void
 {
-    if ($request->expectsJson()) {
-        return response()->json(['message' => 'Доступ запрещён.'], 403);
-    }
-    return redirect()->route('login');
+    $this->renderable(function (PermissionDeniedException $e, Request $request) {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Доступ запрещён.',
+                'required' => $e->getPermission(),
+            ], 403);
+        }
+        return redirect()->route('home')->with('error', 'Недостаточно прав.');
+    });
 }
 ```
+
+→ [Исключения](/ru/guide/exceptions) · [Несколько Guards](/ru/guide/multiple-guards)
