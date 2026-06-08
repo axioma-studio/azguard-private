@@ -5,74 +5,83 @@ declare(strict_types=1);
 namespace AzGuard\Commands;
 
 use AzGuard\Models\DirectGrant;
-use Carbon\Carbon;
+use AzGuard\Grants\GrantBuilder;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Выдать пользователю прямой grant на разрешение.
+ * Artisan-команда для выдачи direct grant пользователю.
  *
- * Примеры:
- *   php artisan guard:grant 1 app.documents.export --panel=app
- *   php artisan guard:grant 1 app.documents.export --panel=app --ttl=3600
- *   php artisan guard:grant 1 "*" --panel=app --ttl=86400
+ * @example
+ *   php artisan az-guard:grant 42 app.documents.export app --ttl=3600
+ *   php artisan az-guard:grant 42 app.documents.export app --model=App\\Models\\Admin
  */
-class GrantCommand extends Command
+final class GrantCommand extends Command
 {
-    protected $signature = 'guard:grant
-        {user_id        : ID пользователя (или модели)}
-        {permission_key : Ключ разрешения (или * для wildcard)}
-        {--panel=app    : ID панели}
-        {--model=       : FQCN модели (по умолчанию — модель пользователя из auth config)}
-        {--ttl=         : Время жизни гранта в секундах (0 / не указан = бессрочно)}';
+    protected $signature = 'az-guard:grant
+        {user-id        : ID пользователя}
+        {permission     : Ключ разрешения (app.documents.export)}
+        {panel          : Идентификатор панели}
+        {--ttl=         : TTL в секундах (если не задан — бессрочно)}
+        {--model=       : FQCN User-модели (default: auth.providers.users.model)}';
 
-    protected $description = 'Выдать прямой grant разрешения пользователю (без роли)';
+    protected $description = 'Выдать direct grant пользователю AzGuard';
 
     public function handle(): int
     {
-        $userId        = $this->argument('user_id');
-        $permissionKey = $this->argument('permission_key');
-        $panelId       = (string) $this->option('panel');
-        $modelClass    = $this->option('model')
-            ?? config('auth.providers.users.model', 'App\\Models\\User');
-        $ttl           = $this->option('ttl');
+        $userId    = $this->argument('user-id');
+        $permKey   = $this->argument('permission');
+        $panelId   = $this->argument('panel');
+        $ttl       = $this->option('ttl') !== null ? (int) $this->option('ttl') : null;
+        $modelClass = $this->resolveModelClass();
 
-        if (! class_exists($modelClass)) {
-            $this->error("Класс модели [{$modelClass}] не найден.");
+        /** @var Authenticatable|null $user */
+        $user = $modelClass::find($userId);
+
+        if ($user === null) {
+            $this->error("Пользователь [{$modelClass}] c ID={$userId} не найден.");
+
             return self::FAILURE;
         }
 
-        $expiresAt = null;
-        if ($ttl !== null && (int) $ttl > 0) {
-            $expiresAt = Carbon::now()->addSeconds((int) $ttl);
+        $builder = (new GrantBuilder($user))->on($panelId);
+
+        if ($ttl !== null) {
+            $builder = $builder->ttl($ttl);
         }
 
-        $table = config('az-guard.table_names.direct_grants', 'az_guard_direct_grants');
+        $grant = $builder->give($permKey);
 
-        $existing = DirectGrant::on()->from($table)
-            ->where('model_type', $modelClass)
-            ->where('model_id', $userId)
-            ->where('permission_key', $permissionKey)
-            ->where('panel_id', $panelId)
-            ->first();
+        $expiresAt = $grant->expires_at instanceof CarbonImmutable
+            ? $grant->expires_at->toDateTimeString()
+            : ($grant->expires_at ? (string) $grant->expires_at : 'бессрочно');
 
-        if ($existing) {
-            $existing->expires_at = $expiresAt;
-            $existing->save();
+        $this->table(
+            ['User ID', 'Model', 'Permission', 'Panel', 'Expires at'],
+            [[
+                $user->getAuthIdentifier(),
+                $modelClass,
+                $permKey,
+                $panelId,
+                $expiresAt,
+            ]],
+        );
 
-            $this->info("Grant обновлён: [{$permissionKey}] → user #{$userId} (панель: {$panelId})" . ($expiresAt ? " до {$expiresAt}" : ' (бессрочно)') . '.');
-        } else {
-            DirectGrant::create([
-                'model_type'     => $modelClass,
-                'model_id'       => $userId,
-                'permission_key' => $permissionKey,
-                'panel_id'       => $panelId,
-                'expires_at'     => $expiresAt,
-            ]);
-
-            $this->info("Grant выдан: [{$permissionKey}] → user #{$userId} (панель: {$panelId})" . ($expiresAt ? " до {$expiresAt}" : ' (бессрочно)') . '.');
-        }
+        $this->info("✅ Grant выдан.");
 
         return self::SUCCESS;
+    }
+
+    private function resolveModelClass(): string
+    {
+        /** @var string|null $option */
+        $option = $this->option('model');
+
+        if ($option !== null && $option !== '') {
+            return $option;
+        }
+
+        return (string) config('auth.providers.users.model', 'App\\Models\\User');
     }
 }
