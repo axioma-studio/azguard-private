@@ -43,8 +43,19 @@ class EditorRole implements RoleInterface
 | `editor` | 10 |
 | `manager` | 50 |
 | `admin` | 100 |
+| `super-admin` | 999 |
 
-Levels are **not** used for permission inheritance — a `manager` does not automatically inherit `editor` permissions unless you explicitly list them. They exist for your app logic, e.g., `$user->hasRoleLevel('>= 50')`.
+Levels are **not** used for permission inheritance — a `manager` does not automatically inherit `editor` permissions unless you explicitly list them. They exist for your app logic:
+
+```php
+// True if the user's highest role level is >= 50
+$user->hasRoleLevel('>= 50');
+
+// Returns the numeric level of the user's highest role
+$user->getRoleLevel();   // e.g. 50
+
+// Examples: '>= 50', '> 10', '== 100', '< 100'
+```
 
 ## Generating roles
 
@@ -56,56 +67,54 @@ php artisan azguard:make-role Admin SuperAdminRole
 ## Assigning roles
 
 ```php
-// By class name
+// By class name (most explicit — preferred)
 $user->assignRole(EditorRole::class);
 
 // By string name (panel auto-resolved from registration)
 $user->assignRole('editor');
 
-// Explicit panel
-$user->assignRole('editor', panel: 'app');
+// Explicit panel — required when the same name exists in multiple panels
+$user->assignRole('admin', panel: 'admin');
 
-// Multiple roles at once
+// Multiple roles at once — replaces the full list
 $user->syncRoles([EditorRole::class, ViewerRole::class]);
-$user->syncRoles(['editor', 'viewer']);
 
 // Remove a single role
 $user->removeRole(EditorRole::class);
 $user->removeRole('editor');
 
-// Remove all roles (sync to empty)
+// Remove all roles
 $user->syncRoles([]);
 ```
+
+::: warning syncRoles([]) removes everything
+`syncRoles()` always replaces the complete role list. Pass only the roles you want the user to have after the call. An empty array removes all roles.
+:::
 
 ## Checking roles
 
 ```php
-$user->hasRole('editor');                   // bool
-$user->hasRole(EditorRole::class);          // bool
-$user->hasAnyRole(['editor', 'admin']);      // true if at least one matches
-$user->hasAllRoles(['editor', 'moderator']); // true only if user has ALL listed
-$user->getRoleNames();                       // Collection<string>
-$user->getRoles();                           // Collection of role class strings
-$user->hasRoleLevel('>= 50');               // compare against level int
+$user->hasRole('editor');                     // bool — by string name
+$user->hasRole(EditorRole::class);            // bool — by class
+$user->hasAnyRole(['editor', 'admin']);        // true if at least one matches
+$user->hasAllRoles(['editor', 'moderator']);   // true only if ALL match
+$user->getRoleNames();                         // Collection<string>
+$user->getRoles();                             // Collection of role objects
+$user->hasRoleLevel('>= 50');                 // compare against level
+$user->getRoleLevel();                         // int: highest level
 ```
 
 ## Inspecting assigned roles
 
 ```php
 // All role names as strings
-$user->getRoleNames();          // Collection<string> e.g. ['editor', 'viewer']
-
-// Role objects (static roles) / DynamicRole models (dynamic roles)
-$user->getRoles();              // Collection
+$user->getRoleNames();            // Collection<string> — ['editor', 'viewer']
 
 // Permissions inherited through roles
-$user->getPermissionsViaRoles();  // Collection of permission strings
+$user->getPermissionsViaRoles();  // Collection<string>
 
 // Combined: permissions from roles + direct grants
-$user->getAllPermissions();       // Collection of permission strings
-
-// Check level
-$user->getRoleLevel();          // int: highest level among all assigned roles
+$user->getAllPermissions();        // Collection<string>
 ```
 
 ## Query users by role
@@ -129,41 +138,26 @@ User::role('editor')
     ->where('active', true)
     ->orderBy('name')
     ->paginate();
-```
 
-## Useful Eloquent patterns
-
-```php
-// Eager-load roles to avoid N+1 in lists
+// Eager-load roles to avoid N+1 in list views
 User::with('azRoles')->paginate();
 
 // Users with no roles at all
 User::doesntHave('azRoles')->get();
-
-// Count users per role
-$count = User::role('editor')->count();
-
-// Get all role names used across the system
-$roleNames = User::with('azRoles')
-    ->get()
-    ->pluck('azRoles')
-    ->flatten()
-    ->pluck('name')
-    ->unique();
 ```
 
 ## Dynamic (DB-backed) roles
 
-For admin UIs where roles are managed at runtime, use the `DynamicRole` model:
+For admin UIs where roles are managed at runtime:
 
 ```php
 use AzGuard\Models\DynamicRole;
 
 // Create
 $role = DynamicRole::create([
-    'name'    => 'tenant-admin',
-    'panel'   => 'app',
-    'level'   => 20,
+    'name'  => 'tenant-admin',
+    'panel' => 'app',
+    'level' => 20,
 ]);
 
 // Attach permissions
@@ -172,17 +166,31 @@ $role->givePermissions([
     DocumentsPermission::Create,
 ]);
 
-// Sync permissions
+// Sync (replaces the permission list)
 $role->syncPermissions([DocumentsPermission::View]);
 
-// Assign dynamic role to user
+// Revoke one
+$role->revokePermission(DocumentsPermission::Create);
+
+// Assign to a user
 $user->assignRole($role);
 
-// Get all dynamic roles
+// List all dynamic roles
 DynamicRole::where('panel', 'app')->get();
 ```
 
 Dynamic roles are stored in `az_guard_roles`; their permissions in `az_guard_role_permissions`.
+
+## Syncing static roles to DB
+
+If your app uses the `az_guard_roles` table as a reference (e.g., for Filament dropdowns), keep it in sync after deploying new PHP role classes:
+
+```bash
+php artisan azguard:sync-roles
+php artisan azguard:sync-roles --panel=app
+```
+
+This is safe to run in CI/CD pipelines.
 
 ## Listing roles
 
@@ -193,13 +201,13 @@ php artisan azguard:list-roles --panel=app
 
 ## Gotchas
 
-**Role names are panel-scoped.** Two roles named `admin` in panels `app` and `admin` are different roles. Always specify the panel explicitly if there's ambiguity: `$user->assignRole('admin', panel: 'admin')`.
+**Role names are panel-scoped.** Two roles named `admin` in panels `app` and `admin` are different roles. Specify the panel explicitly when ambiguous: `$user->assignRole('admin', panel: 'admin')`.
 
-**`syncRoles([])` removes all roles.** This is intentional — sync always replaces the full list. Pass only the roles you want the user to have after the call.
+**`syncRoles([])` removes all roles.** This is intentional. Pass only the roles you want the user to have after the call.
 
 **Role names must be unique within a panel.** Registering two roles with the same `getName()` in the same panel will cause a conflict at boot time.
 
-**Levels are not inherited.** A level-100 `SuperAdmin` role does not automatically include all lower-level permissions. If you want inheritance, list the permissions explicitly or extend a base role class.
+**Levels are not inherited.** A level-100 `SuperAdmin` does not automatically include all lower-level permissions. List them explicitly.
 
 ## Best practices
 
