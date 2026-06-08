@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Filament\Resources\DirectGrantResource\Pages;
 
 use AzGuard\Filament\Resources\DirectGrantResource;
+use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 final class ListDirectGrants extends ListRecords
@@ -13,6 +14,8 @@ final class ListDirectGrants extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\CreateAction::make()->label('Выдать грант'),
+        ];
     }
 }
