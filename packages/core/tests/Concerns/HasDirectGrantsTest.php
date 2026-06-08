@@ -13,9 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase;
 
-/**
- * Стаб-модель, комбинирующая оба трейта
- */
 class StubUserModel extends Model
 {
     use HasAzGuard;
@@ -56,7 +53,6 @@ final class HasDirectGrantsTest extends TestCase
     {
         parent::setUp();
 
-        // Создаём таблицу stub_users ин-мемори для тестов
         $this->app['db']->statement(
             'CREATE TABLE IF NOT EXISTS stub_users (id INTEGER PRIMARY KEY AUTOINCREMENT)'
         );
@@ -72,7 +68,6 @@ final class HasDirectGrantsTest extends TestCase
     public function test_has_direct_grant_returns_true_when_grant_exists(): void
     {
         $user = $this->createStubUser();
-
         (new GrantBuilder($user))->on('app')->give('app.x.view');
 
         $this->assertTrue($user->hasDirectGrant('app.x.view', 'app'));
@@ -105,12 +100,9 @@ final class HasDirectGrantsTest extends TestCase
         $user = $this->createStubUser();
         (new GrantBuilder($user))->on('app')->give('app.y.view');
 
-        $user->hasDirectGrant('app.y.view', 'app'); // прогреваем кэш
-
-        // Удаляем запись напрямую в БД
+        $user->hasDirectGrant('app.y.view', 'app');
         DirectGrant::query()->delete();
 
-        // Кэш всё ещё возвращает true
         $this->assertTrue($user->hasDirectGrant('app.y.view', 'app'));
     }
 
@@ -121,7 +113,6 @@ final class HasDirectGrantsTest extends TestCase
 
         $user->hasDirectGrant('app.z.view', 'app');
         DirectGrant::query()->delete();
-
         $user->clearDirectGrantsCache();
 
         $this->assertFalse($user->hasDirectGrant('app.z.view', 'app'));
@@ -133,7 +124,6 @@ final class HasDirectGrantsTest extends TestCase
         (new GrantBuilder($user))->on('app')->give('app.a.view');
         (new GrantBuilder($user))->on('app')->give('app.b.edit');
 
-        // Истёкший grant
         DirectGrant::create([
             'model_type'     => StubUserModel::class,
             'model_id'       => $user->getKey(),
@@ -157,32 +147,29 @@ final class HasDirectGrantsTest extends TestCase
         $this->assertCount(2, $user->directGrants());
     }
 
-    public function test_has_az_permission_checks_direct_grant_as_fallback(): void
+    public function test_has_permission_checks_direct_grant_as_fallback(): void
     {
         $user = $this->createStubUser();
-
-        // Ролей нет — проверяем через direct grant
         (new GrantBuilder($user))->on('app')->give('app.reports.view');
 
-        $this->assertTrue($user->hasAzPermission('app.reports.view'));
+        $this->assertTrue($user->hasPermission('app.reports.view'));
     }
 
-    public function test_has_az_permission_returns_false_without_role_and_grant(): void
+    public function test_has_permission_returns_false_without_role_and_grant(): void
     {
         $user = $this->createStubUser();
 
-        $this->assertFalse($user->hasAzPermission('app.reports.view'));
+        $this->assertFalse($user->hasPermission('app.reports.view'));
     }
 
-    public function test_clear_az_permissions_cache_clears_both_caches(): void
+    public function test_flush_permissions_clears_both_caches(): void
     {
         $user = $this->createStubUser();
         (new GrantBuilder($user))->on('app')->give('app.test.view');
 
-        $user->hasDirectGrant('app.test.view', 'app'); // прогреваем
+        $user->hasDirectGrant('app.test.view', 'app');
         DirectGrant::query()->delete();
-
-        $user->clearAzPermissionsCache(); // сбрасываем оба
+        $user->flushPermissions();
 
         $this->assertFalse($user->hasDirectGrant('app.test.view', 'app'));
     }
