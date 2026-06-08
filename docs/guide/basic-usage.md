@@ -1,24 +1,20 @@
 # Basic Usage
 
-This page walks you through the full lifecycle: defining roles and permissions, assigning them to users, checking access, and querying users by role or permission.
+This page covers the full daily workflow with AzGuard: defining and assigning roles, checking permissions, querying users by role, and understanding how everything fits together.
 
 ## Add the trait
 
-Add `HasAzGuard` to every model that needs role/permission checks:
+Every model that needs role/permission support must use `HasAzGuard`:
 
 ```php
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use AzGuard\Concerns\HasAzGuard;
+use AzGuard\Traits\HasAzGuard;
 
 class User extends Authenticatable
 {
     use HasAzGuard;
 }
 ```
-
-::: tip
-See [Prerequisites](/guide/prerequisites) for important constraints — especially the list of reserved property names.
-:::
 
 ## Define a permission
 
@@ -103,7 +99,6 @@ $user->hasRole(EditorRole::class);                // bool
 $user->hasAnyRole(['editor', 'admin']);            // true if user has at least one
 $user->hasAllRoles(['editor', 'moderator']);       // true only if user has all
 $user->getRoleNames();                             // Collection<string>
-$user->getRoles();                                 // Collection of role class strings
 ```
 
 ## Check permissions
@@ -112,16 +107,14 @@ $user->getRoles();                                 // Collection of role class s
 // Via the trait — accepts enum case or full string key
 $user->hasPermission(DocumentsPermission::View);
 $user->hasPermission('app.documents.view');
-$user->hasAnyPermission([DocumentsPermission::Edit, DocumentsPermission::Delete]);
-$user->hasAllPermissions([DocumentsPermission::View, DocumentsPermission::Edit]);
 
 // Via Laravel Gate
 use Illuminate\Support\Facades\Gate;
 
-Gate::allows('app.documents.view');      // bool
-Gate::check('app.documents.view');       // alias
+Gate::allows('app.documents.view');
+Gate::check('app.documents.view');
 
-// In a controller action — throws 403 on failure
+// In a controller action
 $this->authorize('app.documents.view');
 
 // Middleware on a route
@@ -136,14 +129,14 @@ Prefer `$user->hasPermission(...)` or `Gate::allows(...)` over `$user->hasRole(.
 ## Inspect what a user has
 
 ```php
-// All permissions resolved across all assigned roles + direct grants
-$user->getAllPermissions();          // Collection<string>
+// All permissions resolved across all assigned roles
+$user->getAllPermissions();          // Collection of permission strings
 
 // Only permissions granted directly (not via roles)
 $user->getDirectPermissions();       // Collection — see Direct Grants
 
 // Only permissions coming from roles
-$user->getPermissionsViaRoles();     // Collection<string>
+$user->getPermissionsViaRoles();     // Collection
 
 // Permission keys as strings
 $user->getPermissionNames();         // Collection<string>
@@ -151,15 +144,11 @@ $user->getPermissionNames();         // Collection<string>
 // All roles
 $user->getRoles();                   // Collection of role class strings
 $user->getRoleNames();               // Collection<string>
-
-// Check specific permission origin
-$user->hasDirectPermission(DocumentsPermission::View);   // bool
-$user->hasPermissionViaRole(DocumentsPermission::View);  // bool
 ```
 
-## Query scopes
+## Query users by role or permission
 
-AzGuard adds Eloquent query scopes to any model using `HasAzGuard`:
+AzGuard provides Eloquent scopes to filter users:
 
 ```php
 // Users that have a specific role
@@ -171,7 +160,7 @@ User::role(['editor', 'admin'])->get();     // has any of these roles
 User::withoutRole('editor')->get();
 User::withoutRole(['editor', 'viewer'])->get();
 
-// Users that have a specific permission (via any role or direct grant)
+// Users that have a specific permission (via any role)
 User::permission('app.documents.edit')->get();
 User::permission(DocumentsPermission::Edit)->get();
 
@@ -179,14 +168,7 @@ User::permission(DocumentsPermission::Edit)->get();
 User::withoutPermission('app.documents.delete')->get();
 ```
 
-Scopes can be chained with other Eloquent calls:
-
-```php
-User::role('editor')
-    ->where('active', true)
-    ->orderBy('name')
-    ->paginate();
-```
+Scopes accept: a string key, an enum case, a role class name, or an array of any of these.
 
 ## Useful Eloquent patterns
 
@@ -200,12 +182,10 @@ User::doesntHave('azRoles')->get();
 // Count users per role
 User::role('editor')->count();
 
-// Count users per role, grouped
-User::with('azRoles')
-    ->get()
-    ->flatMap->azRoles
-    ->countBy('name');
-// => ['editor' => 12, 'admin' => 3, 'viewer' => 47]
+// Users with roles, filter to a specific panel
+User::role('editor')
+    ->where('panel', 'app')
+    ->get();
 ```
 
 ## Gate check in Blade
@@ -219,9 +199,11 @@ User::with('azRoles')
     <span class="text-muted">No delete access</span>
 @endcannot
 
-@canany(['app.documents.create', 'app.documents.edit'])
-    <div class="editor-toolbar">...</div>
-@endcanany
+@can('app.documents.create')
+    <a href="{{ route('documents.create') }}">New document</a>
+@else
+    <span>Read-only</span>
+@endcan
 ```
 
 See [Blade Directives](./blade-directives.md) for role checks and custom directives.
