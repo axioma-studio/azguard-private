@@ -31,6 +31,8 @@ use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Resolver\PermissionResolverCache;
 use AzGuard\Registry\Sources\ClassRoleGrantSource;
+use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
+use AzGuard\Registry\Sources\DirectGrantSource;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
@@ -94,17 +96,20 @@ final class AzGuardServiceProvider extends ServiceProvider
     }
 
     /**
-     * Привязка компонентов Registry:
-     * - PermissionCatalog (singleton, lazy-build через CompositePermissionCatalog)
-     * - PermissionResolverCache (singleton, per-request, Octane-safe)
-     * - EffectivePermissionResolver (singleton)
-     * - GrantSource implementations
+     * Привязка компонентов Registry.
+     *
+     * Источники grants (в порядке приоритета, desc):
+     *   100 — ClassRoleGrantSource   (Фаза 1: PHP-классы ролей)
+     *    90 — DatabaseRoleGrantSource (Фаза 3: DB-роли без class_name)
+     *    80 — DirectGrantSource       (Фаза 3: прямые гранты пользователю)
      */
     protected function registerRegistryBindings(): void
     {
         $this->app->singleton(PermissionResolverCache::class, fn (): PermissionResolverCache => new PermissionResolverCache);
 
         $this->app->singleton(ClassRoleGrantSource::class, fn (): ClassRoleGrantSource => new ClassRoleGrantSource);
+        $this->app->singleton(DatabaseRoleGrantSource::class, fn (): DatabaseRoleGrantSource => new DatabaseRoleGrantSource);
+        $this->app->singleton(DirectGrantSource::class, fn (): DirectGrantSource => new DirectGrantSource);
 
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
@@ -130,13 +135,22 @@ final class AzGuardServiceProvider extends ServiceProvider
                     catalog: $this->app->make(PermissionCatalog::class),
                     sources: [
                         $this->app->make(ClassRoleGrantSource::class),
+                        $this->app->make(DatabaseRoleGrantSource::class),
+                        $this->app->make(DirectGrantSource::class),
                     ],
                     cache: $this->app->make(PermissionResolverCache::class),
                 );
             }
         );
 
-        $this->app->tag([ClassRoleGrantSource::class], [GrantSource::class]);
+        $this->app->tag(
+            [
+                ClassRoleGrantSource::class,
+                DatabaseRoleGrantSource::class,
+                DirectGrantSource::class,
+            ],
+            [GrantSource::class],
+        );
     }
 
     /**
@@ -175,9 +189,6 @@ final class AzGuardServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Регистрирует Blade-директивы: @azcan, @endazcan, @azrole, @endazrole.
-     */
     protected function registerBladeDirectives(): void
     {
         Blade::directive('azcan', function (string $expression): string {
