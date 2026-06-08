@@ -6,10 +6,12 @@ namespace AzGuard\Concerns;
 
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
+use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Adds entity-scoped role support to Eloquent models.
@@ -127,8 +129,8 @@ trait HasScopes
      *   $user->hasScopedPermission('app.projects.edit', $project);
      *
      * Resolution order:
-     *   1. SuperAdmin global wildcard (*) — always granted
-     *   2. Scoped roles for the given entity
+     *   1. SuperAdmin global wildcard (*) — always granted via hasPermission()
+     *   2. Scoped roles for the given entity (1 JOIN query)
      */
     public function hasScopedPermission(string $permission, Model $entity): bool
     {
@@ -136,37 +138,21 @@ trait HasScopes
             return true;
         }
 
-        $scopedRoleIds = ModelHasScope::query()
-            ->where('model_type', $this->getMorphClass())
-            ->where('model_id', $this->getKey())
-            ->where('scope_entity_type', $entity->getMorphClass())
-            ->where('scope_entity_id', $entity->getKey())
-            ->whereNotNull('role_id')
-            ->pluck('role_id');
+        $scopesTable = Config::modelHasScopesTable();
+        $rolesTable  = Config::rolesTable();
 
-        if ($scopedRoleIds->isEmpty()) {
-            return false;
-        }
+        // Single JOIN: model_has_scopes ✕ roles → permission keys
+        $keys = DB::table($scopesTable)
+            ->join($rolesTable, "{$rolesTable}.id", '=', "{$scopesTable}.role_id")
+            ->where("{$scopesTable}.model_type", $this->getMorphClass())
+            ->where("{$scopesTable}.model_id", $this->getKey())
+            ->where("{$scopesTable}.scope_entity_type", $entity->getMorphClass())
+            ->where("{$scopesTable}.scope_entity_id", $entity->getKey())
+            ->whereNotNull("{$scopesTable}.role_id")
+            ->pluck("{$rolesTable}.permission_keys") // JSON column or CSV
+            ->flatMap(fn ($raw) => is_array($raw) ? $raw : json_decode((string) $raw, true) ?? [])
+            ->all();
 
-        /** @var class-string<Role> $roleClass */
-        $roleClass = Config::roleModel();
-
-        $roles = $roleClass::query()->whereIn('id', $scopedRoleIds)->get();
-
-        foreach ($roles as $roleModel) {
-            $logic = $roleModel->getRoleLogic();
-
-            if ($logic === null) {
-                continue;
-            }
-
-            $permissions = $logic->permissions();
-
-            if (in_array('*', $permissions, true) || in_array($permission, $permissions, true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return PermissionSet::fromRawKeys($keys)->grants($permission);
     }
 }
