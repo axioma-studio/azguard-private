@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Resolver;
 
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\Config;
 use Closure;
 
 /**
- * Per-request кэш PermissionSet.
+ * Per-request cache for PermissionSet.
  *
- * Поддерживает два слоя:
- * 1. In-memory (всегда): массив $requestCache, живёт один HTTP-запрос.
- * 2. Cross-request (опционально): Laravel cache store (Redis/etc.).
+ * Supports two layers:
+ * 1. In-memory (always): $requestCache array, lives for one HTTP request.
+ * 2. Cross-request (optional): Laravel cache store (Redis/etc.).
  *
- * Octane-safe: используется флаг $isLoading для предотвращения
- * concurrent stampede (паттерн из Spatie PermissionRegistrar).
+ * Octane-safe: uses $isLoading flag to prevent concurrent stampede
+ * (pattern from Spatie PermissionRegistrar).
  */
 final class PermissionResolverCache
 {
@@ -32,7 +33,6 @@ final class PermissionResolverCache
             return $this->requestCache[$cacheKey];
         }
 
-        // Octane-safe: ждём если другой «поток» уже загружает
         if ($this->isLoading) {
             return $this->retryLoad($cacheKey, $callback);
         }
@@ -40,24 +40,12 @@ final class PermissionResolverCache
         $this->isLoading = true;
 
         try {
-            // Cross-request cache (если настроен store != array)
-            $cacheStore = config('az-guard.cache.store', 'array');
+            $store = Config::cacheStore();
 
-            if ($cacheStore !== 'array') {
-                $ttl = config('az-guard.cache.expiration_time', 3600);
-                $set = cache()->store($cacheStore)->remember(
-                    $cacheKey,
-                    $ttl,
-                    fn () => $this->serialize($callback()),
-                );
-
-                // Десериализация если пришло из Redis
-                if (is_array($set)) {
-                    $set = PermissionSet::fromKeys($set);
-                }
-            } else {
-                $set = $callback();
-            }
+            $set = match (true) {
+                $store !== 'array' => $this->loadFromStore($cacheKey, $store, $callback),
+                default            => $callback(),
+            };
 
             return $this->requestCache[$cacheKey] = $set;
         } finally {
@@ -67,7 +55,7 @@ final class PermissionResolverCache
 
     public function forgetForUser(int|string $userId, string $panelId): void
     {
-        $prefix = "azguard.perms.{$userId}.{$panelId}";
+        $prefix = self::keyFor($userId, $panelId);
 
         $this->requestCache = array_filter(
             $this->requestCache,
@@ -75,9 +63,10 @@ final class PermissionResolverCache
             ARRAY_FILTER_USE_KEY,
         );
 
-        $cacheStore = config('az-guard.cache.store', 'array');
-        if ($cacheStore !== 'array') {
-            cache()->store($cacheStore)->forget($prefix);
+        $store = Config::cacheStore();
+
+        if ($store !== 'array') {
+            cache()->store($store)->forget($prefix);
         }
     }
 
@@ -86,37 +75,32 @@ final class PermissionResolverCache
         $this->requestCache = [];
     }
 
-    /**
-     * Ключ кэша для пользователя+панель.
-     */
     public static function keyFor(int|string $userId, string $panelId): string
     {
         return "azguard.perms.{$userId}.{$panelId}";
     }
 
+    private function loadFromStore(string $cacheKey, string $store, Closure $callback): PermissionSet
+    {
+        $raw = cache()->store($store)->remember(
+            $cacheKey,
+            Config::cacheTtl(),
+            fn () => $callback()->toArray(),
+        );
+
+        return is_array($raw) ? PermissionSet::fromKeys($raw) : $raw;
+    }
+
     private function retryLoad(string $cacheKey, Closure $callback, int $attempt = 0): PermissionSet
     {
         if ($attempt >= $this->maxRetries) {
-            // Fallback: загрузить напрямую без кэша
             return $callback();
         }
 
-        usleep(5_000); // 5ms
+        usleep(5_000);
 
-        if (isset($this->requestCache[$cacheKey])) {
-            return $this->requestCache[$cacheKey];
-        }
-
-        return $this->retryLoad($cacheKey, $callback, $attempt + 1);
-    }
-
-    /**
-     * Для cross-request cache: сохраняем массив ключей, не объект.
-     *
-     * @return list<string>
-     */
-    private function serialize(PermissionSet $set): array
-    {
-        return $set->toArray();
+        return isset($this->requestCache[$cacheKey])
+            ? $this->requestCache[$cacheKey]
+            : $this->retryLoad($cacheKey, $callback, $attempt + 1);
     }
 }
