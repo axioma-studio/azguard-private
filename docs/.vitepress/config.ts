@@ -5,16 +5,14 @@ export default defineConfig({
   title: 'AzGuard',
   description: 'Code-first RBAC for Laravel — roles as PHP classes, permissions in Git.',
 
-  // Если репозиторий будет доступен как https://<org>.github.io/azguard/
-  // раскомментировать и задать base:
-  // base: '/azguard/',
+  base: '/azguard-private/',
 
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', href: '/azguard-private/favicon.ico' }],
   ],
 
   themeConfig: {
-    logo: '/logo.svg',
+    logo: null,
     siteTitle: 'AzGuard',
 
     nav: [
