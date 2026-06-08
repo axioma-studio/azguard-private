@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Exceptions\PanelNotFoundException;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
@@ -19,17 +20,22 @@ final class AzGuardManager implements AzGuardManagerInterface
 
     protected ?Panel $currentPanel = null;
 
-    // ─── Panels ───────────────────────────────────────────────────────────────
+    // ─── Panels ───────────────────────────────────────────────────────────────────
 
-    public function registerPanel(Closure $panel): void
+    /**
+     * Register a panel via a factory closure or a Panel instance.
+     *
+     * Accepts both:
+     *   AzGuard::registerPanel(fn () => new Panel('app', ...));
+     *   AzGuard::registerPanel($panelInstance);
+     */
+    public function registerPanel(Closure|Panel $panel): void
     {
-        $panelInstance = $panel();
+        $panelInstance = $panel instanceof Panel ? $panel : $panel();
         $this->panels[$panelInstance->getId()] = $panelInstance;
     }
 
-    /**
-     * @return array<string, Panel>
-     */
+    /** @return array<string, Panel> */
     public function getPanels(): array
     {
         return $this->panels;
@@ -50,23 +56,27 @@ final class AzGuardManager implements AzGuardManagerInterface
         $this->currentPanel = $panel;
     }
 
+    /**
+     * Resolve a fully-qualified permission key for the given panel.
+     *
+     * @throws PanelNotFoundException
+     */
     public function permission(string $panelId, string|\UnitEnum $permission): string
     {
         $panel = $this->panel(id: $panelId);
 
         if ($panel === null) {
-            throw new \RuntimeException("Панель AzGuard [{$panelId}] не зарегистрирована.");
+            throw PanelNotFoundException::forId($panelId);
         }
 
         return $panel->resolvePermission(permission: $permission);
     }
 
-    // ─── Grants API ───────────────────────────────────────────────────────────
+    // ─── Grants API ─────────────────────────────────────────────────────────────
 
     /**
-     * Возвращает fluent GrantBuilder для пользователя.
+     * Return a fluent GrantBuilder for the given user.
      *
-     * Пример:
      *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
      */
     public function forUser(Authenticatable $user): GrantBuilder
@@ -75,9 +85,9 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Короткий хелпер: выдать direct grant.
+     * Shorthand: grant a direct permission.
      *
-     * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
+     * @param  int|null  $ttl  TTL in seconds. null = no expiry.
      */
     public function grantDirect(
         Authenticatable $user,
@@ -89,9 +99,9 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Короткий хелпер: отозвать direct grant.
+     * Shorthand: revoke a direct permission.
      *
-     * @return int  Количество удалённых записей.
+     * @return int Number of deleted records.
      */
     public function revokeDirect(
         Authenticatable $user,
@@ -102,7 +112,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Короткий хелпер: список активных grants пользователя в панели.
+     * Shorthand: list active grants for user on a panel.
      *
      * @return Collection<int, DirectGrant>
      */
