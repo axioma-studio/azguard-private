@@ -21,12 +21,23 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class EffectivePermissionResolver
 {
-    /** @param iterable<GrantSource> $sources */
+    /** @var list<GrantSource> Sorted by priority DESC once at construction time. */
+    private readonly array $sources;
+
+    /**
+     * @param iterable<GrantSource> $sources
+     */
     public function __construct(
         private readonly PermissionCatalog $catalog,
-        private readonly iterable $sources,
+        iterable $sources,
         private readonly PermissionResolverCache $cache,
-    ) {}
+    ) {
+        // Sort once at construction — priorities are static.
+        $this->sources = collect($sources)
+            ->sortByDesc(fn (GrantSource $s) => $s->priority())
+            ->values()
+            ->all();
+    }
 
     public function forUser(Authenticatable $user, string $panelId): PermissionSet
     {
@@ -40,13 +51,9 @@ final class EffectivePermissionResolver
 
     private function resolve(Authenticatable $user, string $panelId): PermissionSet
     {
-        $sources = collect($this->sources)
-            ->sortByDesc(fn (GrantSource $s) => $s->priority())
-            ->all();
-
         $set = PermissionSet::empty();
 
-        foreach ($sources as $source) {
+        foreach ($this->sources as $source) {
             $set = $set->merge($source->permissionsFor($user, $panelId));
 
             if ($set->isWildcard()) {

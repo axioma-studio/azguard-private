@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\ModelHasScope;
+use AzGuard\Models\Role;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -54,7 +55,7 @@ trait HasScopes
      *
      *   $user->assignScopedRole('editor', $project);
      */
-    public function assignScopedRole(string|\AzGuard\Models\Role $role, Model $entity): static
+    public function assignScopedRole(string|Role $role, Model $entity): static
     {
         $roleModel = $this->resolveScopeRole($role);
 
@@ -82,7 +83,7 @@ trait HasScopes
      *
      *   $user->removeScopedRole('editor', $project);
      */
-    public function removeScopedRole(string|\AzGuard\Models\Role $role, Model $entity): static
+    public function removeScopedRole(string|Role $role, Model $entity): static
     {
         $roleModel = $this->resolveScopeRole($role);
 
@@ -108,7 +109,7 @@ trait HasScopes
      *
      *   $user->hasScopedRole('editor', $project);
      */
-    public function hasScopedRole(string|\AzGuard\Models\Role $role, Model $entity): bool
+    public function hasScopedRole(string|Role $role, Model $entity): bool
     {
         $roleModel = $this->resolveScopeRole($role);
 
@@ -152,7 +153,7 @@ trait HasScopes
             return false;
         }
 
-        /** @var class-string<\AzGuard\Models\Role> $roleClass */
+        /** @var class-string<Role> $roleClass */
         $roleClass = Config::roleModel();
 
         $roles = $roleClass::query()->whereIn('id', $scopedRoleIds)->get();
@@ -174,15 +175,19 @@ trait HasScopes
         return false;
     }
 
-    protected function resolveScopeRole(string|\AzGuard\Models\Role $role): ?\AzGuard\Models\Role
+    /**
+     * Resolve a role by name or return the instance directly.
+     * Delegates to Role::findByName() — single source of truth.
+     */
+    protected function resolveScopeRole(string|Role $role): ?Role
     {
-        if ($role instanceof \AzGuard\Models\Role) {
+        if ($role instanceof Role) {
             return $role;
         }
 
-        /** @var class-string<\AzGuard\Models\Role> $roleClass */
+        /** @var class-string<Role> $roleClass */
         $roleClass = Config::roleModel();
 
-        return $roleClass::query()->where('name', $role)->first();
+        return $roleClass::findByName($role);
     }
 }

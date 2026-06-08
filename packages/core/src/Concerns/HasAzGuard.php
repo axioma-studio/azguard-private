@@ -11,6 +11,7 @@ use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\AzGuardContextBridge;
 use AzGuard\Support\Config;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
@@ -32,7 +33,7 @@ trait HasAzGuard
         );
     }
 
-    public function scopes()
+    public function scopes(): MorphMany
     {
         return $this->morphMany(Config::scopeModel(), 'model');
     }
@@ -117,12 +118,29 @@ trait HasAzGuard
     }
 
     /**
-     * Flush the permission cache for this user.
+     * Flush the permission cache for this user across ALL registered panels.
      * Called automatically by assignRole / removeRole / syncRoles.
      */
-    public function flushPermissions(string $panelId = 'app'): void
+    public function flushPermissions(?string $panelId = null): void
     {
-        app(EffectivePermissionResolver::class)->forgetForUser($this, $panelId);
+        $resolver = app(EffectivePermissionResolver::class);
+
+        if ($panelId !== null) {
+            $resolver->forgetForUser($this, $panelId);
+            return;
+        }
+
+        // Flush all panels registered in the manager
+        $panels = app(\AzGuard\AzGuardManager::class)->getPanels();
+
+        foreach (array_keys($panels) as $id) {
+            $resolver->forgetForUser($this, $id);
+        }
+
+        // Always flush the default 'app' panel even if not in manager
+        if (! isset($panels['app'])) {
+            $resolver->forgetForUser($this, 'app');
+        }
     }
 
     /**
@@ -140,10 +158,10 @@ trait HasAzGuard
             }
 
             $this->roles()->syncWithoutDetaching([$roleModel->getKey()]);
-            $this->flushPermissions();
             event(new RoleAttached($this, $roleModel));
         }
 
+        $this->flushPermissions();
         $this->unsetRelation('roles');
 
         return $this;
@@ -164,10 +182,10 @@ trait HasAzGuard
             }
 
             $this->roles()->detach($roleModel->getKey());
-            $this->flushPermissions();
             event(new RoleDetached($this, $roleModel));
         }
 
+        $this->flushPermissions();
         $this->unsetRelation('roles');
 
         return $this;
@@ -175,23 +193,34 @@ trait HasAzGuard
 
     /**
      * Sync the set of roles on the model.
+     * Uses a single sync() call instead of N detach + M attach queries.
      *
      * @param  array<string|Role>  $roles
      */
     public function syncRoles(array $roles): static
     {
-        foreach ($this->roles()->get() as $currentRole) {
-            $this->roles()->detach($currentRole->getKey());
-            event(new RoleDetached($this, $currentRole));
-        }
+        $roleIds = [];
 
         foreach ($roles as $role) {
             $roleModel = $this->resolveRole($role);
-            if ($roleModel === null) {
-                continue;
+
+            if ($roleModel !== null) {
+                $roleIds[] = $roleModel->getKey();
             }
-            $this->roles()->attach($roleModel->getKey());
-            event(new RoleAttached($this, $roleModel));
+        }
+
+        $changes = $this->roles()->sync($roleIds);
+
+        foreach ($changes['detached'] as $id) {
+            if ($detached = Role::find($id)) {
+                event(new RoleDetached($this, $detached));
+            }
+        }
+
+        foreach ($changes['attached'] as $id) {
+            if ($attached = Role::find($id)) {
+                event(new RoleAttached($this, $attached));
+            }
         }
 
         $this->flushPermissions();
@@ -212,6 +241,7 @@ trait HasAzGuard
 
     /**
      * Resolve a Role model from a name string or Role instance.
+     * Delegates to Role::findByName() to avoid duplication with HasScopes.
      */
     protected function resolveRole(string|Role $role): ?Role
     {
@@ -222,6 +252,6 @@ trait HasAzGuard
         /** @var class-string<Role> $roleClass */
         $roleClass = Config::roleModel();
 
-        return $roleClass::query()->where('name', $role)->first();
+        return $roleClass::findByName($role);
     }
 }

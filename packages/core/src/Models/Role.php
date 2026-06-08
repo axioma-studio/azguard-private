@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -20,8 +22,8 @@ class Role extends Model
     }
 
     /**
-     * Пермиссии, назначенные роли через БД (не через PHP-класс).
-     * Используется DatabaseRoleGrantSource.
+     * Permissions assigned to the role via DB (not via PHP class).
+     * Used by DatabaseRoleGrantSource.
      */
     public function dbPermissions(): HasMany
     {
@@ -32,7 +34,7 @@ class Role extends Model
     }
 
     /**
-     * Инстанцирует класс логики роли (например, SuperAdminRole).
+     * Instantiate the role logic class (e.g. SuperAdminRole).
      */
     public function getRoleLogic(): ?object
     {
@@ -44,7 +46,7 @@ class Role extends Model
     }
 
     /**
-     * Проверить, есть ли DB-пермиссия для данной панели.
+     * Check whether the role has a DB permission for the given panel.
      */
     public function hasDbPermission(string $permissionKey, string $panelId): bool
     {
@@ -52,5 +54,13 @@ class Role extends Model
             ->where('permission_key', $permissionKey)
             ->where('panel_id', $panelId)
             ->exists();
+    }
+
+    /**
+     * Find a role by its name. Consolidates resolveRole() / resolveScopeRole() across traits.
+     */
+    public static function findByName(string $name): ?static
+    {
+        return static::query()->where('name', $name)->first();
     }
 }

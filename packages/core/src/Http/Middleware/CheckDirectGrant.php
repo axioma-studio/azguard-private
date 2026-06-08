@@ -4,38 +4,37 @@ declare(strict_types=1);
 
 namespace AzGuard\Http\Middleware;
 
-use AzGuard\Facades\AzGuard;
+use AzGuard\Support\PanelResolver;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Route middleware: проверяет наличие direct grant у текущего пользователя.
+ * Route middleware: checks that the authenticated user has a direct grant.
  *
- * Подключение в маршрутах:
+ * Usage in routes:
  *
  *   Route::get('/export', ExportController::class)
- *       ->middleware('az.grant:app.documents.export,app');
+ *       ->middleware('azguard.grant:app.documents.export,app');
  *
- * Если второй аргумент (panel) опущен, используется текущая панель AzGuard,
- * а если текущая панель не установлена — null (проверка без фильтра панели).
+ * If the second argument (panel) is omitted, the current AzGuard panel is used.
  *
- * Ответы:
- *   401 — пользователь не аутентифицирован
- *   403 — grant отсутствует или истёк
+ * Responses:
+ *   401 — user is not authenticated
+ *   403 — grant is absent or expired
  */
 final class CheckDirectGrant
 {
     /**
      * @param  Closure(Request): Response  $next
-     * @param  string                      $permissionKey  Ключ разрешения
-     * @param  string|null                 $panelId        Идентификатор панели (опционально)
+     * @param  string                      $permissionKey  Permission key
+     * @param  string|null                 $panelId        Panel ID (optional)
      */
     public function handle(
-        Request    $request,
-        Closure    $next,
-        string     $permissionKey,
-        ?string    $panelId = null,
+        Request  $request,
+        Closure  $next,
+        string   $permissionKey,
+        ?string  $panelId = null,
     ): Response {
         abort_if(
             boolean: ! $request->user(),
@@ -43,9 +42,8 @@ final class CheckDirectGrant
             message: 'Unauthenticated.',
         );
 
-        $resolvedPanel = $panelId ?? AzGuard::currentPanel()?->getId();
-
-        $user = $request->user();
+        $resolvedPanel = PanelResolver::resolve($panelId);
+        $user          = $request->user();
 
         $hasGrant = method_exists($user, 'hasDirectGrant')
             ? $user->hasDirectGrant($permissionKey, $resolvedPanel)
@@ -54,7 +52,7 @@ final class CheckDirectGrant
         abort_if(
             boolean: ! $hasGrant,
             code:    Response::HTTP_FORBIDDEN,
-            message: "Direct grant [{$permissionKey}] требуется для данного действия.",
+            message: "Direct grant [{$permissionKey}] is required for this action.",
         );
 
         return $next($request);

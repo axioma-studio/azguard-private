@@ -12,20 +12,17 @@ use Closure;
  * Per-request cache for PermissionSet.
  *
  * Supports two layers:
- * 1. In-memory (always): $requestCache array, lives for one HTTP request.
- * 2. Cross-request (optional): Laravel cache store (Redis/etc.).
+ * 1. In-memory (always): $requestCache array — lives for one HTTP request.
+ * 2. Cross-request (optional): Laravel cache store (Redis / file / etc.).
  *
- * Octane-safe: uses $isLoading flag to prevent concurrent stampede
- * (pattern from Spatie PermissionRegistrar).
+ * Octane-safe: no usleep() or blocking retry loops.
+ * Concurrent in-process calls will compute the value twice and the last
+ * writer wins in the array — this is harmless and far safer than blocking.
  */
 final class PermissionResolverCache
 {
     /** @var array<string, PermissionSet> */
     private array $requestCache = [];
-
-    private bool $isLoading = false;
-
-    private int $maxRetries = 10;
 
     public function rememberForRequest(string $cacheKey, Closure $callback): PermissionSet
     {
@@ -33,24 +30,13 @@ final class PermissionResolverCache
             return $this->requestCache[$cacheKey];
         }
 
-        if ($this->isLoading) {
-            return $this->retryLoad($cacheKey, $callback);
-        }
+        $store = Config::cacheStore();
 
-        $this->isLoading = true;
+        $set = $store !== 'array'
+            ? $this->loadFromStore($cacheKey, $store, $callback)
+            : $callback();
 
-        try {
-            $store = Config::cacheStore();
-
-            $set = match (true) {
-                $store !== 'array' => $this->loadFromStore($cacheKey, $store, $callback),
-                default            => $callback(),
-            };
-
-            return $this->requestCache[$cacheKey] = $set;
-        } finally {
-            $this->isLoading = false;
-        }
+        return $this->requestCache[$cacheKey] = $set;
     }
 
     public function forgetForUser(int|string $userId, string $panelId): void
@@ -89,18 +75,5 @@ final class PermissionResolverCache
         );
 
         return is_array($raw) ? PermissionSet::fromKeys($raw) : $raw;
-    }
-
-    private function retryLoad(string $cacheKey, Closure $callback, int $attempt = 0): PermissionSet
-    {
-        if ($attempt >= $this->maxRetries) {
-            return $callback();
-        }
-
-        usleep(5_000);
-
-        return isset($this->requestCache[$cacheKey])
-            ? $this->requestCache[$cacheKey]
-            : $this->retryLoad($cacheKey, $callback, $attempt + 1);
     }
 }
