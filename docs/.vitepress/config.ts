@@ -72,6 +72,15 @@ export default defineConfig({
           { text: 'Database Seeding', link: '/guide/seeding' },
           { text: 'Cache',            link: '/guide/cache' },
           { text: 'Extending',        link: '/guide/extending' },
+          { text: 'Events',           link: '/guide/events' },
+          { text: 'Exceptions',       link: '/guide/exceptions' },
+        ],
+      },
+      {
+        text: 'Best Practices',
+        collapsed: false,
+        items: [
+          { text: 'Roles vs Permissions', link: '/guide/best-practices' },
         ],
       },
       {
@@ -91,6 +100,9 @@ export default defineConfig({
           { text: 'Soft Role Override',    link: '/guide/recipes/soft-role-override' },
           { text: 'Super-admin Wildcard',  link: '/guide/recipes/super-admin-wildcard' },
           { text: 'Temp Access via Grant', link: '/guide/recipes/temp-access-via-grant' },
+          { text: 'Multi-Tenant Roles',    link: '/guide/recipes/multi-tenant' },
+          { text: 'Inertia Permissions',   link: '/guide/recipes/inertia-permissions' },
+          { text: 'Policy Integration',    link: '/guide/recipes/policy-integration' },
         ],
       },
     ],
