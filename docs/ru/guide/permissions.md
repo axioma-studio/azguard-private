@@ -1,8 +1,8 @@
 # Разрешения
 
-В AzGuard разрешение — это **PHP enum-кейс**, реализующий `PermissionInterface`. Никаких строк, никакого риска опечаток.
+В AzGuard права — это PHP **enum-кейсы**, а не строки в базе данных. Это даёт IDE-автодополнение, статический анализ и diff-код review в Git.
 
-## Определение enum разрешений
+## Определение прав
 
 ```php
 // app/AzGuard/App/Permissions/PostsPermission.php
@@ -13,74 +13,73 @@ use AzGuard\Attributes\GateAbility;
 
 enum PostsPermission: string implements PermissionInterface
 {
-    #[GateAbility]  // регистрирует 'app.posts.view' в Laravel Gate
+    #[GateAbility]                  // регистрирует 'app.posts.view' в Gate
     case View   = 'posts.view';
+
     case Create = 'posts.create';
     case Edit   = 'posts.edit';
     case Delete = 'posts.delete';
 }
 ```
 
-Атрибут `#[GateAbility]` регистрирует кейс в Laravel Gate с полным ключом `{panel}.{value}`. Кейсы **без** атрибута доступны только через `hasPermission()`, но не через Gate.
+### Как формируется полный ключ разрешения
 
-## Структура ключа
-
-```
-app.posts.view
-│   │     │
-│   │     └─ значение enum-кейса
-│   └─────── namespace из enum (имя файла/папки)
-└─────────── название панели
-```
+`{panel}.{enum-value}` — например, `PostsPermission::View` = `'posts.view'` в панели `app` → `app.posts.view`.
 
 ## Проверка прав
 
 ```php
-// Через трейт — предпочтительный способ
-$user->hasPermission(PostsPermission::View);
+$user->hasPermission(PostsPermission::View);   // enum-кейс
+$user->hasPermission('app.posts.view');         // полный ключ
 
-// Через Gate
-Gate::allows('app.posts.view');
+// Проверка нескольких сразу
+$user->hasAllPermissions([
+    PostsPermission::View,
+    PostsPermission::Edit,
+]);   // true если есть все
 
-// В политиках
-public function update(User $user, Post $post): bool
-{
-    return $user->hasPermission(PostsPermission::Edit);
-}
-
-// В Blade
-@can('app.posts.edit') ... @endcan
+$user->hasAnyPermission([
+    PostsPermission::Create,
+    PostsPermission::Edit,
+]);   // true если есть хотя бы одно
 ```
 
-## Несколько панелей
-
-Каждая панель имеет собственное пространство имён:
+## Атрибут `#[GateAbility]`
 
 ```php
-// admin-панель
-enum AdminUsersPermission: string implements PermissionInterface
+enum PostsPermission: string implements PermissionInterface
 {
-    case View   = 'users.view';    // → admin.users.view
-    case Delete = 'users.delete';  // → admin.users.delete
-}
+    // Ключ Gate: 'app.posts.view'
+    #[GateAbility]
+    case View = 'posts.view';
 
-// app-панель
-enum AppUsersPermission: string implements PermissionInterface
-{
-    case ViewOwn = 'users.view-own';  // → app.users.view-own
+    // Кастомный ключ Gate
+    #[GateAbility(ability: 'view-published-posts')]
+    case ViewPublished = 'posts.view-published';
+
+    // Нет атрибута — не регистрируется в Gate,
+    // но доступно через hasPermission()
+    case InternalFlag = 'posts.internal-flag';
 }
 ```
 
-`admin.users.view` и `app.users.view-own` — полностью независимые разрешения.
-
-## Статический анализ
-
-Поскольку права — это enum-кейсы, PHPStan и IDE понимают их:
+## Панельные пространства имён
 
 ```php
-// ✅ IDE автодополняет, PHPStan проверяет типы
-$user->hasPermission(PostsPermission::Edit);
-
-// ❌ Строка — нет автодополнения, нет проверки
-$user->hasPermission('app.posts.edi');  // опечатка незаметна до рантайма
+// app/AzGuard/Admin/Permissions/UsersPermission.php
+enum UsersPermission: string implements PermissionInterface
+{
+    #[GateAbility]  // 'admin.users.view'
+    case View   = 'users.view';
+    case Edit   = 'users.edit';
+    case Delete = 'users.delete';
+}
 ```
+
+`app.posts.view` и `admin.users.view` — совершенно независимые права.
+
+::: tip
+Папка `App\AzGuard\{Panel}\Permissions\` соответствует панели `{panel}`. AzGuard автоматически определяет префикс из пути.
+:::
+
+→ [Каталог разрешений](/ru/guide/permission-catalog) · [Панели](/ru/guide/panels)

@@ -1,70 +1,81 @@
-# Обзор
+# Обзор: Основы
 
-Eта страница — быстрый справочник по всем основным операциям AzGuard. Подробности — в отдельных разделах.
+Этот раздел показывает ключевые примитивы AzGuard: проверка прав, назначение ролей, прямые гранты и интеграция с Laravel Gate.
 
 ## Проверка прав
 
 ```php
-// Enum-кейс (рекомендуется — IDE автодополняет)
-$user->hasPermission(PostsPermission::Edit);   // true / false
+// Проверка через модель
+$user->hasPermission(PostsPermission::View);        // true / false
+$user->hasPermission('app.posts.view');              // то же
 
-// Строка (полный ключ с панелью)
-$user->hasPermission('app.posts.edit');         // то же самое
+// Проверка роли
+$user->hasRole(EditorRole::class);                   // true / false
 
-// Laravel Gate — работает везде, где работает Gate
-Gate::allows('app.posts.edit');                 // true / false
-$this->authorize('app.posts.edit');             // бросает исключение
+// Laravel Gate
+Gate::allows('app.posts.view');                      // true / false
+$this->authorize('update', $post);                   // 403 если запрещено
+
+// Blade
+@can('app.posts.edit') ... @endcan
+@role(EditorRole::class) ... @endrole
 ```
 
-## Работа с ролями
+## Назначение / снятие роли
 
 ```php
-// Назначить роль
+// Назначить
 $user->assignRole(EditorRole::class);
+$user->assignRoles([EditorRole::class, ModeratorRole::class]);
+
+// Снять
+$user->removeRole(EditorRole::class);
+
+// Все роли пользователя
+$user->roles();   // Collection
+```
+
+## PHP 8 Attributes
+
+Декларативная защита методов контроллера:
+
+```php
+// Проверка перед выполнением метода
+#[CheckPermission(PostsPermission::View)]
+public function index(): Response { ... }
+
+// Проверка с route model binding
+#[CheckPermission(permission: PostsPermission::Edit, arguments: ['post'])]
+public function edit(Post $post): Response { ... }
+
+// Пропустить проверку (super-admin, внутренние CLI-команды)
+#[SkipGuardCheck]
+public function internalSync(): void { ... }
+```
+
+## Прямые гранты
+
+```php
+// Выдать одно право на 1 час
+$user->grantPermission(
+    permission: ReportsPermission::Export,
+    expiresAt: now()->addHour(),
+);
 
 // Отозвать
-$user->revokeRole(EditorRole::class);
-
-// Проверить
-$user->hasRole('editor');  // true / false
-
-// Получить все роли
-$user->roles;  // коллекция
+$user->revokePermission(ReportsPermission::Export);
 ```
 
-## Blade
+→ [Подробнее о прямых грантах](/ru/guide/direct-grants)
 
-```blade
-@can('app.posts.edit')
-    <a href="{{ route('posts.edit', $post) }}">Редактировать</a>
-@endcan
-
-@role('editor')
-    <span class="badge">Редактор</span>
-@endrole
-
-@hasanypermission(['app.posts.edit', 'app.posts.delete'])
-    <div class="actions">...</div>
-@endhasanypermission
-```
-
-## Middleware
+## Query scopes
 
 ```php
-// routes/web.php
-Route::middleware('azguard:app.posts.edit')->group(function () {
-    Route::put('/posts/{post}', [PostController::class, 'update']);
-});
+// Все пользователи с ролью Editor
+User::role(EditorRole::class)->get();
+
+// Все пользователи без какой-либо роли
+User::withoutRole()->get();
 ```
 
-## Атрибут на контроллере
-
-```php
-#[CheckPermission(PostsPermission::Edit)]
-public function update(Request $request, Post $post): Response
-{
-    // Доступ автоматически проверен до входа в метод
-}
-```
-
-→ [Права](/ru/guide/permissions) · [Роли](/ru/guide/roles) · [Прямые гранты](/ru/guide/direct-grants)
+→ [Разрешения](/ru/guide/permissions) · [Роли](/ru/guide/roles) · [Blade-директивы](/ru/guide/blade-directives)

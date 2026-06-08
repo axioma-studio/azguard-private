@@ -1,72 +1,62 @@
 # Blade-директивы
 
-AzGuard регистрирует собственные Blade-директивы поверх стандартных `@can` / `@cannot` Laravel.
+AzGuard работает со всеми стандартными Blade-директивами Laravel и добавляет собственные для работы с ролями.
 
-## Стандартные директивы Gate (работают без изменений)
+## Стандартные директивы Laravel Gate
 
 ```blade
-{{-- Одно разрешение --}}
 @can('app.posts.edit')
     <a href="{{ route('posts.edit', $post) }}">Редактировать</a>
 @endcan
 
 @cannot('app.posts.delete')
-    <span class="text-muted">Удаление недоступно</span>
+    <span>Удаление недоступно</span>
 @endcannot
 
-{{-- С моделью (через Policy) --}}
-@can('update', $post)
-    <button>Сохранить</button>
-@endcan
+@canany(['app.posts.edit', 'app.posts.delete'])
+    <div класс="действия">…</div>
+@endcanany
 ```
 
-## Директивы AzGuard
-
-### @role / @endrole
+## Директивы AzGuard для ролей
 
 ```blade
-@role('editor')
-    <span class="badge badge-editor">Редактор</span>
+@role(EditorRole::class)
+    <nav>Меню редактора</nav>
 @endrole
 
-@role('admin')
+@hasrole(AdminRole::class)
     <a href="/admin">Панель администратора</a>
-@else
-    <span>Нет доступа</span>
-@endrole
-```
+@endhasrole
 
-### @hasanypermission / @endhasanypermission
-
-```blade
-@hasanypermission(['app.posts.edit', 'app.posts.delete'])
-    <div class="actions">
-        @can('app.posts.edit')
-            <a href="...">Ред.</a>
-        @endcan
-        @can('app.posts.delete')
-            <button>Удалить</button>
-        @endcan
-    </div>
-@endhasanypermission
-```
-
-### @hasallpermissions / @endhasallpermissions
-
-```blade
-@hasallpermissions(['app.reports.view', 'app.reports.export'])
-    <a href="/reports/export">Экспорт отчёта</a>
-@endhasallpermissions
-```
-
-### @unlessrole / @endunlessrole
-
-```blade
-@unlessrole('admin')
-    <p>Расширенные настройки доступны только администраторам.</p>
+@unlessrole(AdminRole::class)
+    <p>Обычный пользовательский интерфейс</p>
 @endunlessrole
 ```
 
-## Производительность
+## Использование с enum-классами
 
-Все директивы используют кешированные данные из `hasPermission()`. Многократный вызов в одном шаблоне не порождает лишних запросов к БД.
+```blade
+{{-- Передавайте полный ключ Gate или enum-кейс в @can --}}
+@can('app.documents.view')
+    {{ $doc->title }}
+@endcan
+
+{{-- Для компонентов Livewire --}}
+@php($canEdit = auth()->user()?->hasPermission(DocumentsPermission::Edit))
+<livewire:document-editor :editable="$canEdit" />
+```
+
+## Проверка с моделью (через Policy)
+
+```blade
+@can('update', $post)
+    <button тип="submit">Сохранить</button>
+@endcan
+```
+
+::: tip
+`@can` + модель маршрутизируется через Laravel Policy, которая может использовать `hasPermission()` внутри.
+:::
+
+→ [Политики и Gate](/ru/guide/policies-and-gates) · [Права на фронтенде](/ru/guide/abilities-frontend)

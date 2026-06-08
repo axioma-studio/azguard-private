@@ -1,77 +1,59 @@
 # Интеграция с Filament
 
-AzGuard интегрируется с Filament v3 через панельный провайдер.
+AzGuard предоставляет первоклассную интеграцию с [Filament v3](https://filamentphp.com).
 
-## Настройка
+## Установка
+
+```bash
+composer require axioma-studio/azguard-filament
+```
+
+## Регистрация плагина
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
+use AzGuard\Filament\AzGuardFilamentPlugin;
+
 public function panel(Panel $panel): Panel
 {
     return $panel
-        ->authMiddleware([
-            \AzGuard\Http\Middleware\CheckPermission::class,
-        ]);
+        ->id('admin')
+        ->path('admin')
+        ->authGuard('admin')
+        ->plugin(
+            AzGuardFilamentPlugin::make()
+                ->panel('admin')  // соответствует панели AzGuard
+        );
 }
 ```
 
-## Проверка прав в ресурсах
+## Resources и проверка прав
 
 ```php
-use App\AzGuard\Admin\Permissions\UsersPermission;
+use AzGuard\Filament\Concerns\HasAzGuardPolicy;
 
-class UserResource extends Resource
+class PostResource extends Resource
 {
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->hasPermission(UsersPermission::View) ?? false;
-    }
+    use HasAzGuardPolicy;
 
-    public static function canCreate(): bool
-    {
-        return auth()->user()?->hasPermission(UsersPermission::Create) ?? false;
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return auth()->user()?->hasPermission(UsersPermission::Edit) ?? false;
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return auth()->user()?->hasPermission(UsersPermission::Delete) ?? false;
-    }
+    // Опционально: сопоставление действий Filament с enum-кейсами
+    protected static array $permissionMap = [
+        'viewAny' => PostsPermission::View,
+        'create'  => PostsPermission::Create,
+        'update'  => PostsPermission::Edit,
+        'delete'  => PostsPermission::Delete,
+    ];
 }
 ```
 
-## Навигация по ролям
+## Навигация с учётом прав
 
 ```php
-use Filament\Navigation\NavigationItem;
-
-NavigationItem::make('Пользователи')
-    ->visible(fn () => auth()->user()?->hasPermission(UsersPermission::View))
-    ->url(UserResource::getUrl());
+// Пункты меню автоматически скрываются при отсутствии прав на viewAny
+NavigationItem::make()
+    ->label('Пользователи')
+    ->url('/admin/users')
+    ->visible(fn() => auth()->user()?->hasPermission(UsersPermission::View))
 ```
 
-## Пример: AdminPanel
-
-```php
-// app/AzGuard/Admin/AdminPanel.php
-namespace App\AzGuard\Admin;
-
-use AzGuard\Contracts\PanelInterface;
-
-class AdminPanel implements PanelInterface
-{
-    public function getName(): string { return 'admin'; }
-
-    public function getRoles(): array
-    {
-        return [
-            Roles\AdminRole::class,
-            Roles\ModeratorRole::class,
-        ];
-    }
-}
-```
+→ [Несколько Guards](/ru/guide/multiple-guards)

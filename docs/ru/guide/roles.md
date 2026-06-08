@@ -1,6 +1,6 @@
 # Роли
 
-Роль в AzGuard — это **PHP-класс**, реализующий `RoleInterface`. Он содержит список enum-кейсов разрешений, которые получает пользователь при назначении роли.
+В AzGuard роль — это PHP-класс, реализующий `RoleInterface`. Она определяет список enum-кейсов — база данных хранит только связку `user → role`.
 
 ## Определение роли
 
@@ -14,11 +14,6 @@ use App\AzGuard\App\Permissions\CommentsPermission;
 
 class EditorRole implements RoleInterface
 {
-    public function getName(): string
-    {
-        return 'editor';
-    }
-
     public function permissions(): array
     {
         return [
@@ -32,47 +27,33 @@ class EditorRole implements RoleInterface
 }
 ```
 
-## Назначение и отзыв
+## Назначение / снятие
 
 ```php
-// Назначить
+// Назначить одну роль
 $user->assignRole(EditorRole::class);
 
-// Несколько ролей
-$user->assignRole(EditorRole::class);
-$user->assignRole(ModeratorRole::class);
+// Назначить несколько
+$user->assignRoles([EditorRole::class, ModeratorRole::class]);
 
-// Отозвать конкретную
-$user->revokeRole(EditorRole::class);
+// Снять
+$user->removeRole(EditorRole::class);
 
-// Отозвать все
-$user->revokeAllRoles();
+// Синхронизация: только эти роли (остальные снимаются)
+$user->syncRoles([EditorRole::class]);
 ```
 
-## Проверка роли
+## Проверка
 
 ```php
-$user->hasRole('editor');             // по имени
-$user->hasRole(EditorRole::class);    // по классу
-$user->hasAnyRole(['editor', 'admin']); // любая из списка
+$user->hasRole(EditorRole::class);           // true / false
+$user->hasAnyRole([EditorRole::class, ...]);
+$user->hasAllRoles([...]);
 
-// В Blade
-@role('editor')
-    <span>Вы редактор</span>
-@endrole
+$user->roles();  // Collection со всеми ролями
 ```
 
-## Роли в БД
-
-Roles хранятся в БД по полному имени класса. При переименовании класса выполните:
-
-```bash
-php artisan azguard:sync-roles
-```
-
-Эта команда синхронизирует PHP-классы с таблицей `azguard_user_roles`.
-
-## Наследование
+## Наследование ролей
 
 ```php
 class AdminRole implements RoleInterface
@@ -80,12 +61,23 @@ class AdminRole implements RoleInterface
     public function permissions(): array
     {
         return [
-            // Наследуем все права редактора
-            ...(new EditorRole())->permissions(),
-            // Добавляем эксклюзивные
-            PostsPermission::Delete,
+            ...(new EditorRole)->permissions(),  // все права Editor
             UsersPermission::Manage,
+            SettingsPermission::Edit,
         ];
     }
 }
 ```
+
+## Регистрация в БД
+
+```bash
+# Синхронизировать PHP-роли с таблицей roles
+php artisan azguard:sync-roles
+```
+
+::: tip
+`sync-roles` идемпотентна. Запускайте в миграциях или CI при деплое.
+:::
+
+→ [Лучшие практики: роли vs разрешения](/ru/guide/best-practices)
