@@ -83,16 +83,4 @@ Gate::allows('app.documents.view');               // Laravel Gate
 
 :::
 
-## AzGuard vs Spatie Permission
-
-| | AzGuard | Spatie Permission |
-|---|---|---|
-| **Role storage** | PHP class (Git) | Database record |
-| **Permission storage** | Enum case (Git) | Database record |
-| **Multi-panel** | ✅ Native namespacing | ⚠️ Manual workaround |
-| **PHP 8 Attributes** | ✅ `#[CheckPermission]` | ❌ No |
-| **Octane safe** | ✅ Stateless | ⚠️ Known issues |
-| **Type safety** | ✅ Full | ❌ Strings only |
-| **Filament v3+** | ✅ First-party adapter | ⚠️ Community plugin |
-
-→ [Full comparison including Bouncer & Laratrust](/guide/comparison)
+→ [How does AzGuard compare to Spatie Permission, Bouncer, and Laratrust?](/guide/comparison)
