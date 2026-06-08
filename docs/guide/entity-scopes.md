@@ -1,23 +1,12 @@
 # Entity-Scoped Roles
 
-AzGuard supports assigning roles scoped to specific entities — for example,
-giving a user the `editor` role only for a particular `Project` or `Team`.
+Entity-scoped roles let you assign a role to a user **for a specific model instance**. A user can be `editor` on Project A but have no role on Project B.
 
-This is distinct from global roles (assigned via `HasAzGuard::assignRole()`):
-a scoped role applies only when checking permissions in the context of a given entity.
-
-## Installation
-
-Run the migration to add the `role_id` column to the `model_has_scopes` table:
-
-```bash
-php artisan migrate
-```
+This stacks on top of global roles — it does not replace them.
 
 ## Setup
 
-Add the `InteractsWithAzScopes` trait to any **Eloquent model** that should support
-entity-level scope filtering (e.g. `Project`, `Document`):
+Add `InteractsWithAzScopes` to any Eloquent model that should support scoped role assignment:
 
 ```php
 use AzGuard\Concerns\InteractsWithAzScopes;
@@ -30,45 +19,40 @@ class Project extends Model
 
 Your `User` model must already use `HasAzGuard`.
 
-## Assigning a scoped role
+## Assigning & removing scoped roles
 
 ```php
-// Give $user the 'editor' role scoped to $project
-$user->assignScopedRole('editor', $project);
+// Assign
+$user->assignScopedRole(EditorRole::class, $project, panel: 'app');
 
-// Or pass a Role instance directly
-$user->assignScopedRole($editorRole, $project);
-```
+// Remove
+$user->removeScopedRole(EditorRole::class, $project, panel: 'app');
 
-## Removing a scoped role
-
-```php
-$user->removeScopedRole('editor', $project);
-```
-
-## Checking a scoped role
-
-```php
-if ($user->hasScopedRole('editor', $project)) {
-    // ...
-}
+// Check
+$user->hasScopedRole(EditorRole::class, $project, panel: 'app'); // bool
 ```
 
 ## Checking a scoped permission
 
-`hasScopedPermission()` checks permissions in the following order:
+`hasScopedPermission()` resolves permissions in this order:
 
-1. **SuperAdmin / global wildcard** (`*`) — always granted regardless of scope.
-2. **Global roles** — permissions from roles assigned via `assignRole()`.
-3. **Scoped roles** — permissions from roles assigned for the given entity.
+1. **Wildcard** — if any global role has `['*']`, return `true`.
+2. **Global roles** — permissions from `assignRole()` checked first.
+3. **Scoped roles** — permissions from `assignScopedRole($entity)` checked for the given entity.
 
 ```php
-if ($user->hasScopedPermission('app.projects.edit', $project)) {
+if ($user->hasScopedPermission(AppGuard::permission(DocumentsPermission::Edit), $project)) {
     // user can edit this specific project
 }
 ```
 
-## Use-cases
+The Gate integration uses scoped permissions automatically when an entity is passed as the second argument:
+
+```php
+Gate::allows('app.documents.edit', $project); // uses scoped resolution
+```
+
+## Use cases
 
 | Scenario | Scoped role |
 |---|---|
@@ -77,8 +61,10 @@ if ($user->hasScopedPermission('app.projects.edit', $project)) {
 | Document review | `reviewer` scoped to `Document` |
 | Resource ownership | `owner` scoped to any Eloquent model |
 
-## Notes
+## Cache
 
-- Scoped roles do **not** replace global roles — they stack on top.
-- The `scope_class` column is preserved for backwards-compatible query-scope filtering via `bootInteractsWithAzScopes`.
-- Entity-scoped permissions cache is cleared automatically on `assignScopedRole()` and `removeScopedRole()`.
+Scoped permission cache is cleared automatically on `assignScopedRole()` and `removeScopedRole()`. For manual flush:
+
+```bash
+php artisan azguard:cache-reset --user=42
+```
