@@ -1,22 +1,30 @@
 # Direct Grants
 
-Direct Grants let you assign a **specific permission directly to a user**, bypassing roles entirely.
+::: warning Prefer roles over direct grants
+Direct Grants are an **exception** mechanism, not a primary access-control pattern. The correct default is to assign permissions to roles, and assign roles to users. Use direct grants only when a specific user needs a temporary or one-off permission that doesn't warrant a new role.
 
-::: warning Use direct grants as the exception, not the rule
-The correct approach for most applications is: create a role, attach permissions to it, assign the role to users. Direct grants exist for **exceptional cases** — temporary access, beta features for specific users, one-off export rights.
-
-If you find yourself using direct grants as the primary authorization pattern, [reconsider your role structure](./best-practices.md).
+See [Roles vs Permissions](./best-practices.md#roles-vs-permissions) for the full guidance.
 :::
 
-Typical scenarios:
-- Temporary access (grant expires after N hours)
-- Beta feature for selected users
-- One-time export or operation permission
-- Emergency access override without redeploying code
+Direct Grants let you assign a permission **directly to a user** without creating a role for it. Typical use cases:
 
-## Enable the trait
+- Temporary access (beta feature, limited-time export)
+- One-off override for a specific user
+- Feature flags scoped to individual accounts
 
-Add `HasDirectGrants` to your `User` model alongside `HasAzGuard`:
+## When to use direct grants
+
+| Situation | Recommendation |
+|---|---|
+| One user needs a permission no one else has | ✅ Direct grant |
+| A user needs temporary access (expires in N hours) | ✅ Direct grant with TTL |
+| Multiple users need the same permission | ❌ Create a role instead |
+| Permission is part of a user's everyday job | ❌ Assign a role instead |
+| You find yourself granting the same permission to 5+ users | ❌ Time to create a role |
+
+## Connecting the trait
+
+Add `HasDirectGrants` to your User model alongside `HasAzGuard`:
 
 ```php
 use AzGuard\Concerns\HasAzGuard;
@@ -29,33 +37,33 @@ class User extends Authenticatable
 ```
 
 ::: tip
-`HasDirectGrants` extends `hasPermission()`: it now checks **role permissions** and **direct grants** transparently — the rest of your code does not need to change.
+`HasDirectGrants` extends `hasPermission()`: it now checks roles **and** direct grants. No other code changes needed.
 :::
 
-## Grant a permission
+## Granting a permission
 
 ### Fluent API
 
 ```php
 use AzGuard\Facades\AzGuard;
 
-// Permanent grant
+// Permanent
 AzGuard::forUser($user)
     ->on('app')
     ->give('app.documents.export');
 
-// Grant with TTL (1 hour)
+// With a 1-hour TTL
 AzGuard::forUser($user)
     ->on('app')
     ->ttl(3600)
     ->give('app.documents.export');
 
-// Shorthand helper
+// Shorthand
 AzGuard::grantDirect($user, 'app.documents.export', 'app', ttl: 3600);
 ```
 
 ::: info Idempotent
-Calling `give()` again updates `expires_at` without creating a duplicate. Safe to call multiple times.
+Calling `give()` on an already-granted permission updates `expires_at` without creating a duplicate. Safe to call multiple times.
 :::
 
 ### Artisan
@@ -64,17 +72,17 @@ Calling `give()` again updates `expires_at` without creating a duplicate. Safe t
 # Permanent
 php artisan az-guard:grant {user-id} {permission} {panel}
 
-# With TTL
+# With TTL (seconds)
 php artisan az-guard:grant 42 app.documents.export app --ttl=3600
 
-# Custom model
+# Different model
 php artisan az-guard:grant 7 admin.reports.view admin --model=App\\Models\\Admin
 ```
 
-## Revoke a grant
+## Revoking a grant
 
 ```php
-// Single key
+// Single permission
 AzGuard::forUser($user)->on('app')->revoke('app.documents.export');
 AzGuard::revokeDirect($user, 'app.documents.export', 'app');
 
@@ -83,22 +91,23 @@ AzGuard::forUser($user)->on('app')->revokeAll();
 ```
 
 ```bash
+# Artisan
 php artisan az-guard:revoke-grant 42 app.documents.export app
 php artisan az-guard:revoke-grant 42 - app --all --force
 ```
 
-## Check for a grant
+## Checking a grant
 
 ```php
 // On the User model
-$user->hasDirectGrant('app.documents.export');          // current panel
-$user->hasDirectGrant('app.documents.export', 'app');   // explicit panel
+$user->hasDirectGrant('app.documents.export');
+$user->hasDirectGrant('app.documents.export', 'app');
 
 // Via Laravel Gate
 Gate::allows('direct-grant', 'app.documents.export');
 Gate::allows('direct-grant', ['app.documents.export', 'app']);
 
-// List all active grants
+// List active grants
 $grants = AzGuard::forUser($user)->on('app')->list();
 $grants = AzGuard::activeGrants($user, 'app');
 ```
@@ -106,7 +115,6 @@ $grants = AzGuard::activeGrants($user, 'app');
 ## Blade
 
 ```blade
-{{-- Check direct grant (current panel) --}}
 @azdirect('app.documents.export')
     <button>Export</button>
 @endazdirect
@@ -124,20 +132,20 @@ $grants = AzGuard::activeGrants($user, 'app');
 Route::get('/export', ExportController::class)
     ->middleware('az.grant:app.documents.export,app');
 
-// Panel resolved from AzGuard::currentPanel() when omitted:
+// Panel inferred from AzGuard::currentPanel() if omitted
 Route::get('/export', ExportController::class)
     ->middleware('az.grant:app.documents.export');
 ```
 
-| State | HTTP |
+| Situation | HTTP status |
 |---|---|
 | Not authenticated | 401 |
 | Grant missing or expired | 403 |
-| Grant active | 200 |
+| Grant active | passes through |
 
 ## TTL and expiry
 
-A grant with `expires_at < now()` is considered invalid in all checks. Expired records are cleaned by the scheduler:
+A grant with `expires_at < now()` is treated as inactive in all checks. Expired records are cleaned up by the scheduler:
 
 ```php
 // bootstrap/app.php
@@ -146,8 +154,6 @@ A grant with `expires_at < now()` is considered invalid in all checks. Expired r
 })
 ```
 
-Or manually:
-
 ```bash
 php artisan az-guard:prune-grants
 php artisan az-guard:prune-grants --panel=app
@@ -155,32 +161,33 @@ php artisan az-guard:prune-grants --panel=app
 
 ## Events
 
-| Event | When |
+| Event | When dispatched |
 |---|---|
-| `GrantGiven` | After each `give()` |
-| `GrantRevoked` | After each `revoke()` / `revokeAll()` |
+| `GrantGiven` | After every `give()` call |
+| `GrantRevoked` | After every `revoke()` / `revokeAll()` call |
 
 ```php
 use AzGuard\Events\GrantGiven;
 use AzGuard\Events\GrantRevoked;
 
 Event::listen(GrantGiven::class, function (GrantGiven $event): void {
-    Log::info("Grant [{$event->permissionKey}] given to user #{$event->user->getAuthIdentifier()}");
+    Log::info("Grant [{$event->permissionKey}] issued to user #{$event->user->getAuthIdentifier()}");
 });
 
 Event::listen(GrantRevoked::class, function (GrantRevoked $event): void {
-    // e.g. invalidate API cache
+    // e.g., invalidate API cache
 });
 ```
 
 ## Quick reference
 
-| Method | API |
+| Method | Code |
 |---|---|
-| Fluent | `AzGuard::forUser($u)->on('app')->ttl(3600)->give('...')` |
-| Shorthand | `AzGuard::grantDirect($u, '...', 'app', ttl: 3600)` |
-| Artisan | `php artisan az-guard:grant {id} {perm} {panel}` |
+| Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->give('...')` |
+| Shorthand grant | `AzGuard::grantDirect($u, '...', 'app', ttl: 3600)` |
+| Artisan grant | `php artisan az-guard:grant {id} {perm} {panel}` |
+| Revoke | `AzGuard::forUser($u)->on('app')->revoke('...')` |
+| Check (model) | `$user->hasDirectGrant('app.x.view', 'app')` |
+| Check (Gate) | `Gate::allows('direct-grant', 'app.x.view')` |
 | Blade | `@azdirect('app.x.view') ... @endazdirect` |
 | Middleware | `->middleware('az.grant:app.x.view,app')` |
-| Gate | `Gate::allows('direct-grant', 'app.x.view')` |
-| Model | `$user->hasDirectGrant('app.x.view', 'app')` |
