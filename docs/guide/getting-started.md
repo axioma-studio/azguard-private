@@ -1,12 +1,21 @@
 # Быстрый старт
 
-## Установка
+Минимальный путь от установки до первой проверки прав — 5 шагов.
+
+## 1. Установка
 
 ```bash
 composer require azguard/azguard
 ```
 
-## User
+Публикуйте конфиг и запустите миграции:
+
+```bash
+php artisan vendor:publish --tag=az-guard-config
+php artisan migrate
+```
+
+## 2. User-модель
 
 ```php
 use AzGuard\Concerns\HasAzGuard;
@@ -17,21 +26,33 @@ class User extends Authenticatable
 }
 ```
 
-## Панель
+## 3. Создайте панель
 
 ```bash
-php artisan make:guard-panel
+php artisan azguard:make-panel App
 ```
 
 Зарегистрируйте провайдер в `config/az-guard.php` → `panels`.
 
-## Маршруты (app)
+## 4. Создайте permission
 
-```php
-Route::middleware(['auth', 'azguard.panel:app', 'azguard.roles', 'check.access'])->group(...);
+```bash
+php artisan azguard:make-permission DocumentsPermission --panel=app
 ```
 
-## Контроллер
+```php
+enum DocumentsPermission: string implements PermissionInterface
+{
+    case View   = 'documents.view';
+    case Create = 'documents.create';
+    case Edit   = 'documents.edit';
+    case Delete = 'documents.delete';
+}
+```
+
+## 5. Проверка прав
+
+Через атрибут на контроллере:
 
 ```php
 use AzGuard\Attributes\CheckPermission;
@@ -40,4 +61,32 @@ use AzGuard\Attributes\CheckPermission;
 public function show(Document $document) { ... }
 ```
 
-См. [concept.md](concept.md).
+Через Gate:
+
+```php
+Gate::allows('documents.view', $document);
+```
+
+Через helper:
+
+```php
+if ($user->hasAzPermission(DocumentsPermission::View)) {
+    // ...
+}
+```
+
+Через Blade:
+
+```blade
+@azcan('documents.view')
+    <a href="...">Просмотр</a>
+@endazcan
+```
+
+## Далее
+
+- [Установка и совместимость](installation.md) — полная матрица версий
+- [Концепция](concept.md) — как работает code-first RBAC
+- [Роли](roles.md) — создание и назначение ролей
+- [Прямые гранты](direct-grants.md) — выдача прав без роли
+- [Filament](filament.md) — UI для управления правами
