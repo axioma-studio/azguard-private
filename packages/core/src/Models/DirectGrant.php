@@ -42,7 +42,7 @@ class DirectGrant extends Model
         return Config::directGrantsTable();
     }
 
-    // ─── Relations ───────────────────────────────────────────────────────────────────
+    // ─── Relations ──────────────────────────────────────────────────────────────────
 
     public function grantable(): MorphTo
     {
@@ -52,7 +52,7 @@ class DirectGrant extends Model
     // ─── Scopes ────────────────────────────────────────────────────────────────────
 
     /**
-     * Active grants: no expiry or expires_at > now.
+     * Active grants: permanent (expires_at IS NULL) or not yet expired.
      *
      * @param  Builder<self>  $query
      */
@@ -72,7 +72,7 @@ class DirectGrant extends Model
         $query->where('panel_id', $panelId);
     }
 
-    // ─── Helpers ────────────────────────────────────────────────────────────────────
+    // ─── Helpers ──────────────────────────────────────────────────────────────────
 
     public function isExpired(): bool
     {

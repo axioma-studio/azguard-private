@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -12,12 +13,17 @@ class Role extends Model
 {
     protected $fillable = ['name', 'level', 'class_name'];
 
+    public function getTable(): string
+    {
+        return Config::rolesTable();
+    }
+
     public function users(): MorphToMany
     {
         return $this->morphedByMany(
             config('auth.providers.users.model'),
             'model',
-            config('az-guard.table_names.model_has_roles')
+            Config::modelHasRolesTable()
         );
     }
 
@@ -34,7 +40,8 @@ class Role extends Model
     }
 
     /**
-     * Instantiate the role logic class (e.g. SuperAdminRole).
+     * Instantiate the role logic class via the service container.
+     * Allows constructor injection in role classes.
      */
     public function getRoleLogic(): ?object
     {
@@ -42,7 +49,7 @@ class Role extends Model
             return null;
         }
 
-        return new $this->class_name;
+        return app($this->class_name);
     }
 
     /**
@@ -57,7 +64,7 @@ class Role extends Model
     }
 
     /**
-     * Find a role by its name. Consolidates resolveRole() / resolveScopeRole() across traits.
+     * Find a role by its name.
      */
     public static function findByName(string $name): ?static
     {

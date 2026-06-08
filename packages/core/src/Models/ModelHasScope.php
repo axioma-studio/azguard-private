@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -40,6 +41,6 @@ class ModelHasScope extends Model
 
     public function role(): BelongsTo
     {
-        return $this->belongsTo(config('az-guard.models.role'));
+        return $this->belongsTo(Config::roleModel());
     }
 }
