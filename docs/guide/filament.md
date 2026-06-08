@@ -1,14 +1,14 @@
-# Filament + AzGuard
+# Filament Integration
 
-Пакет `azguard/filament` предоставляет UI для управления ролями и прямыми грантами прямо из Filament-админки.
+The `azguard/filament` package provides a first-party UI for managing roles, permissions, and direct grants from the Filament admin panel.
 
-## Установка
+## Installation
 
 ```bash
 composer require azguard/filament
 ```
 
-Добавьте плагин в ваш Filament Panel Provider:
+Register the plugin in your Filament Panel Provider:
 
 ```php
 use AzGuard\Filament\AzGuardPlugin;
@@ -22,23 +22,31 @@ public function panel(Panel $panel): Panel
 }
 ```
 
-> `forPanel('admin')` указывает, в контексте какой AzGuard-панели работает Filament.
-> По умолчанию — `'app'`.
+`forPanel('admin')` tells the plugin which AzGuard panel this Filament instance manages. Defaults to `'app'`.
 
-## Ресурсы
+## Built-in resources
 
 ### RoleResource
 
-Позволяет создавать, редактировать и удалять роли. Во вкладке **Permissions** через `RolePermissionsRelationManager` можно
-напрямую привязывать permission-строки к роли.
+Lists all roles (static + custom DB-backed) for the configured panel. From this resource you can:
+
+- **View** static roles (read-only — they are PHP classes)
+- **Create / edit / delete** custom `AzRole` records
+- **Assign permissions** to custom roles via the Permissions relation manager
+- **Pick from a permission dropdown** — the picker is populated from all registered permission enums for the panel
 
 ### DirectGrantResource
 
-Отображает все прямые гранты пользователям. Поддерживает создание, редактирование и удаление грантов с фильтрацией по пользователю и панели.
+Shows all direct grants for any user on the configured panel. Supports:
 
-## Защита ресурсов через GuardResource
+- Create a grant (user + permission + optional expiry)
+- Edit expiry or notes
+- Revoke (soft-delete) a grant
+- Filter by user, permission, or status
 
-Если вам нужно ограничить доступ к собственным Filament Resource-ам через AzGuard, наследуйтесь от `GuardResource`:
+## Protecting your own resources with GuardResource
+
+Inherit from `AzGuardResource` to gate any Filament resource behind an AzGuard permission:
 
 ```php
 use AzGuard\Filament\Resources\AzGuardResource;
@@ -57,22 +65,18 @@ final class UserResource extends AzGuardResource
 }
 ```
 
-Методы `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()` автоматически проксируются
-через `Gate::allows` + `AzGuard::permission()`.
+`canViewAny()`, `canCreate()`, `canEdit()`, and `canDelete()` are all proxied through `Gate::allows()` + `AzGuard::permission()` automatically.
 
-## Совместимость
+## Custom roles picker
+
+When editing a custom `AzRole` in `RoleResource`, the permissions tab shows a multi-select populated from all `#[GateAbility]`-annotated enum cases for the panel. Static role permissions are shown read-only for reference.
+
+## Compatibility
 
 | azguard/filament | Filament 4 | Filament 5 |
 |---|:---:|:---:|
 | `0.x` (dev) | ✅ | ✅ |
 
-## Инвариант
+## Invariant
 
-Filament-пакет проверяет только permissions панели, указанной в `forPanel()`. Роли уровня `app`
-не пересекаются с правами Filament-админки.
-
-## Далее
-
-- [Установка и совместимость](installation.md) — полная матрица версий
-- [Прямые гранты](direct-grants.md) — выдача прав без роли
-- [Роли](roles.md) — code-first описание ролей
+The Filament plugin checks only permissions scoped to the panel passed to `forPanel()`. App-panel roles have no effect inside the Filament admin.
