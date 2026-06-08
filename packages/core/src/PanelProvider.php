@@ -7,6 +7,8 @@ namespace AzGuard;
 use AzGuard\Auth\PolicyAttributeRegistrar;
 use AzGuard\Facades\AzGuard;
 use AzGuard\Guard\PolicyDiscovery;
+use AzGuard\Registry\Builders\EnumPermissionCatalogBuilder;
+use AzGuard\Registry\Builders\PolicyAbilityCatalogBuilder;
 use AzGuard\Support\Panel;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -57,6 +59,57 @@ abstract class PanelProvider extends ServiceProvider
             if ($modelClass !== null) {
                 Gate::policy($modelClass, $policyClass);
             }
+        }
+
+        $this->registerCatalogBuilders(
+            panel: $panel,
+            policyClasses: $policyClasses,
+            basePath: $basePath,
+            baseNamespace: $baseNamespace,
+        );
+    }
+
+    /**
+     * Регистрирует EnumPermissionCatalogBuilder и PolicyAbilityCatalogBuilder
+     * для данной панели в теге azguard.catalog_builders, чтобы
+     * CompositePermissionCatalog мог собрать полный каталог прав.
+     *
+     * Можно переопределить в конкретном PanelProvider для добавления
+     * собственных builders или замены стандартных.
+     *
+     * @param list<string> $policyClasses
+     */
+    protected function registerCatalogBuilders(
+        Panel $panel,
+        array $policyClasses,
+        string $basePath,
+        string $baseNamespace,
+    ): void {
+        $panelId = $panel->getId();
+        $permissionEnums = $panel->getPermissionEnums();
+
+        if ($permissionEnums !== []) {
+            $this->app->tag([
+                $this->app->instance(
+                    'azguard.catalog_builder.' . $panelId . '.enum',
+                    new EnumPermissionCatalogBuilder(
+                        panelId: $panelId,
+                        enumClasses: $permissionEnums,
+                    ),
+                ),
+            ], 'azguard.catalog_builders');
+        }
+
+        if ($policyClasses !== []) {
+            $this->app->tag([
+                $this->app->instance(
+                    'azguard.catalog_builder.' . $panelId . '.policy',
+                    new PolicyAbilityCatalogBuilder(
+                        panelId: $panelId,
+                        policyClasses: $policyClasses,
+                    ),
+                ),
+            ], 'azguard.catalog_builders');
         }
     }
 
