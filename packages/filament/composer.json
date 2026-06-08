@@ -1,12 +1,12 @@
 {
     "name": "axioma-studio/azguard-filament",
-    "description": "Filament v3 UI for AzGuard — roles, permissions, direct grants management",
+    "description": "Filament UI for AzGuard — roles, permissions, direct grants management (supports Filament 4 and 5)",
     "type": "library",
     "license": "proprietary",
     "require": {
         "php": "^8.2",
         "axioma-studio/azguard-core": "*",
-        "filament/filament": "^3.0"
+        "filament/filament": "^4.0 || ^5.0"
     },
     "autoload": {
         "psr-4": {
