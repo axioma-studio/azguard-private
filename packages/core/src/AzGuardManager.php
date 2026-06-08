@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AzGuard;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
-use AzGuard\Exceptions\PanelNotFoundException;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
@@ -20,7 +19,7 @@ final class AzGuardManager implements AzGuardManagerInterface
 
     protected ?Panel $currentPanel = null;
 
-    // ─── Panels ───────────────────────────────────────────────────────────────
+    // ─── Panels ──────────────────────────────────────────────────────────────
 
     public function registerPanel(Closure $panel): void
     {
@@ -51,26 +50,21 @@ final class AzGuardManager implements AzGuardManagerInterface
         $this->currentPanel = $panel;
     }
 
-    /**
-     * Resolve a fully-qualified permission string for the given panel.
-     *
-     * @throws PanelNotFoundException if the panel is not registered
-     */
     public function permission(string $panelId, string|\UnitEnum $permission): string
     {
-        $panel = $this->panel($panelId);
+        $panel = $this->panel(id: $panelId);
 
         if ($panel === null) {
-            throw new PanelNotFoundException($panelId);
+            throw new \RuntimeException("AzGuard panel [{$panelId}] is not registered.");
         }
 
         return $panel->resolvePermission(permission: $permission);
     }
 
-    // ─── Grants API ───────────────────────────────────────────────────────────
+    // ─── Grants API ─────────────────────────────────────────────────────────
 
     /**
-     * Return a fluent GrantBuilder for the given user.
+     * Return a fluent GrantBuilder for a user.
      *
      * Example:
      *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
@@ -81,7 +75,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Shorthand: issue a direct grant to a user.
+     * Shorthand: issue a direct grant.
      *
      * @param  int|null  $ttl  TTL in seconds. null = permanent.
      */
@@ -95,7 +89,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Shorthand: revoke a direct grant from a user.
+     * Shorthand: revoke a direct grant.
      *
      * @return int Number of deleted records.
      */
@@ -108,7 +102,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Shorthand: list active grants for a user in a panel.
+     * Shorthand: list active direct grants for a user in a panel.
      *
      * @return Collection<int, DirectGrant>
      */
