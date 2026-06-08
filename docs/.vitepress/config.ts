@@ -16,7 +16,8 @@ export default defineConfig({
     siteTitle: 'AzGuard',
 
     nav: [
-      { text: 'Guide', link: '/guide/getting-started' },
+      { text: 'Guide', link: '/guide/quick-start' },
+      { text: 'Reference', link: '/guide/artisan-commands' },
       { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard-private' },
     ],
 
@@ -25,34 +26,56 @@ export default defineConfig({
         text: 'Introduction',
         collapsed: false,
         items: [
-          { text: 'Getting Started',   link: '/guide/getting-started' },
-          { text: 'Why AzGuard?',      link: '/guide/why-azguard' },
-          { text: 'Comparison',        link: '/guide/comparison' },
-          { text: 'Concept',           link: '/guide/concept' },
-          { text: 'Architecture',      link: '/guide/architecture' },
+          { text: 'What is AzGuard?', link: '/guide/why-azguard' },
+          { text: 'Quick Start',      link: '/guide/quick-start' },
         ],
       },
       {
-        text: 'Essentials',
+        text: 'Core Concepts',
         collapsed: false,
         items: [
-          { text: 'Roles',               link: '/guide/roles' },
+          { text: 'Panels',              link: '/guide/panels' },
           { text: 'Permissions',         link: '/guide/permissions' },
+          { text: 'Roles',               link: '/guide/roles' },
           { text: 'Policies & Gates',    link: '/guide/policies-and-gates' },
-          { text: 'HTTP Access',         link: '/guide/http-access' },
-          { text: 'Panels: App vs Admin',link: '/guide/panels-app-vs-admin' },
-          { text: 'Direct Grants',       link: '/guide/direct-grants' },
+          { text: 'Permission Catalog',  link: '/guide/permission-catalog' },
         ],
       },
       {
-        text: 'Advanced',
+        text: 'Features',
         collapsed: false,
         items: [
-          { text: 'Entity Scopes',       link: '/guide/entity-scopes' },
-          { text: 'Domain Structure',    link: '/guide/domain-structure' },
-          { text: 'Frontend Abilities',  link: '/guide/abilities-frontend' },
-          { text: 'Filament Integration',link: '/guide/filament' },
-          { text: 'Recipes',             link: '/guide/recipes' },
+          { text: 'HTTP Access',        link: '/guide/http-access' },
+          { text: 'Direct Grants',      link: '/guide/direct-grants' },
+          { text: 'Entity Scopes',      link: '/guide/entity-scopes' },
+          { text: 'Frontend Abilities', link: '/guide/abilities-frontend' },
+          { text: 'Context (opt-in)',   link: '/guide/context' },
+        ],
+      },
+      {
+        text: 'Integrations',
+        collapsed: false,
+        items: [
+          { text: 'Filament',  link: '/guide/filament' },
+        ],
+      },
+      {
+        text: 'Reference',
+        collapsed: false,
+        items: [
+          { text: 'Artisan Commands', link: '/guide/artisan-commands' },
+          { text: 'Configuration',    link: '/guide/configuration' },
+          { text: 'Comparison',       link: '/guide/comparison' },
+          { text: 'Changelog',        link: '/guide/changelog' },
+        ],
+      },
+      {
+        text: 'Recipes',
+        collapsed: true,
+        items: [
+          { text: 'Soft Role Override',       link: '/guide/recipes/soft-role-override' },
+          { text: 'Super-admin Wildcard',     link: '/guide/recipes/super-admin-wildcard' },
+          { text: 'Temp Access via Grant',    link: '/guide/recipes/temp-access-via-grant' },
         ],
       },
     ],

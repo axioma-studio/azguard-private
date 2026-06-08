@@ -4,40 +4,92 @@ layout: home
 hero:
   name: AzGuard
   text: Code-first RBAC for Laravel
-  tagline: Roles as PHP classes. Permissions in Git. Zero magic.
+  tagline: Roles are PHP classes. Permissions live in Git. No magic, no migrations per feature.
   actions:
     - theme: brand
-      text: Get Started
-      link: /guide/getting-started
+      text: Get Started →
+      link: /guide/quick-start
     - theme: alt
       text: Why AzGuard?
       link: /guide/why-azguard
-    - theme: alt
-      text: View on GitHub
-      link: https://github.com/axioma-studio/azguard-private
 
 features:
   - icon: 🏗️
     title: Code-First Roles
-    details: Define roles as PHP classes with typed permission arrays. No more database migrations for every permission change.
+    details: Roles are plain PHP classes with typed permission arrays. Diffable, testable, version-controlled.
 
-  - icon: 🔒
-    title: Multi-Panel Support
-    details: Isolated permission scopes per panel (app, admin, api). One user, different access contexts.
-
-  - icon: 🎯
-    title: Entity Scopes
-    details: Assign roles per entity — user is Editor on Project A but not Project B. First-class support out of the box.
+  - icon: 🎛️
+    title: Multi-Panel Isolation
+    details: app.* and admin.* permission namespaces are fully isolated. One user model, multiple independent access contexts.
 
   - icon: ⚡
     title: Laravel Gate Native
-    details: Plugs directly into Laravel Gate via Gate::before(). Works with @can, Gate::allows(), policies — no new API to learn.
+    details: Plugs into Gate::before(). Works with @can, Gate::allows(), and policies — no new API to learn.
 
-  - icon: 🐘
-    title: PHP 8.3+ Attributes
-    details: Use #[RequiresPermission] and #[RequiresRole] attributes on controllers. Declarative, readable, IDE-friendly.
+  - icon: 🩺
+    title: Built-in Doctor
+    details: artisan azguard:doctor scans your config, migrations, and role definitions and reports mismatches before they hit prod.
 
-  - icon: 📦
-    title: Composer-Ready
-    details: Install via Composer, publish config, run migrations. Works with Laravel 11 and 12.
+  - icon: 🎯
+    title: Direct Grants
+    details: Grant individual permissions to a user without assigning a role. Perfect for temporary or exception-based access.
+
+  - icon: 🔌
+    title: Context (opt-in)
+    details: Attach a runtime context (tenant, team, project) to every permission check. Zero overhead when not used.
 ---
+
+## Three lines that tell the story
+
+::: code-group
+
+```php [1. Define]
+enum DocumentsPermission: string implements PermissionInterface
+{
+    #[GateAbility]  // auto-registered with Gate
+    case View   = 'documents.view';
+    case Create = 'documents.create';
+    case Edit   = 'documents.edit';
+    case Delete = 'documents.delete';
+}
+```
+
+```php [2. Protect]
+// Controller method — declarative, IDE-friendly
+#[CheckPermission(permission: DocumentsPermission::View, arguments: ['document'])]
+public function show(Document $document): Response
+{
+    return Inertia::render('Documents/Show', [
+        'document'  => $document,
+        'abilities' => DocumentsAbilities::fromDocument($document)->toArray(),
+    ]);
+}
+```
+
+```php [3. Check]
+// Anywhere in your codebase
+$user->hasAzPermission(DocumentsPermission::View);  // bool
+
+Gate::allows('app.documents.view', $document);       // Laravel Gate
+
+// Blade
+@azcan('documents.view')
+    <a href="...">View document</a>
+@endazcan
+```
+
+:::
+
+## AzGuard vs Spatie Permission
+
+| | AzGuard | Spatie Permission |
+|---|---|---|
+| **Role storage** | PHP class (Git) | Database record |
+| **Permission storage** | Enum case (Git) | Database record |
+| **Multi-panel** | ✅ Native namespacing | ⚠️ Manual workaround |
+| **PHP 8 Attributes** | ✅ `#[CheckPermission]` | ❌ No |
+| **Octane safe** | ✅ Stateless | ⚠️ Known issues |
+| **Type safety** | ✅ Full | ❌ Strings only |
+| **Filament v3+** | ✅ First-party package | ⚠️ Community plugin |
+
+→ [Full comparison including Bouncer & Laratrust](/guide/comparison)

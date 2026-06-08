@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament;
 
+use AzGuard\Filament\Pages\DoctorPage;
 use AzGuard\Filament\Resources\DirectGrantResource;
 use AzGuard\Filament\Resources\RoleResource;
 use Filament\Contracts\Plugin;
@@ -50,10 +51,14 @@ final class AzGuardPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->resources([
-            RoleResource::class,
-            DirectGrantResource::class,
-        ]);
+        $panel
+            ->resources([
+                RoleResource::class,
+                DirectGrantResource::class,
+            ])
+            ->pages([
+                DoctorPage::class,
+            ]);
     }
 
     public function boot(Panel $panel): void
