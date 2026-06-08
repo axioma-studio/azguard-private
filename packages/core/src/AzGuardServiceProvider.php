@@ -8,6 +8,7 @@ use AzGuard\Auth\PolicyAttributeRegistrar;
 use AzGuard\Commands\DoctorCommand;
 use AzGuard\Commands\ListPermissionsCommand;
 use AzGuard\Commands\CacheResetCommand;
+use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Commands\MakeGuardAbilitiesCommand;
 use AzGuard\Commands\MakeGuardPanelCommand;
 use AzGuard\Commands\MakeGuardPermissionCommand;
@@ -33,7 +34,6 @@ final class AzGuardServiceProvider extends ServiceProvider
             key: 'az-guard',
         );
 
-        // Регистрируем синглтон и привязываем к интерфейсу
         $this->app->singleton(AzGuardManager::class, fn (): AzGuardManager => new AzGuardManager);
         $this->app->bind(AzGuardManagerInterface::class, AzGuardManager::class);
 
@@ -72,6 +72,7 @@ final class AzGuardServiceProvider extends ServiceProvider
                 MakeGuardRoleCommand::class,
                 ListPermissionsCommand::class,
                 CacheResetCommand::class,
+                SyncRolesCommand::class,
             ]);
         }
     }
