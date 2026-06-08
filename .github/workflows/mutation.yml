@@ -1,26 +1,64 @@
 name: Mutation Testing
 
+# Advisory only: runs on main merges and manual dispatch.
+# Not a PR blocker — mutation testing is expensive and should
+# be reviewed after the test suite is stable.
 on:
-  schedule:
-    - cron: '0 4 * * 1'
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   infection:
-    name: Infection (Mutation Testing)
+    name: Infection (advisory, MSI ≥ 70%)
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3
           coverage: xdebug
+          tools: composer:v2
+        env:
+          XDEBUG_MODE: coverage
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-infection-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-infection-
+            ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Generate coverage for Infection
+        run: vendor/bin/pest --coverage-xml=build/coverage/xml --min=0
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          XDEBUG_MODE: coverage
 
       - name: Run Infection
-        run: vendor/bin/infection --threads=4 --min-msi=70 --min-covered-msi=80
+        run: |
+          vendor/bin/infection \
+            --threads=4 \
+            --min-msi=70 \
+            --min-covered-msi=80 \
+            --coverage=build/coverage/xml \
+            --no-progress
         env:
-          INFECTION_BADGE_API_KEY: ${{ secrets.INFECTION_BADGE_API_KEY }}
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          XDEBUG_MODE: coverage

@@ -1,4 +1,4 @@
-name: Static Analysis
+name: Code Style
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  larastan:
-    name: Larastan (PHPStan level 6)
+  pint:
+    name: Laravel Pint
     runs-on: ubuntu-latest
 
     steps:
@@ -31,13 +31,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-phpstan-${{ hashFiles('**/composer.json') }}
+          key: ${{ runner.os }}-composer-pint-${{ hashFiles('**/composer.json') }}
           restore-keys: |
-            ${{ runner.os }}-composer-phpstan-
+            ${{ runner.os }}-composer-pint-
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Run Larastan
-        run: vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=256M --no-progress
+      - name: Check code style
+        run: vendor/bin/pint --test

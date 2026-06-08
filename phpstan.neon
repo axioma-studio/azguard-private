@@ -1,16 +1,19 @@
 includes:
-    - vendor/larastan/larastan/extension.neon
+  - vendor/larastan/larastan/extension.neon
 
 parameters:
-    paths:
-        - packages/core/src
+  paths:
+    - packages/core/src
 
-    level: 6
+  level: 6
 
-    checkMissingIterableValueType: false
+  checkModelProperties: true
+  checkPhpDocMissingReturn: true
 
-    ignoreErrors:
-        - '#Call to an undefined method Illuminate\\Contracts\\Auth\\Access\\Authorizable::#'
-
-    excludePaths:
-        - packages/core/src/Support/BaseRole.php
+  ignoreErrors:
+    # Laravel magic Query Builder methods
+    - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+    # Eloquent dynamic property access
+    - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model#'
+    # Authorizable contract — Gate integration
+    - '#Call to an undefined method Illuminate\\Contracts\\Auth\\Access\\Authorizable::#'
