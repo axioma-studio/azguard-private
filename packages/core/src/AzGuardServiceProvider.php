@@ -9,6 +9,8 @@ use AzGuard\Commands\CacheResetCommand;
 use AzGuard\Commands\CatalogListCommand;
 use AzGuard\Commands\CatalogValidateCommand;
 use AzGuard\Commands\DoctorCommand;
+use AzGuard\Commands\GrantCommand;
+use AzGuard\Commands\GrantsListCommand;
 use AzGuard\Commands\ListPermissionsCommand;
 use AzGuard\Commands\ListScopedRolesCommand;
 use AzGuard\Commands\MakeGuardAbilitiesCommand;
@@ -16,6 +18,8 @@ use AzGuard\Commands\MakeGuardPanelCommand;
 use AzGuard\Commands\MakeGuardPermissionCommand;
 use AzGuard\Commands\MakeGuardPolicyCommand;
 use AzGuard\Commands\MakeGuardRoleCommand;
+use AzGuard\Commands\RevokeCommand;
+use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Guard\GuardDoctor;
@@ -91,6 +95,11 @@ final class AzGuardServiceProvider extends ServiceProvider
                 SyncRolesCommand::class,
                 CatalogListCommand::class,
                 CatalogValidateCommand::class,
+                // Phase 4: grants CLI
+                GrantCommand::class,
+                RevokeCommand::class,
+                GrantsListCommand::class,
+                RolePermissionsCommand::class,
             ]);
         }
     }
@@ -158,12 +167,12 @@ final class AzGuardServiceProvider extends ServiceProvider
      */
     protected function registerOctaneListeners(): void
     {
-        if (! class_exists('Laravel\Octane\Events\RequestHandled')) {
+        if (! class_exists('Laravel\\Octane\\Events\\RequestHandled')) {
             return;
         }
 
         $this->app['events']->listen(
-            'Laravel\Octane\Events\RequestHandled',
+            'Laravel\\Octane\\Events\\RequestHandled',
             function (): void {
                 $this->app->make(PermissionResolverCache::class)->forgetAll();
             }
