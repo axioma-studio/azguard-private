@@ -9,7 +9,7 @@ use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
-use AzGuard\Registry\Resolver\PermissionResolverCache;
+use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 use PHPUnit\Framework\TestCase;
@@ -25,21 +25,48 @@ final class EffectivePermissionResolverTest extends TestCase
 {
     private function makeUser(int $id = 1): Authenticatable
     {
-        return new class($id) implements Authenticatable {
+        return new class($id) implements Authenticatable
+        {
             public function __construct(private int $id) {}
-            public function getAuthIdentifierName(): string { return 'id'; }
-            public function getAuthIdentifier() { return $this->id; }
-            public function getAuthPasswordName(): string { return 'password'; }
-            public function getAuthPassword(): string { return ''; }
-            public function getRememberToken(): string { return ''; }
+
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthIdentifier()
+            {
+                return $this->id;
+            }
+
+            public function getAuthPasswordName(): string
+            {
+                return 'password';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return '';
+            }
+
+            public function getRememberToken(): string
+            {
+                return '';
+            }
+
             public function setRememberToken($value): void {}
-            public function getRememberTokenName(): string { return ''; }
+
+            public function getRememberTokenName(): string
+            {
+                return '';
+            }
         };
     }
 
     private function makeGrantSource(PermissionSet $set, int $priority = 100): GrantSource
     {
-        return new class($set, $priority) implements GrantSource {
+        return new class($set, $priority) implements GrantSource
+        {
             public function __construct(
                 private readonly PermissionSet $set,
                 private readonly int $prio,
@@ -50,16 +77,28 @@ final class EffectivePermissionResolverTest extends TestCase
                 return $this->set;
             }
 
-            public function priority(): int { return $this->prio; }
+            public function priority(): int
+            {
+                return $this->prio;
+            }
         };
     }
 
     private function makeCatalog(array $definitions, string $panelId = 'app'): PermissionCatalog
     {
-        $builder = new class($definitions) implements \AzGuard\Registry\Contracts\PermissionCatalogBuilder {
+        $builder = new class($definitions) implements \AzGuard\Registry\Contracts\PermissionCatalogBuilder
+        {
             public function __construct(private readonly array $defs) {}
-            public function build(string $panelId): array { return $this->defs; }
-            public function supports(string $panelId): bool { return true; }
+
+            public function build(string $panelId): array
+            {
+                return $this->defs;
+            }
+
+            public function supports(string $panelId): bool
+            {
+                return true;
+            }
         };
 
         return new CompositePermissionCatalog(
@@ -78,7 +117,7 @@ final class EffectivePermissionResolverTest extends TestCase
         $resolver = new EffectivePermissionResolver(
             catalog: $catalog,
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser($this->makeUser(), 'app');
@@ -100,7 +139,7 @@ final class EffectivePermissionResolverTest extends TestCase
         $resolver = new EffectivePermissionResolver(
             catalog: $catalog,
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser($this->makeUser(), 'app');
@@ -117,7 +156,7 @@ final class EffectivePermissionResolverTest extends TestCase
         $resolver = new EffectivePermissionResolver(
             catalog: $catalog,
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser($this->makeUser(), 'app');
@@ -131,13 +170,13 @@ final class EffectivePermissionResolverTest extends TestCase
         $def = EnumPermissionDefinition::fromCase(ResolverTestPermission::View, 'app', 'app.x.view');
         $catalog = $this->makeCatalog([$def]);
 
-        $lowSource  = $this->makeGrantSource(PermissionSet::fromKeys(['app.x.view']), priority: 10);
+        $lowSource = $this->makeGrantSource(PermissionSet::fromKeys(['app.x.view']), priority: 10);
         $highSource = $this->makeGrantSource(PermissionSet::wildcard(), priority: 100);
 
         $resolver = new EffectivePermissionResolver(
             catalog: $catalog,
             sources: [$lowSource, $highSource], // намеренно неотсортированы
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         // Высший приоритет = wildcard, итог должен быть wildcard
@@ -151,20 +190,27 @@ final class EffectivePermissionResolverTest extends TestCase
         $catalog = $this->makeCatalog([$def]);
 
         $callCount = 0;
-        $source = new class($callCount) implements GrantSource {
+        $source = new class($callCount) implements GrantSource
+        {
             public function __construct(private int &$count) {}
+
             public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
             {
                 $this->count++;
+
                 return PermissionSet::fromKeys(['app.docs.view']);
             }
-            public function priority(): int { return 100; }
+
+            public function priority(): int
+            {
+                return 100;
+            }
         };
 
         $resolver = new EffectivePermissionResolver(
             catalog: $catalog,
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $user = $this->makeUser(42);
@@ -181,20 +227,27 @@ final class EffectivePermissionResolverTest extends TestCase
         $catalog = $this->makeCatalog([$def]);
 
         $callCount = 0;
-        $source = new class($callCount) implements GrantSource {
+        $source = new class($callCount) implements GrantSource
+        {
             public function __construct(private int &$count) {}
+
             public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
             {
                 $this->count++;
+
                 return PermissionSet::fromKeys(['app.docs.view']);
             }
-            public function priority(): int { return 100; }
+
+            public function priority(): int
+            {
+                return 100;
+            }
         };
 
         $resolver = new EffectivePermissionResolver(
             catalog: $catalog,
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $user = $this->makeUser(7);

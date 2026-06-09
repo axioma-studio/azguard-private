@@ -15,9 +15,11 @@ class HasAzGuardStubUser extends Model
 {
     use HasAzGuard;
 
-    protected $table      = 'stub_az_users';
-    protected $fillable   = ['id'];
-    public    $timestamps = false;
+    protected $table = 'stub_az_users';
+
+    protected $fillable = ['id'];
+
+    public $timestamps = false;
 }
 
 final class HasAzGuardTest extends TestCase
@@ -33,16 +35,16 @@ final class HasAzGuardTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
     }
 

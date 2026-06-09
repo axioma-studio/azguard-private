@@ -28,15 +28,14 @@ This creates `config/az-guard.php`. See the [Configuration reference](/guide/con
 php artisan migrate
 ```
 
-Five tables are created:
+Four tables are created (names match `config/az-guard.php` defaults):
 
 | Table | Purpose |
 |---|---|
-| `az_guard_roles` | Dynamic role definitions |
-| `az_guard_model_has_roles` | User → role assignments |
-| `az_guard_model_has_scopes` | User → scoped role assignments |
-| `az_guard_role_permissions` | Dynamic role → permission links |
-| `az_guard_direct_grants` | Per-user direct permission grants |
+| `roles` | Dynamic role definitions |
+| `model_has_roles` | User → role assignments |
+| `model_has_scopes` | User → scoped role assignments |
+| `az_direct_grants` | Per-user direct permission grants |
 
 ## Add the trait
 
@@ -49,15 +48,15 @@ class User extends Authenticatable
 }
 ```
 
-## Optional: publish migrations
+## Optional: customize table names
 
-If you need to customize the table structure:
+AzGuard's migrations read table names from `config/az-guard.php`. If you need different names, publish the config and edit the `table_names` section **before** running migrations:
 
 ```bash
-php artisan vendor:publish --tag=az-guard-migrations
+php artisan vendor:publish --tag=az-guard-config
+# Edit config/az-guard.php → table_names
+php artisan migrate
 ```
-
-Then edit the migrations before running `php artisan migrate`.
 
 ## Verify installation
 

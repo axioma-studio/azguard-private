@@ -90,7 +90,7 @@ Gate::allows('direct-grant', ['app.x', 'app']);    // bool
 3. `#[CheckPermission]` на контроллере
 4. ключ в Abilities DTO (если UI)
 5. resolved string в роли
-6. `php artisan guard:doctor`
+6. `php artisan guard:doctor` (alias: `azguard:doctor`)
 7. тест allow/deny
 
 См. [recipes/index.md](guide/recipes/index.md), [filament.md](guide/filament.md), [entity-scopes.md](guide/entity-scopes.md), [direct-grants.md](guide/direct-grants.md).

@@ -27,30 +27,56 @@ final class GrantBuilderTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
     }
 
     private function makeUser(int $id = 1): Authenticatable
     {
-        return new class($id) implements Authenticatable {
+        return new class($id) implements Authenticatable
+        {
             public function __construct(private int $id) {}
-            public function getAuthIdentifierName(): string { return 'id'; }
-            public function getAuthIdentifier() { return $this->id; }
-            public function getAuthPasswordName(): string { return 'password'; }
-            public function getAuthPassword(): string { return ''; }
-            public function getRememberToken(): string { return ''; }
+
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthIdentifier()
+            {
+                return $this->id;
+            }
+
+            public function getAuthPasswordName(): string
+            {
+                return 'password';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return '';
+            }
+
+            public function getRememberToken(): string
+            {
+                return '';
+            }
+
             public function setRememberToken($value): void {}
-            public function getRememberTokenName(): string { return ''; }
+
+            public function getRememberTokenName(): string
+            {
+                return '';
+            }
         };
     }
 
@@ -66,14 +92,13 @@ final class GrantBuilderTest extends TestCase
 
         $this->assertInstanceOf(DirectGrant::class, $grant);
         $this->assertDatabaseHas('az_guard_direct_grants', [
-            'model_id'       => 1,
+            'model_id' => 1,
             'permission_key' => 'app.documents.view',
-            'panel_id'       => 'app',
-            'expires_at'     => null,
+            'panel_id' => 'app',
+            'expires_at' => null,
         ]);
 
-        Event::assertDispatched(GrantGiven::class, fn ($e) =>
-            $e->permissionKey === 'app.documents.view' &&
+        Event::assertDispatched(GrantGiven::class, fn ($e) => $e->permissionKey === 'app.documents.view' &&
             $e->panelId === 'app' &&
             $e->expiresAt === null
         );
@@ -83,9 +108,9 @@ final class GrantBuilderTest extends TestCase
     {
         Event::fake([GrantGiven::class]);
 
-        $user   = $this->makeUser(2);
+        $user = $this->makeUser(2);
         $before = now()->addSeconds(3590);
-        $after  = now()->addSeconds(3610);
+        $after = now()->addSeconds(3610);
 
         $grant = (new GrantBuilder($user))
             ->on('app')
@@ -120,11 +145,10 @@ final class GrantBuilderTest extends TestCase
 
         $this->assertSame(1, $deleted);
         $this->assertDatabaseMissing('az_guard_direct_grants', [
-            'model_id'       => 4,
+            'model_id' => 4,
             'permission_key' => 'app.z.delete',
         ]);
-        Event::assertDispatched(GrantRevoked::class, fn ($e) =>
-            $e->permissionKey === 'app.z.delete'
+        Event::assertDispatched(GrantRevoked::class, fn ($e) => $e->permissionKey === 'app.z.delete'
         );
     }
 
@@ -163,11 +187,11 @@ final class GrantBuilderTest extends TestCase
 
         // Добавляем истекший grant напрямую
         DirectGrant::create([
-            'model_type'     => get_class($user),
-            'model_id'       => 7,
+            'model_type' => get_class($user),
+            'model_id' => 7,
             'permission_key' => 'app.expired.view',
-            'panel_id'       => 'app',
-            'expires_at'     => now()->subHour(),
+            'panel_id' => 'app',
+            'expires_at' => now()->subHour(),
         ]);
 
         $list = (new GrantBuilder($user))->on('app')->list();
@@ -178,9 +202,9 @@ final class GrantBuilderTest extends TestCase
 
     public function test_on_returns_immutable_clone(): void
     {
-        $user    = $this->makeUser(8);
+        $user = $this->makeUser(8);
         $builder = new GrantBuilder($user);
-        $clone   = $builder->on('admin');
+        $clone = $builder->on('admin');
 
         // Оригинал и клон — разные объекты
         $this->assertNotSame($builder, $clone);

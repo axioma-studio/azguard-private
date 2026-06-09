@@ -18,9 +18,11 @@ class StubUserModel extends Model
     use HasAzGuard;
     use HasDirectGrants;
 
-    protected $table      = 'stub_users';
-    protected $fillable   = ['id'];
-    public    $timestamps = false;
+    protected $table = 'stub_users';
+
+    protected $fillable = ['id'];
+
+    public $timestamps = false;
 }
 
 final class HasDirectGrantsTest extends TestCase
@@ -36,16 +38,16 @@ final class HasDirectGrantsTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
     }
 
@@ -85,11 +87,11 @@ final class HasDirectGrantsTest extends TestCase
         $user = $this->createStubUser();
 
         DirectGrant::create([
-            'model_type'     => StubUserModel::class,
-            'model_id'       => $user->getKey(),
+            'model_type' => StubUserModel::class,
+            'model_id' => $user->getKey(),
             'permission_key' => 'app.x.view',
-            'panel_id'       => 'app',
-            'expires_at'     => now()->subMinute(),
+            'panel_id' => 'app',
+            'expires_at' => now()->subMinute(),
         ]);
 
         $this->assertFalse($user->hasDirectGrant('app.x.view', 'app'));
@@ -125,11 +127,11 @@ final class HasDirectGrantsTest extends TestCase
         (new GrantBuilder($user))->on('app')->give('app.b.edit');
 
         DirectGrant::create([
-            'model_type'     => StubUserModel::class,
-            'model_id'       => $user->getKey(),
+            'model_type' => StubUserModel::class,
+            'model_id' => $user->getKey(),
             'permission_key' => 'app.c.delete',
-            'panel_id'       => 'app',
-            'expires_at'     => now()->subSecond(),
+            'panel_id' => 'app',
+            'expires_at' => now()->subSecond(),
         ]);
 
         $grants = $user->directGrants('app');

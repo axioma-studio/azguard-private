@@ -6,7 +6,6 @@ namespace AzGuard\Tests\Registry;
 
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
-use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
 use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +20,8 @@ final class CompositePermissionCatalogTest extends TestCase
 {
     private function makeBuilder(string $panelId, array $definitions): PermissionCatalogBuilder
     {
-        return new class($panelId, $definitions) implements PermissionCatalogBuilder {
+        return new class($panelId, $definitions) implements PermissionCatalogBuilder
+        {
             public function __construct(
                 private readonly string $panel,
                 private readonly array $defs,

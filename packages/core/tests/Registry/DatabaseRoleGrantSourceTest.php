@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AzGuard\Tests\Registry;
 
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
-use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase;
@@ -23,17 +22,17 @@ final class DatabaseRoleGrantSourceTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
 
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
     }
 
@@ -46,15 +45,41 @@ final class DatabaseRoleGrantSourceTest extends TestCase
 
     private function makeUser(int $id): Authenticatable
     {
-        return new class($id) implements Authenticatable {
+        return new class($id) implements Authenticatable
+        {
             public function __construct(private int $id) {}
-            public function getAuthIdentifierName(): string { return 'id'; }
-            public function getAuthIdentifier() { return $this->id; }
-            public function getAuthPasswordName(): string { return 'password'; }
-            public function getAuthPassword(): string { return ''; }
-            public function getRememberToken(): string { return ''; }
+
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthIdentifier()
+            {
+                return $this->id;
+            }
+
+            public function getAuthPasswordName(): string
+            {
+                return 'password';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return '';
+            }
+
+            public function getRememberToken(): string
+            {
+                return '';
+            }
+
             public function setRememberToken($value): void {}
-            public function getRememberTokenName(): string { return ''; }
+
+            public function getRememberTokenName(): string
+            {
+                return '';
+            }
         };
     }
 
@@ -72,9 +97,9 @@ final class DatabaseRoleGrantSourceTest extends TestCase
     {
         DB::table('az_guard_roles')->insert(['id' => 1, 'name' => 'editor', 'level' => 0]);
         DB::table('az_guard_model_has_roles')->insert([
-            'role_id'    => 1,
+            'role_id' => 1,
             'model_type' => get_class($this->makeUser(1)),
-            'model_id'   => 1,
+            'model_id' => 1,
         ]);
         DB::table('az_guard_role_permissions')->insert([
             ['role_id' => 1, 'permission_key' => 'app.documents.view',   'panel_id' => 'app'],
@@ -93,9 +118,9 @@ final class DatabaseRoleGrantSourceTest extends TestCase
     {
         DB::table('az_guard_roles')->insert(['id' => 2, 'name' => 'admin', 'level' => 10]);
         DB::table('az_guard_model_has_roles')->insert([
-            'role_id'    => 2,
+            'role_id' => 2,
             'model_type' => get_class($this->makeUser(2)),
-            'model_id'   => 2,
+            'model_id' => 2,
         ]);
         DB::table('az_guard_role_permissions')->insert([
             ['role_id' => 2, 'permission_key' => 'app.users.view',   'panel_id' => 'app'],
@@ -113,9 +138,9 @@ final class DatabaseRoleGrantSourceTest extends TestCase
     {
         DB::table('az_guard_roles')->insert(['id' => 3, 'name' => 'superadmin', 'level' => 99]);
         DB::table('az_guard_model_has_roles')->insert([
-            'role_id'    => 3,
+            'role_id' => 3,
             'model_type' => get_class($this->makeUser(3)),
-            'model_id'   => 3,
+            'model_id' => 3,
         ]);
         DB::table('az_guard_role_permissions')->insert([
             ['role_id' => 3, 'permission_key' => '*', 'panel_id' => 'app'],

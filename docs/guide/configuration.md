@@ -15,92 +15,70 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Models
+    |--------------------------------------------------------------------------
+    | Eloquent models used by AzGuard. Replace with your own subclasses.
+    */
+    'models' => [
+        'role'         => \AzGuard\Models\Role::class,
+        'scope'        => \AzGuard\Models\ModelHasScope::class,
+        'direct_grant' => \AzGuard\Models\DirectGrant::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Panels
     |--------------------------------------------------------------------------
-    |
-    | List every PanelProviderInterface implementation.
-    | Each panel defines its own permissions, roles, and namespace prefix.
-    |
+    | List every class that extends AzGuard\PanelProvider.
+    | Each panel defines its own permission namespace and catalog builders.
     */
     'panels' => [
-        // \App\Guards\App\AppPanelProvider::class,
-        // \App\Guards\Admin\AdminPanelProvider::class,
+        // \App\AzGuard\Panels\AppPanelProvider::class,
+        // \App\AzGuard\Panels\AdminPanelProvider::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Table Names
+    |--------------------------------------------------------------------------
+    | Override if existing tables conflict. All four keys must be present.
+    */
+    'table_names' => [
+        'roles'            => 'roles',
+        'model_has_roles'  => 'model_has_roles',
+        'model_has_scopes' => 'model_has_scopes',
+        'direct_grants'    => 'az_direct_grants',
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Cache
     |--------------------------------------------------------------------------
-    |
-    | AzGuard caches resolved permissions per user per panel.
-    | Set 'store' to any cache store defined in config/cache.php.
-    | Set 'ttl' to 0 to disable caching (useful in tests).
-    |
+    | 'store'  — any store from config/cache.php. Use 'array' to disable
+    |            cross-request caching (in-memory only, good for tests).
+    | 'expiration_time' — TTL in seconds. null = never expires.
     */
     'cache' => [
-        'store' => env('AZGUARD_CACHE_STORE', 'default'),
-        'ttl'   => env('AZGUARD_CACHE_TTL', 3600), // seconds
-        'prefix' => 'azguard',
+        'store'           => 'array',
+        'expiration_time' => 3600,
+        'key'             => 'azguard.permissions',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Wildcard permission
+    | Features
     |--------------------------------------------------------------------------
-    |
-    | When a role's permissions() returns ['*'], Gate::before returns true
-    | for all abilities. Set to false to disable wildcard support entirely.
-    |
+    | Toggle optional capabilities. All disabled by default for maximum
+    | backwards compatibility.
     */
-    'wildcard' => true,
-
-    /*
-    |--------------------------------------------------------------------------
-    | User model
-    |--------------------------------------------------------------------------
-    |
-    | The Eloquent model that uses HasAzGuard.
-    |
-    */
-    'user_model' => env('AZGUARD_USER_MODEL', \App\Models\User::class),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Table names
-    |--------------------------------------------------------------------------
-    |
-    | Override if you need custom table names (e.g. multi-tenant setups).
-    |
-    */
-    'tables' => [
-        'roles'         => 'az_guard_roles',
-        'role_user'     => 'az_guard_role_user',
-        'grants'        => 'az_guard_direct_grants',
-        'permissions'   => 'az_guard_permissions',
+    'features' => [
+        'wildcard_permission' => false,
+        'direct_grants'       => true,
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Gate registration
-    |--------------------------------------------------------------------------
-    |
-    | Controls when AzGuard registers Gate::before and Gate::define calls.
-    | Disable if you manage Gate registration manually.
-    |
-    */
-    'auto_register_gate' => true,
 
 ];
 ```
 
-## Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `AZGUARD_CACHE_STORE` | `default` | Cache store for permission resolution |
-| `AZGUARD_CACHE_TTL` | `3600` | Permission cache TTL in seconds |
-| `AZGUARD_USER_MODEL` | `App\Models\User` | Eloquent user model |
-
 ::: tip Tests
-Set `AZGUARD_CACHE_TTL=0` in your `phpunit.xml` to disable caching in tests and avoid stale permission state between test cases.
+Set `cache.store` to `'array'` (the default) to keep permissions in-memory only, which prevents stale state between test cases.
 :::

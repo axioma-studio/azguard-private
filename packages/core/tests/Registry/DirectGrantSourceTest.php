@@ -21,9 +21,9 @@ final class DirectGrantSourceTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names.direct_grants', 'az_guard_direct_grants');
     }
@@ -44,15 +44,41 @@ final class DirectGrantSourceTest extends TestCase
 
     private function makeUser(int $id): Authenticatable
     {
-        return new class($id) implements Authenticatable {
+        return new class($id) implements Authenticatable
+        {
             public function __construct(private int $id) {}
-            public function getAuthIdentifierName(): string { return 'id'; }
-            public function getAuthIdentifier() { return $this->id; }
-            public function getAuthPasswordName(): string { return 'password'; }
-            public function getAuthPassword(): string { return ''; }
-            public function getRememberToken(): string { return ''; }
+
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthIdentifier()
+            {
+                return $this->id;
+            }
+
+            public function getAuthPasswordName(): string
+            {
+                return 'password';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return '';
+            }
+
+            public function getRememberToken(): string
+            {
+                return '';
+            }
+
             public function setRememberToken($value): void {}
-            public function getRememberTokenName(): string { return ''; }
+
+            public function getRememberTokenName(): string
+            {
+                return '';
+            }
         };
     }
 

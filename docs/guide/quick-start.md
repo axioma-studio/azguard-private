@@ -16,7 +16,7 @@ php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```
 
-The migration creates five tables: `az_guard_roles`, `az_guard_model_has_roles`, `az_guard_model_has_scopes`, `az_guard_role_permissions`, and `az_guard_direct_grants`.
+The migration creates four tables: `roles`, `model_has_roles`, `model_has_scopes`, and `az_direct_grants`.
 
 ## 2. Add the trait to your User model
 
@@ -38,26 +38,24 @@ Create a panel provider and list it in `config/az-guard.php`:
 
 ```php
 // app/AzGuard/Panels/AppPanelProvider.php
-use AzGuard\Contracts\PanelProviderInterface;
+namespace App\AzGuard\Panels;
 
-class AppPanelProvider implements PanelProviderInterface
+use AzGuard\PanelProvider;
+use AzGuard\Support\Panel;
+use App\AzGuard\App\Permissions\DocumentsPermission;
+use App\AzGuard\App\Permissions\UsersPermission;
+
+class AppPanelProvider extends PanelProvider
 {
-    public function panel(): string { return 'app'; }
-
-    public function permissions(): array
+    public function panel(Panel $panel): Panel
     {
-        return [
-            DocumentsPermission::class,
-            UsersPermission::class,
-        ];
-    }
-
-    public function roles(): array
-    {
-        return [
-            EditorRole::class,
-            ViewerRole::class,
-        ];
+        return $panel
+            ->id('app')
+            ->path('app')
+            ->permissionEnums([
+                DocumentsPermission::class,
+                UsersPermission::class,
+            ]);
     }
 }
 ```
@@ -72,7 +70,7 @@ class AppPanelProvider implements PanelProviderInterface
 ## 4. Create a permission enum
 
 ```bash
-php artisan azguard:make-permission App DocumentsPermission
+php artisan make:guard-permission App DocumentsPermission
 ```
 
 ```php
@@ -100,7 +98,7 @@ The full Gate key is `{panel}.{permission_value}` → `app.documents.view`.
 ## 5. Create a role
 
 ```bash
-php artisan azguard:make-role App EditorRole
+php artisan make:guard-role App EditorRole
 ```
 
 ```php

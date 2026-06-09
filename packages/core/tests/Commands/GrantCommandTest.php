@@ -15,10 +15,16 @@ use Orchestra\Testbench\TestCase;
  */
 class StubCommandUser extends Model
 {
-    protected $table      = 'stub_cmd_users';
-    protected $fillable   = ['id'];
-    public    $timestamps = false;
-    public function getAuthIdentifier(): mixed { return $this->getKey(); }
+    protected $table = 'stub_cmd_users';
+
+    protected $fillable = ['id'];
+
+    public $timestamps = false;
+
+    public function getAuthIdentifier(): mixed
+    {
+        return $this->getKey();
+    }
 }
 
 final class GrantCommandTest extends TestCase
@@ -34,16 +40,16 @@ final class GrantCommandTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
         // Указываем на стаб-модель
         $app['config']->set('auth.providers.users.model', StubCommandUser::class);
@@ -70,30 +76,30 @@ final class GrantCommandTest extends TestCase
         $user = $this->createUser();
 
         $this->artisan('az-guard:grant', [
-            'user-id'    => $user->getKey(),
+            'user-id' => $user->getKey(),
             'permission' => 'app.docs.view',
-            'panel'      => 'app',
+            'panel' => 'app',
         ])->assertSuccessful();
 
         $this->assertDatabaseHas('az_guard_direct_grants', [
-            'model_id'       => $user->getKey(),
+            'model_id' => $user->getKey(),
             'permission_key' => 'app.docs.view',
-            'panel_id'       => 'app',
-            'expires_at'     => null,
+            'panel_id' => 'app',
+            'expires_at' => null,
         ]);
     }
 
     public function test_grant_command_with_ttl_sets_expires_at(): void
     {
-        $user   = $this->createUser();
+        $user = $this->createUser();
         $before = now()->addSeconds(3590);
-        $after  = now()->addSeconds(3610);
+        $after = now()->addSeconds(3610);
 
         $this->artisan('az-guard:grant', [
-            'user-id'    => $user->getKey(),
+            'user-id' => $user->getKey(),
             'permission' => 'app.docs.export',
-            'panel'      => 'app',
-            '--ttl'      => '3600',
+            'panel' => 'app',
+            '--ttl' => '3600',
         ])->assertSuccessful();
 
         $grant = DirectGrant::first();
@@ -104,9 +110,9 @@ final class GrantCommandTest extends TestCase
     public function test_grant_command_fails_when_user_not_found(): void
     {
         $this->artisan('az-guard:grant', [
-            'user-id'    => 9999,
+            'user-id' => 9999,
             'permission' => 'app.x',
-            'panel'      => 'app',
+            'panel' => 'app',
         ])->assertFailed();
 
         $this->assertDatabaseCount('az_guard_direct_grants', 0);
@@ -117,16 +123,16 @@ final class GrantCommandTest extends TestCase
         $user = $this->createUser();
 
         $this->artisan('az-guard:grant', [
-            'user-id'    => $user->getKey(),
+            'user-id' => $user->getKey(),
             'permission' => 'app.y.edit',
-            'panel'      => 'app',
+            'panel' => 'app',
         ])->assertSuccessful();
 
         $this->artisan('az-guard:revoke-grant', [
-            'user-id'    => $user->getKey(),
+            'user-id' => $user->getKey(),
             'permission' => 'app.y.edit',
-            'panel'      => 'app',
-            '--force'    => true,
+            'panel' => 'app',
+            '--force' => true,
         ])->assertSuccessful();
 
         $this->assertDatabaseMissing('az_guard_direct_grants', [
@@ -140,18 +146,18 @@ final class GrantCommandTest extends TestCase
 
         foreach (['app.a', 'app.b', 'app.c'] as $perm) {
             $this->artisan('az-guard:grant', [
-                'user-id'    => $user->getKey(),
+                'user-id' => $user->getKey(),
                 'permission' => $perm,
-                'panel'      => 'app',
+                'panel' => 'app',
             ])->assertSuccessful();
         }
 
         $this->artisan('az-guard:revoke-grant', [
-            'user-id'    => $user->getKey(),
+            'user-id' => $user->getKey(),
             'permission' => '-',   // игнорируется при --all
-            'panel'      => 'app',
-            '--all'      => true,
-            '--force'    => true,
+            'panel' => 'app',
+            '--all' => true,
+            '--force' => true,
         ])->assertSuccessful();
 
         $this->assertDatabaseCount('az_guard_direct_grants', 0);
@@ -162,10 +168,10 @@ final class GrantCommandTest extends TestCase
         $user = $this->createUser();
 
         $this->artisan('az-guard:revoke-grant', [
-            'user-id'    => $user->getKey(),
+            'user-id' => $user->getKey(),
             'permission' => 'app.nonexistent',
-            'panel'      => 'app',
-            '--force'    => true,
+            'panel' => 'app',
+            '--force' => true,
         ])
             ->assertSuccessful()
             ->expectsOutputToContain('не найден');

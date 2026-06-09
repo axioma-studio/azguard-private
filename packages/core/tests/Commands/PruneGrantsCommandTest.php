@@ -22,16 +22,16 @@ final class PruneGrantsCommandTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
     }
 
@@ -66,7 +66,7 @@ final class PruneGrantsCommandTest extends TestCase
 
         // admin grant остался
         $this->assertDatabaseHas('az_guard_direct_grants', [
-            'panel_id'       => 'admin',
+            'panel_id' => 'admin',
             'permission_key' => 'b',
         ]);
     }

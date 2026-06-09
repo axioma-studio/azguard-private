@@ -2,6 +2,10 @@
 
 A **panel** is an isolated permission namespace in AzGuard. Think of it as an independent access control domain within a single Laravel application.
 
+::: info AzGuard Panel vs Filament Panel
+If you use the `azguard/filament` package, be aware that these are two different concepts. An **AzGuard Panel** is a *logical authorization namespace* (e.g. `app`, `admin`). A **Filament Panel** is a *UI dashboard* (the sidebar, pages, etc.). They are linked by the integration package but are otherwise independent.
+:::
+
 ## Why panels?
 
 Most real-world Laravel apps have multiple distinct areas, each needing its own access rules:
@@ -22,33 +26,22 @@ Every panel is declared as a PHP class:
 // app/AzGuard/Panels/AppPanelProvider.php
 namespace App\AzGuard\Panels;
 
-use AzGuard\Contracts\PanelProviderInterface;
+use AzGuard\PanelProvider;
+use AzGuard\Support\Panel;
 use App\AzGuard\App\Permissions\DocumentsPermission;
 use App\AzGuard\App\Permissions\UsersPermission;
-use App\AzGuard\App\Roles\EditorRole;
-use App\AzGuard\App\Roles\ViewerRole;
 
-class AppPanelProvider implements PanelProviderInterface
+class AppPanelProvider extends PanelProvider
 {
-    public function panel(): string
+    public function panel(Panel $panel): Panel
     {
-        return 'app';
-    }
-
-    public function permissions(): array
-    {
-        return [
-            DocumentsPermission::class,
-            UsersPermission::class,
-        ];
-    }
-
-    public function roles(): array
-    {
-        return [
-            EditorRole::class,
-            ViewerRole::class,
-        ];
+        return $panel
+            ->id('app')
+            ->path('app')
+            ->permissionEnums([
+                DocumentsPermission::class,
+                UsersPermission::class,
+            ]);
     }
 }
 ```

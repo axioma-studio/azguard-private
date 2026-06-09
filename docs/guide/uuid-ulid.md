@@ -32,7 +32,7 @@ class User extends Authenticatable
 
 ## Migration considerations
 
-When using UUID or ULID keys the `azguard_role_user` pivot table's foreign key column must match:
+When using UUID or ULID keys the `model_has_roles` pivot table's foreign key column must match:
 
 ```php
 // In the published migration, change:
@@ -41,14 +41,14 @@ $table->unsignedBigInteger('user_id');
 $table->uuid('user_id');   // or ulid()
 ```
 
-Publish and edit the migration before running it:
+AzGuard does not publish migrations separately. To change the column type, publish the config and add a custom migration after `az_guard` migrations run:
 
 ```bash
-php artisan vendor:publish --tag=azguard-migrations
+php artisan vendor:publish --tag=az-guard-config
 ```
 
 ::: warning
-If you change key types on an existing installation, you must migrate the data in `azguard_role_user` manually.
+If you change key types on an existing installation, you must migrate the data in `model_has_roles` manually.
 :::
 
 ## Morph maps

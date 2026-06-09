@@ -22,16 +22,16 @@ final class RevokeCommandTest extends TestCase
     {
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
         $app['config']->set('az-guard.table_names', [
-            'roles'            => 'az_guard_roles',
-            'model_has_roles'  => 'az_guard_model_has_roles',
+            'roles' => 'az_guard_roles',
+            'model_has_roles' => 'az_guard_model_has_roles',
             'model_has_scopes' => 'az_guard_model_has_scopes',
             'role_permissions' => 'az_guard_role_permissions',
-            'direct_grants'    => 'az_guard_direct_grants',
+            'direct_grants' => 'az_guard_direct_grants',
         ]);
         $app['config']->set('auth.providers.users.model', 'App\\Models\\User');
     }
@@ -39,11 +39,11 @@ final class RevokeCommandTest extends TestCase
     private function seedGrant(int $userId, string $key, string $panel = 'app'): void
     {
         DirectGrant::create([
-            'model_type'     => 'App\\Models\\User',
-            'model_id'       => $userId,
+            'model_type' => 'App\\Models\\User',
+            'model_id' => $userId,
             'permission_key' => $key,
-            'panel_id'       => $panel,
-            'expires_at'     => null,
+            'panel_id' => $panel,
+            'expires_at' => null,
         ]);
     }
 
@@ -53,20 +53,20 @@ final class RevokeCommandTest extends TestCase
         $this->seedGrant(1, 'app.docs.edit');
 
         $this->artisan('guard:revoke', [
-            'user_id'        => '1',
+            'user_id' => '1',
             'permission_key' => 'app.docs.view',
-            '--panel'        => 'app',
-            '--model'        => 'App\\Models\\User',
-            '--force'        => true,
+            '--panel' => 'app',
+            '--model' => 'App\\Models\\User',
+            '--force' => true,
         ])->assertSuccessful()
-          ->expectsOutputToContain('Отозвано 1');
+            ->expectsOutputToContain('Отозвано 1');
 
         $this->assertDatabaseMissing('az_guard_direct_grants', [
-            'model_id'       => 1,
+            'model_id' => 1,
             'permission_key' => 'app.docs.view',
         ]);
         $this->assertDatabaseHas('az_guard_direct_grants', [
-            'model_id'       => 1,
+            'model_id' => 1,
             'permission_key' => 'app.docs.edit',
         ]);
     }
@@ -74,13 +74,13 @@ final class RevokeCommandTest extends TestCase
     public function test_revoke_warns_when_not_found(): void
     {
         $this->artisan('guard:revoke', [
-            'user_id'        => '999',
+            'user_id' => '999',
             'permission_key' => 'app.nothing',
-            '--panel'        => 'app',
-            '--model'        => 'App\\Models\\User',
-            '--force'        => true,
+            '--panel' => 'app',
+            '--model' => 'App\\Models\\User',
+            '--force' => true,
         ])->assertSuccessful()
-          ->expectsOutputToContain('Грантов не найдено');
+            ->expectsOutputToContain('Грантов не найдено');
     }
 
     public function test_revoke_all_for_panel(): void
@@ -91,12 +91,12 @@ final class RevokeCommandTest extends TestCase
 
         $this->artisan('guard:revoke', [
             'user_id' => '5',
-            '--all'   => true,
+            '--all' => true,
             '--panel' => 'app',
             '--model' => 'App\\Models\\User',
             '--force' => true,
         ])->assertSuccessful()
-          ->expectsOutputToContain('Отозвано 2');
+            ->expectsOutputToContain('Отозвано 2');
 
         // admin-грант должен остаться
         $this->assertDatabaseHas('az_guard_direct_grants', [

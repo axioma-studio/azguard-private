@@ -1,6 +1,6 @@
 # Artisan Commands
 
-All AzGuard commands are prefixed with `azguard:`.
+AzGuard ships commands under several prefixes: `azguard:`, `guard:`, and `make:guard-` for scaffolding.
 
 ## Reference
 
@@ -13,9 +13,9 @@ All AzGuard commands are prefixed with `azguard:`.
 | `azguard:cache-reset --user=42` | Clear cache for a specific user ID |
 | `azguard:list-permissions` | List all registered permissions across panels |
 | `azguard:list-permissions --panel=app` | Filter by panel |
-| `azguard:make-permission {Panel} {Name}` | Scaffold a new permission enum |
-| `azguard:make-role {Panel} {Name}` | Scaffold a new role class |
-| `azguard:make-panel {Name}` | Scaffold a panel provider |
+| `make:guard-permission {Panel} {Name}` | Scaffold a new permission enum |
+| `make:guard-role {Panel} {Name}` | Scaffold a new role class |
+| `make:guard-panel {Name}` | Scaffold a panel provider |
 
 ## `azguard:doctor`
 
@@ -39,7 +39,7 @@ Checks performed:
 
 ## `azguard:sync-roles`
 
-Syncs static role metadata (name, panel, level) to `az_guard_roles`. Useful after adding a new static role in CI/CD:
+Syncs static role metadata (name, panel, level) to the `roles` table. Useful after adding a new static role in CI/CD:
 
 ```bash
 php artisan azguard:sync-roles
@@ -62,14 +62,14 @@ Run this after modifying a role's `permissions()` array in code and deploying, s
 
 ```bash
 # New permission enum
-php artisan azguard:make-permission App InvoicesPermission
+php artisan make:guard-permission App InvoicesPermission
 # → app/Guards/App/Permissions/InvoicesPermission.php
 
 # New role class
-php artisan azguard:make-role App AccountantRole
+php artisan make:guard-role App AccountantRole
 # → app/Guards/App/Roles/AccountantRole.php
 
 # New panel provider
-php artisan azguard:make-panel Api
+php artisan make:guard-panel Api
 # → app/Guards/Api/ApiPanelProvider.php
 ```
