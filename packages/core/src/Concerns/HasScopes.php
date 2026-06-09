@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Auth;
  * - removeScopedRole()    — remove a scoped role assignment
  * - hasScopedRole()       — check if user has a role for a specific entity
  * - hasScopedPermission() — check permission within a specific entity scope
+ *
+ * @deprecated Use HasScopedRoles instead. HasScopes is kept only as a BC alias.
  */
 trait HasScopes
 {
@@ -29,7 +31,7 @@ trait HasScopes
 
     public static function bootHasScopes(): void
     {
-        static::addGlobalScope('az_guard_filter', function (Builder $builder): void {
+        static::addGlobalScope(HasScopedRoles::SCOPE_KEY, function (Builder $builder): void {
             if (app()->runningInConsole() || ! Auth::check()) {
                 return;
             }
@@ -175,14 +177,5 @@ trait HasScopes
         }
 
         return false;
-    }
-
-    /**
-     * @deprecated Use resolveRole() from ResolvesRole trait instead.
-     *             Kept as a BC alias — will be removed in the next major version.
-     */
-    protected function resolveScopeRole(string|Role $role): ?Role
-    {
-        return $this->resolveRole($role);
     }
 }

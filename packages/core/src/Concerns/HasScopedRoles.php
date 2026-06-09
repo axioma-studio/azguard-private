@@ -28,9 +28,18 @@ use Illuminate\Support\Facades\Auth;
  */
 trait HasScopedRoles
 {
+    /**
+     * The Eloquent global scope key used to filter query results
+     * based on the authenticated user's scoped roles.
+     *
+     * Use this constant when calling Model::withoutGlobalScope():
+     *   Model::withoutGlobalScope(HasScopedRoles::SCOPE_KEY);
+     */
+    public const SCOPE_KEY = 'azguard_scope_filter';
+
     public static function bootHasScopedRoles(): void
     {
-        static::addGlobalScope('az_guard_filter', function (Builder $builder): void {
+        static::addGlobalScope(self::SCOPE_KEY, function (Builder $builder): void {
             if (app()->runningInConsole() || ! Auth::check()) {
                 return;
             }
