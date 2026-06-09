@@ -3,14 +3,15 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
-use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
 
 return RectorConfig::configure()
     ->withPaths([
-        __DIR__ . '/packages/core/src',
+        __DIR__.'/packages/core/src',
+        __DIR__.'/packages/context/src',
+        __DIR__.'/packages/filament/src',
     ])
-    ->withPhpSets(php82: true)
+    ->withPhpSets(php83: true)
     ->withSets([
         SetList::CODE_QUALITY,
         SetList::DEAD_CODE,
@@ -19,5 +20,5 @@ return RectorConfig::configure()
     ])
     ->withImportNames()
     ->withSkip([
-        __DIR__ . '/packages/core/src/Support/BaseRole.php',
+        __DIR__.'/packages/core/src/Support/BaseRole.php',
     ]);

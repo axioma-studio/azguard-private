@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AzGuard\Guard;
 
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Support\Panel;
+use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Authorizable;
 
 /**
  * Core authorization component.
@@ -20,10 +22,11 @@ use Illuminate\Contracts\Auth\Authorizable;
  * Panel is resolved from the current request (SetCurrentPanel middleware);
  * falls back to the first registered panel.
  */
-final class Authorizer
+final readonly class Authorizer
 {
     public function __construct(
-        private readonly EffectivePermissionResolver $resolver,
+        private EffectivePermissionResolver $resolver,
+        private AzGuardManagerInterface $manager,
     ) {}
 
     public function check(Authorizable $user, string $ability): ?bool
@@ -49,15 +52,13 @@ final class Authorizer
 
     private function resolvePanelId(): ?string
     {
-        $manager = app(\AzGuard\AzGuardManager::class);
+        $current = $this->manager->currentPanel();
 
-        $current = $manager->currentPanel();
-
-        if ($current !== null) {
+        if ($current instanceof Panel) {
             return $current->getId();
         }
 
-        $panels = $manager->getPanels();
+        $panels = $this->manager->getPanels();
 
         return $panels === [] ? null : array_key_first($panels);
     }
