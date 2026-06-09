@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\ModelHasScope;
+use AzGuard\Models\Role;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,12 +22,16 @@ use Illuminate\Support\Facades\Auth;
  * - removeScopedRole()    — remove a scoped role assignment
  * - hasScopedRole()       — check if user has a role for a specific entity
  * - hasScopedPermission() — check permission within a specific entity scope
+ *
+ * @deprecated Use HasScopedRoles instead. HasScopes is kept only as a BC alias.
  */
 trait HasScopes
 {
+    use ResolvesRole;
+
     public static function bootHasScopes(): void
     {
-        static::addGlobalScope('az_guard_filter', function (Builder $builder): void {
+        static::addGlobalScope(HasScopedRoles::SCOPE_KEY, function (Builder $builder): void {
             if (app()->runningInConsole() || ! Auth::check()) {
                 return;
             }
@@ -54,9 +59,9 @@ trait HasScopes
      *
      *   $user->assignScopedRole('editor', $project);
      */
-    public function assignScopedRole(string|\AzGuard\Models\Role $role, Model $entity): static
+    public function assignScopedRole(string|Role $role, Model $entity): static
     {
-        $roleModel = $this->resolveScopeRole($role);
+        $roleModel = $this->resolveRole($role);
 
         if ($roleModel === null) {
             return $this;
@@ -82,9 +87,9 @@ trait HasScopes
      *
      *   $user->removeScopedRole('editor', $project);
      */
-    public function removeScopedRole(string|\AzGuard\Models\Role $role, Model $entity): static
+    public function removeScopedRole(string|Role $role, Model $entity): static
     {
-        $roleModel = $this->resolveScopeRole($role);
+        $roleModel = $this->resolveRole($role);
 
         if ($roleModel === null) {
             return $this;
@@ -108,9 +113,9 @@ trait HasScopes
      *
      *   $user->hasScopedRole('editor', $project);
      */
-    public function hasScopedRole(string|\AzGuard\Models\Role $role, Model $entity): bool
+    public function hasScopedRole(string|Role $role, Model $entity): bool
     {
-        $roleModel = $this->resolveScopeRole($role);
+        $roleModel = $this->resolveRole($role);
 
         if ($roleModel === null) {
             return false;
@@ -152,7 +157,7 @@ trait HasScopes
             return false;
         }
 
-        /** @var class-string<\AzGuard\Models\Role> $roleClass */
+        /** @var class-string<Role> $roleClass */
         $roleClass = Config::roleModel();
 
         $roles = $roleClass::query()->whereIn('id', $scopedRoleIds)->get();
@@ -172,17 +177,5 @@ trait HasScopes
         }
 
         return false;
-    }
-
-    protected function resolveScopeRole(string|\AzGuard\Models\Role $role): ?\AzGuard\Models\Role
-    {
-        if ($role instanceof \AzGuard\Models\Role) {
-            return $role;
-        }
-
-        /** @var class-string<\AzGuard\Models\Role> $roleClass */
-        $roleClass = Config::roleModel();
-
-        return $roleClass::query()->where('name', $role)->first();
     }
 }

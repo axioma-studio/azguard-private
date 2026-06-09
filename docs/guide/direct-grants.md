@@ -1,10 +1,30 @@
 # Direct Grants
 
-Direct Grants — механизм выдачи прав **напрямую пользователю** без ролей. Используйте их, когда нужно выдать одно право конкретному пользователю, не создавая отдельную роль. Типичные сценарии: временный доступ, экспорт по запросу, бета-функциональность для выбранных пользователей.
+::: warning Prefer roles over direct grants
+Direct Grants are an **exception** mechanism, not a primary access-control pattern. The correct default is to assign permissions to roles, and assign roles to users. Use direct grants only when a specific user needs a temporary or one-off permission that doesn't warrant a new role.
 
-## Подключение трейта
+See [Roles vs Permissions](./best-practices.md#roles-vs-permissions) for the full guidance.
+:::
 
-Добавьте `HasDirectGrants` в User-модель рядом с `HasAzGuard`:
+Direct Grants let you assign a permission **directly to a user** without creating a role for it. Typical use cases:
+
+- Temporary access (beta feature, limited-time export)
+- One-off override for a specific user
+- Feature flags scoped to individual accounts
+
+## When to use direct grants
+
+| Situation | Recommendation |
+|---|---|
+| One user needs a permission no one else has | ✅ Direct grant |
+| A user needs temporary access (expires in N hours) | ✅ Direct grant with TTL |
+| Multiple users need the same permission | ❌ Create a role instead |
+| Permission is part of a user's everyday job | ❌ Assign a role instead |
+| You find yourself granting the same permission to 5+ users | ❌ Time to create a role |
+
+## Connecting the trait
+
+Add `HasDirectGrants` to your User model alongside `HasAzGuard`:
 
 ```php
 use AzGuard\Concerns\HasAzGuard;
@@ -17,56 +37,56 @@ class User extends Authenticatable
 ```
 
 ::: tip
-`HasDirectGrants` расширяет `hasAzPermission()`: теперь он проверяет роль **или** direct grant — остальной код менять не нужно.
+`HasDirectGrants` extends `hasPermission()`: it now checks roles **and** direct grants. No other code changes needed.
 :::
 
-## Выдача grant
+## Granting a permission
 
 ### Fluent API
 
 ```php
 use AzGuard\Facades\AzGuard;
 
-// Бессрочно
+// Permanent
 AzGuard::forUser($user)
     ->on('app')
-    ->give('app.documents.export');
+    ->give(DocumentsPermission::Export);
 
-// С TTL 1 час
+// With a 1-hour TTL
 AzGuard::forUser($user)
     ->on('app')
     ->ttl(3600)
-    ->give('app.documents.export');
+    ->give(DocumentsPermission::Export);
 
-// Короткий способ
-AzGuard::grantDirect($user, 'app.documents.export', 'app', ttl: 3600);
+// Shorthand
+AzGuard::grantDirect($user, DocumentsPermission::Export, 'app', ttl: 3600);
 ```
 
-::: info Idempotency
-Повторный вызов `give()` обновляет `expires_at` без создания дубликата. Безопасно вызывать несколько раз.
+::: info Idempotent
+Calling `give()` on an already-granted permission updates `expires_at` without creating a duplicate. Safe to call multiple times.
 :::
 
-### Artisan CLI
+### Artisan
 
 ```bash
-# Выдать бессрочно
+# Permanent
 php artisan az-guard:grant {user-id} {permission} {panel}
 
-# Выдать на 1 час
+# With TTL (seconds)
 php artisan az-guard:grant 42 app.documents.export app --ttl=3600
 
-# Другая модель
+# Different model
 php artisan az-guard:grant 7 admin.reports.view admin --model=App\\Models\\Admin
 ```
 
-## Отзыв grant
+## Revoking a grant
 
 ```php
-// Один ключ
-AzGuard::forUser($user)->on('app')->revoke('app.documents.export');
-AzGuard::revokeDirect($user, 'app.documents.export', 'app');
+// Single permission — enum
+AzGuard::forUser($user)->on('app')->revoke(DocumentsPermission::Export);
+AzGuard::revokeDirect($user, DocumentsPermission::Export, 'app');
 
-// Все grants панели
+// All grants for a panel
 AzGuard::forUser($user)->on('app')->revokeAll();
 ```
 
@@ -76,64 +96,56 @@ php artisan az-guard:revoke-grant 42 app.documents.export app
 php artisan az-guard:revoke-grant 42 - app --all --force
 ```
 
-## Проверка наличия grant
+## Checking a grant
 
 ```php
-// На User-модели
-$user->hasDirectGrant('app.documents.export');          // текущая панель
-$user->hasDirectGrant('app.documents.export', 'app');   // явная панель
+// On the User model — enum or string accepted, enum preferred
+$user->hasDirectGrant(DocumentsPermission::Export);
+$user->hasDirectGrant(DocumentsPermission::Export, 'app');
 
-// Через Laravel Gate
-Gate::allows('direct-grant', 'app.documents.export');
-Gate::allows('direct-grant', ['app.documents.export', 'app']);
+// Via Laravel Gate
+Gate::allows('direct-grant', DocumentsPermission::Export);
+Gate::allows('direct-grant', [DocumentsPermission::Export, 'app']);
 
-// Список активных grants
+// List active grants
 $grants = AzGuard::forUser($user)->on('app')->list();
 $grants = AzGuard::activeGrants($user, 'app');
 ```
 
-## Темплейты Blade
+## Blade
 
 ```blade
-{{-- Проверка direct grant (текущая панель) --}}
-@azdirect('app.documents.export')
+@azdirect(\App\AzGuard\App\Permissions\DocumentsPermission::Export->value)
     <button>Export</button>
 @endazdirect
 
-{{-- Явная панель --}}
-@azdirect('app.documents.export', 'app')
+{{-- Explicit panel --}}
+@azdirect(\App\AzGuard\App\Permissions\DocumentsPermission::Export->value, 'app')
     <button>Export</button>
 @endazdirect
-
-{{-- Для сравнения: роли --}}
-@azcan('app.documents.view')
-    <a href="/docs">Documents</a>
-@endazcan
 ```
 
-## Route Middleware
+## Route middleware
 
 ```php
-use Illuminate\Support\Facades\Route;
-
-// az.grant:{permission},{panel}
+// az.grant:{permission},{panel} — string form required by middleware
 Route::get('/export', ExportController::class)
-    ->middleware('az.grant:app.documents.export,app');
+    ->middleware('az.grant:' . DocumentsPermission::Export->value . ',app');
 
-// Панель из AzGuard::currentPanel() если не указана:
+// Panel inferred from AzGuard::currentPanel() if omitted
 Route::get('/export', ExportController::class)
-    ->middleware('az.grant:app.documents.export');
+    ->middleware('az.grant:' . DocumentsPermission::Export->value);
 ```
 
-| Ситуация | HTTP |
+| Situation | HTTP status |
 |---|---|
-| Не аутентифицирован | 401 |
-| Grant отсутствует или истёк | 403 |
-| Grant активен | 200 |
+| Not authenticated | 401 |
+| Grant missing or expired | 403 |
+| Grant active | passes through |
 
-## TTL и истечение
+## TTL and expiry
 
-Grant с `expires_at < now()` автоматически считается недействительным во всех проверках. Старые записи очищает планировщик:
+A grant with `expires_at < now()` is treated as inactive in all checks. Expired records are cleaned up by the scheduler:
 
 ```php
 // bootstrap/app.php
@@ -142,42 +154,40 @@ Grant с `expires_at < now()` автоматически считается не
 })
 ```
 
-Или вручную:
-
 ```bash
 php artisan az-guard:prune-grants
 php artisan az-guard:prune-grants --panel=app
 ```
 
-## События
+## Events
 
-| Событие | Когда диспатчится |
+| Event | When dispatched |
 |---|---|
-| `GrantGiven` | После каждого `give()` |
-| `GrantRevoked` | После каждого `revoke()` / `revokeAll()` |
+| `GrantGiven` | After every `give()` call |
+| `GrantRevoked` | After every `revoke()` / `revokeAll()` call |
 
 ```php
 use AzGuard\Events\GrantGiven;
 use AzGuard\Events\GrantRevoked;
-use Illuminate\Support\Facades\Event;
 
 Event::listen(GrantGiven::class, function (GrantGiven $event): void {
-    Log::info("Grant [{$event->permissionKey}] выдан user #{$event->user->getAuthIdentifier()}");
+    Log::info("Grant [{$event->permissionKey}] issued to user #{$event->user->getAuthIdentifier()}");
 });
 
 Event::listen(GrantRevoked::class, function (GrantRevoked $event): void {
-    // например, инвалидация кэша API
+    // e.g., invalidate API cache
 });
 ```
 
-## Быстрый справочник
+## Quick reference
 
-| Способ | API |
+| Method | Code |
 |---|---|
-| Fluent (fluent-цепочка) | `AzGuard::forUser($u)->on('app')->ttl(3600)->give('...')` |
-| Короткий хелпер | `AzGuard::grantDirect($u, '...', 'app', ttl: 3600)` |
-| Artisan | `php artisan az-guard:grant {id} {perm} {panel}` |
-| Blade | `@azdirect('app.x.view') ... @endazdirect` |
-| Middleware | `->middleware('az.grant:app.x.view,app')` |
-| Gate | `Gate::allows('direct-grant', 'app.x.view')` |
-| User-модель | `$user->hasDirectGrant('app.x.view', 'app')` |
+| Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->give(DocumentsPermission::Export)` |
+| Shorthand grant | `AzGuard::grantDirect($u, DocumentsPermission::Export, 'app', ttl: 3600)` |
+| Artisan grant | `php artisan az-guard:grant {id} {perm} {panel}` |
+| Revoke | `AzGuard::forUser($u)->on('app')->revoke(DocumentsPermission::Export)` |
+| Check (model) | `$user->hasDirectGrant(DocumentsPermission::Export, 'app')` |
+| Check (Gate) | `Gate::allows('direct-grant', DocumentsPermission::Export)` |
+| Blade | `@azdirect(DocumentsPermission::Export->value) ... @endazdirect` |
+| Middleware | `->middleware('az.grant:' . DocumentsPermission::Export->value . ',app')` |

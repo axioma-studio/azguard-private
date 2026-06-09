@@ -5,94 +5,73 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\DirectGrant;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use AzGuard\Support\Config;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Трейт для Eloquent-моделей (User, Admin, …).
+ * Adds direct-grant support to a User model.
  *
- * Добавляет:
- *  - directGrants()  — отношение
- *  - hasDirectGrant() — проверка наличия активного grant
- *  - Расширение hasAzPermission(): теперь учитывает гранты
+ * Direct grants are one-off permission assignments that bypass roles.
+ * They are checked by DirectGrantSource inside EffectivePermissionResolver.
  *
- * Использование:
- *   class User extends Authenticatable
- *   {
- *       use HasAzGuard, HasDirectGrants;
- *   }
+ * Usage:
+ *   $user->grantDirect('app.posts.edit');
+ *   $user->hasDirectGrant('app.posts.edit'); // true
+ *   $user->revokeGrant('app.posts.edit');
  */
 trait HasDirectGrants
 {
-    // ─── Relation ─────────────────────────────────────────────────────────────
-
     /**
-     * @return MorphMany<DirectGrant>
+     * All direct grants belonging to this model.
      */
-    public function directGrants(): MorphMany
+    public function activeGrants(): HasMany
     {
-        return $this->morphMany(DirectGrant::class, 'grantable');
+        return $this->hasMany(Config::directGrantModel(), 'model_id')
+            ->where('model_type', $this->getMorphClass());
     }
 
-    // ─── Queries ──────────────────────────────────────────────────────────────
-
     /**
-     * Проверяет наличие активного direct grant для конкретного права.
-     *
-     * @param  string       $permissionKey  Ключ права, например 'app.documents.export'
-     * @param  string|null  $panelId        Явная панель; если null — берётся текущая из AzGuard
+     * Check whether this model has a specific direct grant.
      */
-    public function hasDirectGrant(string $permissionKey, ?string $panelId = null): bool
+    public function hasDirectGrant(string $permission): bool
     {
-        $panel = $panelId ?? \AzGuard\Facades\AzGuard::currentPanel()?->getId();
-
-        if ($panel === null) {
-            return false;
-        }
-
-        return $this->directGrants()
-            ->where('panel_id', $panel)
-            ->where('permission_key', $permissionKey)
-            ->active()
+        return $this->activeGrants()
+            ->where('permission', $permission)
             ->exists();
     }
 
     /**
-     * Возвращает все активные grants пользователя для панели.
-     *
-     * @return Collection<int, DirectGrant>
+     * Assign a direct grant for the given permission.
+     * Silently ignores duplicates via firstOrCreate.
      */
-    public function activeDirectGrants(?string $panelId = null): Collection
+    public function grantDirect(string $permission): static
     {
-        $panel = $panelId ?? \AzGuard\Facades\AzGuard::currentPanel()?->getId();
+        DirectGrant::firstOrCreate([
+            'model_type'  => $this->getMorphClass(),
+            'model_id'    => $this->getKey(),
+            'permission'  => $permission,
+        ]);
 
-        $query = $this->directGrants()->active();
-
-        if ($panel !== null) {
-            $query->forPanel($panel);
+        if (method_exists($this, 'flushPermissions')) {
+            $this->flushPermissions();
         }
 
-        return $query->get();
+        return $this;
     }
 
-    // ─── Override hasAzPermission ─────────────────────────────────────────────
-
     /**
-     * Переопределяет HasAzGuard::hasAzPermission():
-     * возвращает true если пользователь имеет право через роль ИЛИ через direct grant.
-     *
-     * HasAzGuard должен быть подключён в той же модели.
+     * Revoke a direct grant for the given permission.
      */
-    public function hasAzPermission(string $permission, ?string $panelId = null): bool
+    public function revokeGrant(string $permission): static
     {
-        // Родительский метод из HasAzGuard (через роли)
-        if (method_exists(parent::class, 'hasAzPermission')) {
-            /** @phpstan-ignore-next-line */
-            if (parent::hasAzPermission($permission, $panelId)) {
-                return true;
-            }
+        $this->activeGrants()
+            ->where('permission', $permission)
+            ->delete();
+
+        if (method_exists($this, 'flushPermissions')) {
+            $this->flushPermissions();
         }
 
-        return $this->hasDirectGrant($permission, $panelId);
+        return $this;
     }
 }

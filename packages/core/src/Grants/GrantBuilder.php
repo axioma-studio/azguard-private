@@ -6,15 +6,18 @@ namespace AzGuard\Grants;
 
 use AzGuard\Events\GrantGiven;
 use AzGuard\Events\GrantRevoked;
+use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Models\DirectGrant;
+use AzGuard\Support\PanelResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 /**
- * Fluent-строитель для работы с Direct Grants.
+ * Fluent builder for working with Direct Grants.
  *
- * Использование:
+ * Usage:
  *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.documents.export');
  *   AzGuard::forUser($user)->on('app')->revoke('app.documents.export');
  *   AzGuard::forUser($user)->on('app')->list();
@@ -38,7 +41,7 @@ final class GrantBuilder
     }
 
     /**
-     * Установить TTL в секундах. null = бессрочно.
+     * Set TTL in seconds. null = no expiry.
      */
     public function ttl(?int $seconds): static
     {
@@ -50,13 +53,14 @@ final class GrantBuilder
     // ─── Actions ──────────────────────────────────────────────────────────────
 
     /**
-     * Выдать право (или обновить expires_at существующего).
+     * Grant a permission (or update expires_at on an existing one).
+     * Idempotent: repeated calls update expires_at only.
      *
-     * Idempotent: повторный вызов обновляет expires_at.
+     * @throws PanelNotSetException
      */
     public function give(string $permissionKey): DirectGrant
     {
-        $panel = $this->resolvePanel();
+        $panel = PanelResolver::resolveOrFail($this->panelId);
 
         $expiresAt = $this->ttlSeconds !== null
             ? Carbon::now()->addSeconds($this->ttlSeconds)
@@ -70,9 +74,7 @@ final class GrantBuilder
                 'panel_id'        => $panel,
                 'permission_key'  => $permissionKey,
             ],
-            [
-                'expires_at' => $expiresAt,
-            ],
+            ['expires_at' => $expiresAt],
         );
 
         event(new GrantGiven(
@@ -86,18 +88,15 @@ final class GrantBuilder
     }
 
     /**
-     * Отозвать конкретное право.
+     * Revoke a specific permission.
      *
-     * @return int  Количество удалённых записей (0 или 1).
+     * @return int Number of deleted records (0 or 1).
+     * @throws PanelNotSetException
      */
     public function revoke(string $permissionKey): int
     {
-        $panel = $this->resolvePanel();
-
-        $deleted = DirectGrant::query()
-            ->where('grantable_type', $this->user::class)
-            ->where('grantable_id', $this->user->getAuthIdentifier())
-            ->where('panel_id', $panel)
+        $panel   = PanelResolver::resolveOrFail($this->panelId);
+        $deleted = $this->baseQuery($panel)
             ->where('permission_key', $permissionKey)
             ->delete();
 
@@ -113,19 +112,15 @@ final class GrantBuilder
     }
 
     /**
-     * Отозвать все права пользователя в панели.
+     * Revoke all permissions for the user on the panel.
      *
-     * @return int  Количество удалённых записей.
+     * @return int Number of deleted records.
+     * @throws PanelNotSetException
      */
     public function revokeAll(): int
     {
-        $panel = $this->resolvePanel();
-
-        $deleted = DirectGrant::query()
-            ->where('grantable_type', $this->user::class)
-            ->where('grantable_id', $this->user->getAuthIdentifier())
-            ->where('panel_id', $panel)
-            ->delete();
+        $panel   = PanelResolver::resolveOrFail($this->panelId);
+        $deleted = $this->baseQuery($panel)->delete();
 
         if ($deleted > 0) {
             event(new GrantRevoked(
@@ -139,38 +134,29 @@ final class GrantBuilder
     }
 
     /**
-     * Вернуть все активные grants пользователя в панели.
+     * Return all active grants for the user on the panel.
      *
      * @return Collection<int, DirectGrant>
+     * @throws PanelNotSetException
      */
     public function list(): Collection
     {
-        $panel = $this->resolvePanel();
-
-        return DirectGrant::query()
-            ->where('grantable_type', $this->user::class)
-            ->where('grantable_id', $this->user->getAuthIdentifier())
-            ->where('panel_id', $panel)
+        return $this->baseQuery(PanelResolver::resolveOrFail($this->panelId))
             ->active()
             ->get();
     }
 
     // ─── Internal ─────────────────────────────────────────────────────────────
 
-    private function resolvePanel(): string
+    /**
+     * Base query scoped to this user + panel.
+     * All mutating / read methods build on top of this.
+     */
+    private function baseQuery(string $panel): Builder
     {
-        if ($this->panelId !== null) {
-            return $this->panelId;
-        }
-
-        $current = \AzGuard\Facades\AzGuard::currentPanel();
-
-        if ($current === null) {
-            throw new \RuntimeException(
-                'AzGuard\Grants\GrantBuilder: панель не указана. Вызовите ->on("panel-id") или установите текущую панель.',
-            );
-        }
-
-        return $current->getId();
+        return DirectGrant::query()
+            ->where('grantable_type', $this->user::class)
+            ->where('grantable_id', $this->user->getAuthIdentifier())
+            ->where('panel_id', $panel);
     }
 }

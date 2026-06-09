@@ -24,7 +24,7 @@ use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
-use AzGuard\Guard\Authorizer;
+use AzGuard\Guard\AzGuardDiagnostics;
 use AzGuard\Guard\GuardDoctor;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\CheckDirectGrant;
@@ -38,6 +38,7 @@ use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use AzGuard\Support\Config;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
@@ -52,13 +53,17 @@ final class AzGuardServiceProvider extends ServiceProvider
             key: 'az-guard',
         );
 
-        $this->app->singleton(AzGuardManager::class, fn (): AzGuardManager => new AzGuardManager);
+        $this->app->singleton(AzGuardManager::class);
         $this->app->bind(AzGuardManagerInterface::class, AzGuardManager::class);
 
-        $this->app->singleton(PolicyAttributeRegistrar::class, fn (): PolicyAttributeRegistrar => new PolicyAttributeRegistrar);
-        $this->app->singleton(GuardDoctor::class, fn (): GuardDoctor => new GuardDoctor);
+        $this->app->singleton(PolicyAttributeRegistrar::class);
 
-        // ─── Registry ────────────────────────────────────────────────────────────────────────
+        // Canonical binding — use AzGuardDiagnostics going forward.
+        $this->app->singleton(AzGuardDiagnostics::class);
+        // BC alias — resolving the old GuardDoctor name from the container still works.
+        $this->app->alias(AzGuardDiagnostics::class, GuardDoctor::class);
+
+        // ─── Registry ─────────────────────────────────────────────────────────
 
         $this->app->singleton(ClassRoleGrantSource::class);
         $this->app->singleton(DatabaseRoleGrantSource::class);
@@ -74,7 +79,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
-            $manager = $this->app->make(AzGuardManager::class);
+            $manager  = $this->app->make(AzGuardManager::class);
             $panelIds = array_keys($manager->getPanels());
 
             $builders = iterator_to_array(
@@ -103,8 +108,9 @@ final class AzGuardServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(paths: __DIR__ . '/../database/migrations');
 
+        // Use instanceof instead of method_exists for a precise type check.
         Gate::before(function ($user, string $ability): ?bool {
-            if ($user === null || ! method_exists($user, 'getAuthIdentifier')) {
+            if (! $user instanceof Authenticatable) {
                 return null;
             }
 
@@ -154,7 +160,7 @@ final class AzGuardServiceProvider extends ServiceProvider
         $router->aliasMiddleware('azguard.roles', LoadAzGuardRoles::class);
         $router->aliasMiddleware('azguard.panel', SetCurrentPanel::class);
         $router->aliasMiddleware('azguard.check', CheckAccess::class);
-        $router->aliasMiddleware('az.grant',       CheckDirectGrant::class);
+        $router->aliasMiddleware('azguard.grant', CheckDirectGrant::class);
 
         $alias = Config::checkAccessAlias();
 
@@ -167,6 +173,7 @@ final class AzGuardServiceProvider extends ServiceProvider
      * Blade directives.
      *
      * @azcan    / @endazcan    — permission check
+     * @elseazcan / @unlessazcan / @endunlessazcan — added in DX2
      * @azrole   / @endazrole   — role check
      * @azdirect / @endazdirect — direct grant check
      */
@@ -177,6 +184,16 @@ final class AzGuardServiceProvider extends ServiceProvider
         });
 
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
+
+        Blade::directive('elseazcan', function (string $expression): string {
+            return "<?php elseif (auth()->check() && auth()->user()->hasPermission({$expression})): ?>";
+        });
+
+        Blade::directive('unlessazcan', function (string $expression): string {
+            return "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>";
+        });
+
+        Blade::directive('endunlessazcan', fn (): string => '<?php endif; ?>');
 
         Blade::directive('azrole', function (string $expression): string {
             return "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>";

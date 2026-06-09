@@ -10,67 +10,61 @@ use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Главная точка получения PermissionSet для пользователя.
+ * Main entry point for obtaining a PermissionSet for a user.
  *
- * Агрегирует все GrantSource, фильтрует результат через PermissionCatalog
- * (только известные ключи или '*'), кэширует на request.
+ * Aggregates all GrantSources, filters result through PermissionCatalog
+ * (known keys only or '*'), caches per request via PermissionCache.
  *
- * Фаза 1: ClassRoleGrantSource.
- * Фаза 3: + DatabaseRoleGrantSource, DirectGrantSource.
- * Фаза 4: + ContextualRoleGrantSource.
+ * Phase 1: ClassRoleGrantSource.
+ * Phase 3: + DatabaseRoleGrantSource, DirectGrantSource.
+ * Phase 4: + ContextualRoleGrantSource.
  */
 final class EffectivePermissionResolver
 {
+    /** @var list<GrantSource> Sorted by priority DESC once at construction time. */
+    private readonly array $sources;
+
     /**
      * @param iterable<GrantSource> $sources
      */
     public function __construct(
         private readonly PermissionCatalog $catalog,
-        private readonly iterable $sources,
-        private readonly PermissionResolverCache $cache,
-    ) {}
+        iterable $sources,
+        private readonly PermissionCache $cache,
+    ) {
+        $this->sources = collect($sources)
+            ->sortByDesc(fn (GrantSource $s) => $s->priority())
+            ->values()
+            ->all();
+    }
 
     public function forUser(Authenticatable $user, string $panelId): PermissionSet
     {
-        $userId = $user->getAuthIdentifier();
-        $cacheKey = PermissionResolverCache::keyFor($userId, $panelId);
+        $cacheKey = PermissionCache::keyFor($user->getAuthIdentifier(), $panelId);
 
         return $this->cache->rememberForRequest(
             $cacheKey,
-            function () use ($user, $panelId): PermissionSet {
-                return $this->resolve($user, $panelId);
-            },
+            fn () => $this->resolve($user, $panelId),
         );
     }
 
     private function resolve(Authenticatable $user, string $panelId): PermissionSet
     {
-        // Сортируем источники по приоритету (desc)
-        $sources = collect($this->sources)
-            ->sortByDesc(fn (GrantSource $s) => $s->priority())
-            ->all();
-
         $set = PermissionSet::empty();
 
-        foreach ($sources as $source) {
-            $granted = $source->permissionsFor($user, $panelId);
-            $set = $set->merge($granted);
+        foreach ($this->sources as $source) {
+            $set = $set->merge($source->permissionsFor($user, $panelId));
 
-            // Если wildcard — дальше нет смысла
             if ($set->isWildcard()) {
                 return $set;
             }
         }
 
-        // Фильтрация через каталог: отбрасываем неизвестные ключи.
-        // В debug-режиме можно логировать orphan keys.
-        return $set->filter(
-            fn (string $key) => $this->catalog->has($panelId, $key),
-        );
+        return $set->filter(fn (string $key) => $this->catalog->has($panelId, $key));
     }
 
     /**
-     * Сброс кэша для конкретного пользователя (вызывать при смене ролей).
+     * Flush cache for a specific user (call when roles change).
      */
     public function forgetForUser(Authenticatable $user, string $panelId): void
     {

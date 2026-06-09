@@ -27,12 +27,12 @@ final class PermissionSetTest extends TestCase
         $this->assertTrue($set->isWildcard());
     }
 
-    public function test_contains_exact_key(): void
+    public function test_has_exact_key(): void
     {
         $set = PermissionSet::fromKeys(['app.documents.view', 'app.documents.create']);
 
-        $this->assertTrue($set->contains('app.documents.view'));
-        $this->assertFalse($set->contains('app.documents.delete'));
+        $this->assertTrue($set->has('app.documents.view'));
+        $this->assertFalse($set->has('app.documents.delete'));
     }
 
     public function test_wildcard_pattern_matches(): void
@@ -49,9 +49,7 @@ final class PermissionSetTest extends TestCase
         $a = PermissionSet::fromKeys(['app.documents.view']);
         $b = PermissionSet::wildcard();
 
-        $merged = $a->merge($b);
-
-        $this->assertTrue($merged->isWildcard());
+        $this->assertTrue($a->merge($b)->isWildcard());
     }
 
     public function test_merge_combines_keys(): void
@@ -61,8 +59,8 @@ final class PermissionSetTest extends TestCase
 
         $merged = $a->merge($b);
 
-        $this->assertTrue($merged->contains('app.documents.view'));
-        $this->assertTrue($merged->contains('app.users.view'));
+        $this->assertTrue($merged->has('app.documents.view'));
+        $this->assertTrue($merged->has('app.users.view'));
         $this->assertFalse($merged->isWildcard());
     }
 
@@ -83,12 +81,34 @@ final class PermissionSetTest extends TestCase
         $this->assertCount(2, $set->toArray());
     }
 
-    public function test_grants_combines_contains_and_wildcard_pattern(): void
+    public function test_grants_combines_has_and_wildcard_pattern(): void
     {
         $set = PermissionSet::fromKeys(['app.exact', 'app.group.*']);
 
         $this->assertTrue($set->grants('app.exact'));
         $this->assertTrue($set->grants('app.group.view'));
         $this->assertFalse($set->grants('app.other'));
+    }
+
+    public function test_keys_returns_list(): void
+    {
+        $set = PermissionSet::fromKeys(['app.a', 'app.b']);
+
+        $this->assertSame(['app.a', 'app.b'], $set->keys());
+        $this->assertSame($set->keys(), $set->toArray());
+    }
+
+    public function test_count(): void
+    {
+        $this->assertSame(0, PermissionSet::empty()->count());
+        $this->assertSame(1, PermissionSet::wildcard()->count());
+        $this->assertSame(3, PermissionSet::fromKeys(['a', 'b', 'c'])->count());
+    }
+
+    public function test_wildcard_has_returns_true_for_any_key(): void
+    {
+        $set = PermissionSet::wildcard();
+
+        $this->assertTrue($set->has('any.random.key'));
     }
 }

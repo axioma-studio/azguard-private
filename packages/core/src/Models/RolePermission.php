@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Пермиссии, привязанные к DB-роли через таблицу.
+ * DB-level permissions assigned to a role via the role_permissions table.
  *
  * @property int    $id
  * @property int    $role_id
@@ -19,7 +20,7 @@ class RolePermission extends Model
 {
     public function getTable(): string
     {
-        return config('az-guard.table_names.role_permissions', 'az_guard_role_permissions');
+        return Config::rolePermissionsTable();
     }
 
     protected $fillable = [
@@ -30,6 +31,6 @@ class RolePermission extends Model
 
     public function role(): BelongsTo
     {
-        return $this->belongsTo(config('az-guard.models.role'), 'role_id');
+        return $this->belongsTo(Config::roleModel(), 'role_id');
     }
 }

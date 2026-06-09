@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Values;
 
 /**
- * Иммутабельный набор resolved permission keys для одного пользователя+панель.
- * Поддерживает wildcard '*' (SuperAdmin) и паттерны 'app.documents.*'.
+ * Immutable set of resolved permission keys for one user+panel.
+ * Supports wildcard '*' (SuperAdmin) and patterns like 'app.documents.*'.
  */
 final class PermissionSet
 {
@@ -35,7 +35,28 @@ final class PermissionSet
     }
 
     /**
-     * Слияние двух наборов. Если хоть один wildcard — результат wildcard.
+     * Build a PermissionSet from raw keys returned by a GrantSource.
+     *
+     * Centralises the repeated empty / wildcard / fromKeys pattern
+     * that previously appeared in every GrantSource implementation.
+     *
+     * @param list<string> $keys
+     */
+    public static function fromRawKeys(array $keys): self
+    {
+        if ($keys === []) {
+            return self::empty();
+        }
+
+        if (in_array('*', $keys, strict: true)) {
+            return self::wildcard();
+        }
+
+        return self::fromKeys($keys);
+    }
+
+    /**
+     * Merge two sets. If either is wildcard — result is wildcard.
      */
     public function merge(self $other): self
     {
@@ -47,9 +68,9 @@ final class PermissionSet
     }
 
     /**
-     * Точное совпадение ключа.
+     * Exact key match.
      */
-    public function contains(string $key): bool
+    public function has(string $key): bool
     {
         if ($this->isWildcard()) {
             return true;
@@ -59,8 +80,7 @@ final class PermissionSet
     }
 
     /**
-     * Wildcard-совпадение: 'app.documents.*' покрывает 'app.documents.view'.
-     * Логика аналогична текущей HasAzGuard::hasAzPermission().
+     * Wildcard match: 'app.documents.*' covers 'app.documents.view'.
      */
     public function matchesWildcard(string $key): bool
     {
@@ -74,6 +94,7 @@ final class PermissionSet
             }
 
             $regex = '/^' . str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')) . '$/';
+
             if (preg_match($regex, $key)) {
                 return true;
             }
@@ -83,11 +104,11 @@ final class PermissionSet
     }
 
     /**
-     * Полная проверка: точное совпадение OR wildcard-паттерн.
+     * Full check: exact match OR wildcard pattern.
      */
     public function grants(string $key): bool
     {
-        return $this->contains($key) || $this->matchesWildcard($key);
+        return $this->has($key) || $this->matchesWildcard($key);
     }
 
     public function isWildcard(): bool
@@ -101,11 +122,17 @@ final class PermissionSet
     }
 
     /**
-     * Фильтрация ключей (используется для валидации через каталог).
+     * Filter keys (used for catalog validation).
      */
     public function filter(\Closure $callback): self
     {
         return new self(array_filter($this->keys, $callback));
+    }
+
+    /** @return list<string> */
+    public function keys(): array
+    {
+        return $this->keys;
     }
 
     /** @return list<string> */
