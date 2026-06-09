@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
-use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
 
 return RectorConfig::configure()
     ->withPaths([
-        __DIR__ . '/src',
+        __DIR__.'/src',
     ])
 
     // Target: PHP 8.3 — enables readonly properties, typed class constants,
@@ -31,7 +30,7 @@ return RectorConfig::configure()
         \Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector::class => [
             // Eloquent boot* hooks must not have a void return type annotation
             // because Laravel checks method_exists and then calls them dynamically.
-            __DIR__ . '/src/Concerns',
+            __DIR__.'/src/Concerns',
         ],
     ])
 

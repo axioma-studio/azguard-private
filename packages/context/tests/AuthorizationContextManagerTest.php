@@ -14,7 +14,7 @@ final class AuthorizationContextManagerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->manager = new AuthorizationContextManager();
+        $this->manager = new AuthorizationContextManager;
     }
 
     public function test_current_returns_null_when_not_set(): void
@@ -56,7 +56,7 @@ final class AuthorizationContextManagerTest extends TestCase
 
     public function test_panels_are_isolated(): void
     {
-        $ctxApp   = new AuthorizationContext('app', 'workspace', 1);
+        $ctxApp = new AuthorizationContext('app', 'workspace', 1);
         $ctxAdmin = new AuthorizationContext('admin', 'workspace', 2);
 
         $this->manager->set($ctxApp);
@@ -78,7 +78,7 @@ final class AuthorizationContextManagerTest extends TestCase
 
     public function test_clear_does_not_affect_other_panels(): void
     {
-        $ctxApp   = new AuthorizationContext('app', 'workspace', 1);
+        $ctxApp = new AuthorizationContext('app', 'workspace', 1);
         $ctxAdmin = new AuthorizationContext('admin', 'workspace', 2);
 
         $this->manager->set($ctxApp);

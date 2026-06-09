@@ -20,7 +20,7 @@ final class AuthorizationContextTest extends TestCase
 
     public function test_with_panel_returns_new_instance(): void
     {
-        $ctx  = new AuthorizationContext('app', 'workspace', 42);
+        $ctx = new AuthorizationContext('app', 'workspace', 42);
         $ctx2 = $ctx->withPanel('admin');
 
         $this->assertNotSame($ctx, $ctx2);
@@ -31,7 +31,7 @@ final class AuthorizationContextTest extends TestCase
 
     public function test_with_context_returns_new_instance(): void
     {
-        $ctx  = new AuthorizationContext('app', 'workspace', 42);
+        $ctx = new AuthorizationContext('app', 'workspace', 42);
         $ctx2 = $ctx->withContext('project', 'abc');
 
         $this->assertNotSame($ctx, $ctx2);

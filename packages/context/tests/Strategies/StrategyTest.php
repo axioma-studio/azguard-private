@@ -24,8 +24,8 @@ final class StrategyTest extends TestCase
 
     public function test_global_plus_context_no_context_returns_global(): void
     {
-        $strategy = new GlobalPlusContextStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
+        $strategy = new GlobalPlusContextStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
 
         $result = $strategy->merge($this->user(), 'app', $global, null);
 
@@ -35,9 +35,9 @@ final class StrategyTest extends TestCase
 
     public function test_global_plus_context_merges_both(): void
     {
-        $strategy = new GlobalPlusContextStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
-        $context  = PermissionSet::fromKeys(['app.posts.edit']);
+        $strategy = new GlobalPlusContextStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
+        $context = PermissionSet::fromKeys(['app.posts.edit']);
 
         $result = $strategy->merge($this->user(), 'app', $global, $context);
 
@@ -47,9 +47,9 @@ final class StrategyTest extends TestCase
 
     public function test_global_plus_context_wildcard_context_propagates(): void
     {
-        $strategy = new GlobalPlusContextStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
-        $context  = PermissionSet::wildcard();
+        $strategy = new GlobalPlusContextStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
+        $context = PermissionSet::wildcard();
 
         $result = $strategy->merge($this->user(), 'app', $global, $context);
 
@@ -62,8 +62,8 @@ final class StrategyTest extends TestCase
 
     public function test_context_only_no_context_returns_empty(): void
     {
-        $strategy = new ContextOnlyStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
+        $strategy = new ContextOnlyStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
 
         $result = $strategy->merge($this->user(), 'app', $global, null);
 
@@ -73,9 +73,9 @@ final class StrategyTest extends TestCase
 
     public function test_context_only_ignores_global(): void
     {
-        $strategy = new ContextOnlyStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
-        $context  = PermissionSet::fromKeys(['app.posts.edit']);
+        $strategy = new ContextOnlyStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
+        $context = PermissionSet::fromKeys(['app.posts.edit']);
 
         $result = $strategy->merge($this->user(), 'app', $global, $context);
 
@@ -89,8 +89,8 @@ final class StrategyTest extends TestCase
 
     public function test_deny_without_context_no_context_returns_empty(): void
     {
-        $strategy = new DenyWithoutContextStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
+        $strategy = new DenyWithoutContextStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
 
         $result = $strategy->merge($this->user(), 'app', $global, null);
 
@@ -99,9 +99,9 @@ final class StrategyTest extends TestCase
 
     public function test_deny_without_context_with_context_merges(): void
     {
-        $strategy = new DenyWithoutContextStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
-        $context  = PermissionSet::fromKeys(['app.posts.edit']);
+        $strategy = new DenyWithoutContextStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
+        $context = PermissionSet::fromKeys(['app.posts.edit']);
 
         $result = $strategy->merge($this->user(), 'app', $global, $context);
 
@@ -111,9 +111,9 @@ final class StrategyTest extends TestCase
 
     public function test_deny_without_context_with_empty_context_returns_global(): void
     {
-        $strategy = new DenyWithoutContextStrategy();
-        $global   = PermissionSet::fromKeys(['app.posts.view']);
-        $context  = PermissionSet::empty();
+        $strategy = new DenyWithoutContextStrategy;
+        $global = PermissionSet::fromKeys(['app.posts.view']);
+        $context = PermissionSet::empty();
 
         $result = $strategy->merge($this->user(), 'app', $global, $context);
 
