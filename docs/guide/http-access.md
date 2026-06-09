@@ -77,20 +77,27 @@ The `arguments` array maps to route model bindings by parameter name. The middle
 
 ## Manual Gate checks
 
-For non-controller code (jobs, listeners, services):
+For non-controller code (jobs, listeners, services), always pass the **enum case** — never a raw string:
 
 ```php
-// Throws AuthorizationException on deny
-Gate::authorize('app.documents.edit', $document);
+// ✅ Enum — type-safe, IDE-navigable
+Gate::authorize(DocumentsPermission::Edit, $document);
 
-// Returns bool — handle the deny yourself
-if (! Gate::allows('app.documents.edit', $document)) {
+if (! Gate::allows(DocumentsPermission::Edit, $document)) {
     throw new AuthorizationException('Cannot edit this document.');
 }
 
 // In controllers
-$this->authorize('app.documents.delete', $document);
+$this->authorize(DocumentsPermission::Delete, $document);
 ```
+
+::: tip Route middleware — the only exception
+Route middleware `'can:'` requires a string. Use `->value` to derive it from the enum:
+```php
+Route::get('/documents/{document}/edit', [DocumentController::class, 'edit'])
+    ->middleware('can:' . DocumentsPermission::Edit->value . ',document');
+```
+:::
 
 ## API routes (JSON 403)
 

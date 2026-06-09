@@ -131,16 +131,22 @@ class EditorRole implements RoleInterface
 
 ```php
 // Assign
-$user->assignRole('editor');  // by name, panel auto-resolved
-// or explicitly:
-$user->assignRole(EditorRole::class, panel: 'app');
+$user->assignRole('editor');                 // by name, panel auto-resolved
+$user->assignRole(EditorRole::class);        // by class (preferred)
+$user->assignRole(EditorRole::class, panel: 'app');  // explicit panel
 
-// Check (multiple ways — all equivalent)
-$user->hasPermission(DocumentsPermission::View);        // true
-$user->hasPermission('app.documents.view');              // true
-Gate::allows('app.documents.view');                     // true (Gate facade)
-request()->user()->can('app.documents.view');           // true (Auth helper)
+// ✅ Check — always use enum constants
+$user->hasPermission(DocumentsPermission::View);   // true
+Gate::allows(DocumentsPermission::View);           // true (Gate facade)
+request()->user()->can(DocumentsPermission::View); // true (Auth helper)
+
+// ⚠️  String form — accepted for backward compatibility, but not recommended
+// $user->hasPermission('app.documents.view');     // works, but avoid
 ```
+
+::: tip Use enum constants everywhere
+Raw strings like `'app.documents.view'` are accepted but not recommended — a typo is a silent security hole that no IDE or static analyser will catch. Always use the enum case: `DocumentsPermission::View`.
+:::
 
 ## Verify the setup
 

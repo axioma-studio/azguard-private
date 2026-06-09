@@ -35,12 +35,71 @@ AppPermission         // documents_view, documents_create, invoices_view, ...
 ## Never hardcode string keys
 
 ```php
-// ❌ Typos are silent failures
-$user->hasPermission('app.documents.veiw'); // typo
+// ❌ Typos are silent failures — no IDE warning, no static analysis error
+$user->hasPermission('app.documents.veiw'); // typo — always returns false
 
 // ✅ Type-safe, IDE-navigable, refactor-safe
 $user->hasPermission(DocumentsPermission::View);
 ```
+
+This rule applies **everywhere** — not just `hasPermission()`. See the section below.
+
+## Enum constants in Gate and Blade
+
+Pass enum cases directly to `Gate::allows()`, `Gate::authorize()`, and `$this->authorize()`. Laravel calls `->value` automatically on `BackedEnum`.
+
+```php
+// ✅ Controller / service / job
+Gate::allows(DocumentsPermission::Edit, $document);
+$this->authorize(DocumentsPermission::Delete, $document);
+
+if (! Gate::allows(DocumentsPermission::Edit, $document)) {
+    abort(403);
+}
+
+// ❌ Raw string — typo won't be caught by IDE or Larastan
+Gate::allows('app.documents.edti', $document);
+```
+
+In **Blade templates** (no `use` statements), use one of two patterns:
+
+```php
+// ✅ Option 1 (preferred): resolve in the controller, pass as boolean
+public function show(Document $document): Response
+{
+    return view('documents.show', [
+        'document' => $document,
+        'can' => [
+            'edit'   => Gate::allows(DocumentsPermission::Edit,   $document),
+            'delete' => Gate::allows(DocumentsPermission::Delete, $document),
+        ],
+    ]);
+}
+```
+
+```blade
+{{-- ✅ Option 1: clean, no strings in template --}}
+@if($can['edit'])
+    <button>Edit</button>
+@endif
+
+{{-- ✅ Option 2: FQCN with ->value when a variable isn't available --}}
+@can(\App\AzGuard\App\Permissions\DocumentsPermission::Edit->value)
+    <button>Edit</button>
+@endcan
+
+{{-- ❌ Raw string — avoid --}}
+@can('app.documents.edit')
+    <button>Edit</button>
+@endcan
+```
+
+::: tip Route middleware — the one exception
+`Route::middleware('can:...')` requires a string. Derive it from the enum:
+```php
+->middleware('can:' . DocumentsPermission::Edit->value . ',document')
+```
+:::
 
 ## Static roles as the source of truth
 
@@ -74,7 +133,7 @@ class DocumentPolicy
 {
     public function edit(User $user, Document $document): bool
     {
-        // 1. Capability check
+        // 1. Capability check — enum, not string
         if (! $user->hasPermission(DocumentsPermission::Edit)) {
             return false;
         }

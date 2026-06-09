@@ -55,22 +55,31 @@ No other logic runs in `Gate::before`. All real permission checks happen in poli
 
 ## Calling the Gate
 
-```php
-// In a controller
-Gate::allows('app.documents.view', $document);   // bool
-Gate::authorize('app.documents.edit', $document); // throws 403 on failure
+Always pass the **enum case** directly — not a raw string. Laravel Gate accepts `BackedEnum` and calls `->value` automatically:
 
-// Blade
-@can('app.documents.delete', $document)
+```php
+// ✅ In a controller — enum case
+Gate::allows(DocumentsPermission::View, $document);
+Gate::authorize(DocumentsPermission::Edit, $document);
+```
+
+```blade
+{{-- ✅ Option 1: pre-resolved boolean from controller (preferred) --}}
+@if($can['delete'])
+    <button>Delete</button>
+@endif
+
+{{-- ✅ Option 2: FQCN with ->value --}}
+@can(\App\Guards\App\Permissions\DocumentsPermission::Delete->value, $document)
     <button>Delete</button>
 @endcan
 
-// Shorthand (panel resolved from middleware)
+{{-- ✅ Shorthand — panel resolved from middleware context --}}
 @azcan('documents.view')
     <a href="...">View</a>
 @endazcan
 ```
 
-::: warning
-Always use **resolved** ability strings (`app.documents.view`) when calling the Gate directly. `@azcan` resolves the panel from the current request context.
+::: tip Enum vs string
+Enum cases are type-safe and refactor-safe. `@azcan` accepts the short key without the panel prefix — use it for panel-scoped templates. In PHP code (controllers, services, jobs), always pass the enum directly to `Gate::allows()` / `Gate::authorize()`.
 :::

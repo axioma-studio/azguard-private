@@ -50,16 +50,16 @@ use AzGuard\Facades\AzGuard;
 // Permanent
 AzGuard::forUser($user)
     ->on('app')
-    ->give('app.documents.export');
+    ->give(DocumentsPermission::Export);
 
 // With a 1-hour TTL
 AzGuard::forUser($user)
     ->on('app')
     ->ttl(3600)
-    ->give('app.documents.export');
+    ->give(DocumentsPermission::Export);
 
 // Shorthand
-AzGuard::grantDirect($user, 'app.documents.export', 'app', ttl: 3600);
+AzGuard::grantDirect($user, DocumentsPermission::Export, 'app', ttl: 3600);
 ```
 
 ::: info Idempotent
@@ -82,9 +82,9 @@ php artisan az-guard:grant 7 admin.reports.view admin --model=App\\Models\\Admin
 ## Revoking a grant
 
 ```php
-// Single permission
-AzGuard::forUser($user)->on('app')->revoke('app.documents.export');
-AzGuard::revokeDirect($user, 'app.documents.export', 'app');
+// Single permission — enum
+AzGuard::forUser($user)->on('app')->revoke(DocumentsPermission::Export);
+AzGuard::revokeDirect($user, DocumentsPermission::Export, 'app');
 
 // All grants for a panel
 AzGuard::forUser($user)->on('app')->revokeAll();
@@ -99,13 +99,13 @@ php artisan az-guard:revoke-grant 42 - app --all --force
 ## Checking a grant
 
 ```php
-// On the User model
-$user->hasDirectGrant('app.documents.export');
-$user->hasDirectGrant('app.documents.export', 'app');
+// On the User model — enum or string accepted, enum preferred
+$user->hasDirectGrant(DocumentsPermission::Export);
+$user->hasDirectGrant(DocumentsPermission::Export, 'app');
 
 // Via Laravel Gate
-Gate::allows('direct-grant', 'app.documents.export');
-Gate::allows('direct-grant', ['app.documents.export', 'app']);
+Gate::allows('direct-grant', DocumentsPermission::Export);
+Gate::allows('direct-grant', [DocumentsPermission::Export, 'app']);
 
 // List active grants
 $grants = AzGuard::forUser($user)->on('app')->list();
@@ -115,12 +115,12 @@ $grants = AzGuard::activeGrants($user, 'app');
 ## Blade
 
 ```blade
-@azdirect('app.documents.export')
+@azdirect(\App\AzGuard\App\Permissions\DocumentsPermission::Export->value)
     <button>Export</button>
 @endazdirect
 
 {{-- Explicit panel --}}
-@azdirect('app.documents.export', 'app')
+@azdirect(\App\AzGuard\App\Permissions\DocumentsPermission::Export->value, 'app')
     <button>Export</button>
 @endazdirect
 ```
@@ -128,13 +128,13 @@ $grants = AzGuard::activeGrants($user, 'app');
 ## Route middleware
 
 ```php
-// az.grant:{permission},{panel}
+// az.grant:{permission},{panel} — string form required by middleware
 Route::get('/export', ExportController::class)
-    ->middleware('az.grant:app.documents.export,app');
+    ->middleware('az.grant:' . DocumentsPermission::Export->value . ',app');
 
 // Panel inferred from AzGuard::currentPanel() if omitted
 Route::get('/export', ExportController::class)
-    ->middleware('az.grant:app.documents.export');
+    ->middleware('az.grant:' . DocumentsPermission::Export->value);
 ```
 
 | Situation | HTTP status |
@@ -183,11 +183,11 @@ Event::listen(GrantRevoked::class, function (GrantRevoked $event): void {
 
 | Method | Code |
 |---|---|
-| Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->give('...')` |
-| Shorthand grant | `AzGuard::grantDirect($u, '...', 'app', ttl: 3600)` |
+| Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->give(DocumentsPermission::Export)` |
+| Shorthand grant | `AzGuard::grantDirect($u, DocumentsPermission::Export, 'app', ttl: 3600)` |
 | Artisan grant | `php artisan az-guard:grant {id} {perm} {panel}` |
-| Revoke | `AzGuard::forUser($u)->on('app')->revoke('...')` |
-| Check (model) | `$user->hasDirectGrant('app.x.view', 'app')` |
-| Check (Gate) | `Gate::allows('direct-grant', 'app.x.view')` |
-| Blade | `@azdirect('app.x.view') ... @endazdirect` |
-| Middleware | `->middleware('az.grant:app.x.view,app')` |
+| Revoke | `AzGuard::forUser($u)->on('app')->revoke(DocumentsPermission::Export)` |
+| Check (model) | `$user->hasDirectGrant(DocumentsPermission::Export, 'app')` |
+| Check (Gate) | `Gate::allows('direct-grant', DocumentsPermission::Export)` |
+| Blade | `@azdirect(DocumentsPermission::Export->value) ... @endazdirect` |
+| Middleware | `->middleware('az.grant:' . DocumentsPermission::Export->value . ',app')` |

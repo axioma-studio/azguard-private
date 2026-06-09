@@ -6,22 +6,55 @@ AzGuard integrates with Laravel's native Gate layer, which means **all standard 
 Always prefer **permission directives** (`@can`, `@cannot`, `@canany`, `@haspermission`) over role directives (`@role`, `@hasrole`). Permissions are stable; roles change. Code that checks permissions stays valid even when you rename or restructure roles.
 :::
 
+## Passing permissions from the controller
+
+Blade templates have no `use` statements, so the cleanest pattern is to **resolve permissions once in the controller** and pass pre-computed booleans to the view:
+
+```php
+// DocumentController
+public function show(Document $document): Response
+{
+    return view('documents.show', [
+        'document' => $document,
+        'can' => [
+            'edit'   => Gate::allows(DocumentsPermission::Edit,   $document),
+            'delete' => Gate::allows(DocumentsPermission::Delete, $document),
+        ],
+    ]);
+}
+```
+
+```blade
+{{-- ✅ Clean — no strings, no FQCN --}}
+@if($can['edit'])
+    <a href="{{ route('documents.edit', $document) }}" class="btn">Edit</a>
+@endif
+
+@if($can['delete'])
+    <button class="btn-danger">Delete</button>
+@endif
+```
+
+This is the **recommended pattern**: permission logic stays in PHP where it belongs, templates stay clean, and the check is type-safe at the source.
+
 ## Permission directives
+
+When you must use Gate directives directly in a template (e.g. layouts, shared partials), use the enum `->value` property or the fully-qualified class name:
 
 ### `@can` / `@cannot`
 
 ```blade
-{{-- Check a single permission --}}
-@can('app.documents.edit')
+{{-- ✅ FQCN with ->value --}}
+@can(\App\AzGuard\App\Permissions\DocumentsPermission::Edit->value)
     <a href="{{ route('documents.edit', $document) }}" class="btn">Edit</a>
 @endcan
 
-@cannot('app.documents.delete')
+@cannot(\App\AzGuard\App\Permissions\DocumentsPermission::Delete->value)
     <p class="text-muted">You don't have permission to delete documents.</p>
 @endcannot
 
 {{-- With an else branch --}}
-@can('app.documents.create')
+@can(\App\AzGuard\App\Permissions\DocumentsPermission::Create->value)
     <a href="{{ route('documents.create') }}">New document</a>
 @else
     <span class="text-muted">Read-only access</span>
@@ -33,7 +66,10 @@ Always prefer **permission directives** (`@can`, `@cannot`, `@canany`, `@hasperm
 Passes if the user has **at least one** of the listed permissions:
 
 ```blade
-@canany(['app.documents.create', 'app.documents.edit'])
+@canany([
+    \App\AzGuard\App\Permissions\DocumentsPermission::Create->value,
+    \App\AzGuard\App\Permissions\DocumentsPermission::Edit->value,
+])
     <div class="editor-toolbar">
         {{-- shown to users who can either create or edit --}}
     </div>
@@ -47,12 +83,12 @@ There is no `@canall` directive. To check for all permissions, chain multiple `@
 An alias for `@can` specific to AzGuard permission strings:
 
 ```blade
-@haspermission('app.documents.view')
+@haspermission(\App\AzGuard\App\Permissions\DocumentsPermission::View->value)
     <a href="/documents">Documents</a>
 @endhaspermission
 
 {{-- With explicit guard --}}
-@haspermission('app.documents.view', 'web')
+@haspermission(\App\AzGuard\App\Permissions\DocumentsPermission::View->value, 'web')
     <a href="/documents">Documents</a>
 @endhaspermission
 ```
@@ -61,7 +97,7 @@ An alias for `@can` specific to AzGuard permission strings:
 
 ```blade
 {{-- Routes through Laravel's Policy system if a policy exists for Document --}}
-@can('app.documents.edit', $document)
+@can(\App\AzGuard\App\Permissions\DocumentsPermission::Edit->value, $document)
     <button type="button">Edit</button>
 @endcan
 ```
@@ -70,7 +106,7 @@ An alias for `@can` specific to AzGuard permission strings:
 
 ```blade
 {{-- Useful in multi-guard apps --}}
-@can('admin.users.manage', 'admin')
+@can(\App\AzGuard\Admin\Permissions\UsersPermission::Manage->value, 'admin')
     <a href="/admin/users">Manage users</a>
 @endcan
 ```
@@ -207,4 +243,4 @@ For non-Gate checks in controllers you can also use `@if` with the trait methods
 
 ## Performance note
 
-Gate checks with AzGuard are resolved per-request from in-memory role definitions and cached within the request lifecycle. Calling `@can('app.documents.view')` multiple times on the same page does **not** re-query the database.
+Gate checks with AzGuard are resolved per-request from in-memory role definitions and cached within the request lifecycle. Calling `@can(DocumentsPermission::View->value)` multiple times on the same page does **not** re-query the database.

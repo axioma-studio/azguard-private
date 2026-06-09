@@ -37,7 +37,7 @@ public function test_editor_can_view_documents(): void
 
 public function test_viewer_cannot_delete(): void
 {
-    $user    = User::factory()->create();
+    $user     = User::factory()->create();
     $document = Document::factory()->create();
     $user->assignRole('viewer');
 
@@ -125,9 +125,10 @@ public function test_gate_allows_editor(): void
 
     $this->actingAs($user);
 
-    $this->assertTrue(Gate::allows('app.documents.view'));
-    $this->assertTrue(Gate::allows('app.documents.edit'));
-    $this->assertFalse(Gate::allows('app.documents.delete'));
+    // ✅ Always use enum constants in Gate assertions
+    $this->assertTrue(Gate::allows(DocumentsPermission::View));
+    $this->assertTrue(Gate::allows(DocumentsPermission::Edit));
+    $this->assertFalse(Gate::allows(DocumentsPermission::Delete));
 }
 
 public function test_gate_with_model(): void
@@ -139,7 +140,7 @@ public function test_gate_with_model(): void
     $this->actingAs($user);
 
     // Routes through DocumentPolicy::update() if registered
-    $this->assertTrue(Gate::allows('update', $document));
+    $this->assertTrue(Gate::allows(DocumentsPermission::Edit, $document));
 }
 ```
 
@@ -162,8 +163,8 @@ public function test_service_checks_permission(): void
 {
     $user = User::factory()->make(['id' => 1]);
 
-    // Grant in-memory — no DB writes
-    AzGuardFake::grantPermission($user, 'app.documents.view');
+    // Grant in-memory — no DB writes; use enum
+    AzGuardFake::grantPermission($user, DocumentsPermission::View);
     AzGuardFake::grantRole($user, 'editor');
 
     $result = app(DocumentService::class)->canView($user, $document);

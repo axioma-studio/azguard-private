@@ -109,25 +109,28 @@ $user->getRoles();                                 // Collection of role class s
 ## Check permissions
 
 ```php
-// Via the trait — accepts enum case or full string key
+// Via the trait — always prefer enum cases
 $user->hasPermission(DocumentsPermission::View);
-$user->hasPermission('app.documents.view');
 $user->hasAnyPermission([DocumentsPermission::Edit, DocumentsPermission::Delete]);
 $user->hasAllPermissions([DocumentsPermission::View, DocumentsPermission::Edit]);
 
-// Via Laravel Gate
+// Via Laravel Gate — pass the enum directly
 use Illuminate\Support\Facades\Gate;
 
-Gate::allows('app.documents.view');      // bool
-Gate::check('app.documents.view');       // alias
+Gate::allows(DocumentsPermission::View);   // ✅ enum — type-safe
+Gate::check(DocumentsPermission::View);    // alias
 
 // In a controller action — throws 403 on failure
-$this->authorize('app.documents.view');
+$this->authorize(DocumentsPermission::View);
 
-// Middleware on a route
+// Middleware on a route — the only place a string is unavoidable
 Route::get('/documents', DocumentController::class)
-    ->middleware('can:app.documents.view');
+    ->middleware('can:' . DocumentsPermission::View->value);
 ```
+
+::: tip Always use enum constants, never raw strings
+Passing a raw string to `Gate::allows('app.documents.veiw')` fails silently — a typo is an undetected security hole. Enum constants are type-safe, IDE-navigable, and refactor-safe.
+:::
 
 ::: tip Always check permissions, not roles
 Prefer `$user->hasPermission(...)` or `Gate::allows(...)` over `$user->hasRole(...)` for access control. Roles change over time; permissions express intent and are stable.
@@ -172,11 +175,10 @@ User::withoutRole('editor')->get();
 User::withoutRole(['editor', 'viewer'])->get();
 
 // Users that have a specific permission (via any role or direct grant)
-User::permission('app.documents.edit')->get();
 User::permission(DocumentsPermission::Edit)->get();
 
 // Users that do NOT have a specific permission
-User::withoutPermission('app.documents.delete')->get();
+User::withoutPermission(DocumentsPermission::Delete)->get();
 ```
 
 Scopes can be chained with other Eloquent calls:
@@ -210,19 +212,48 @@ User::with('azRoles')
 
 ## Gate check in Blade
 
+In Blade templates, pass pre-resolved booleans from the controller (preferred) or use the enum `->value` property:
+
+```php
+// In the controller — resolve once, pass as data
+public function edit(Document $document): Response
+{
+    return view('documents.edit', [
+        'document' => $document,
+        'can' => [
+            'edit'   => Gate::allows(DocumentsPermission::Edit,   $document),
+            'delete' => Gate::allows(DocumentsPermission::Delete, $document),
+        ],
+    ]);
+}
+```
+
 ```blade
-@can('app.documents.edit')
+{{-- ✅ Option 1: pre-resolved boolean from the controller (preferred) --}}
+@if($can['edit'])
+    <a href="{{ route('documents.edit', $document) }}">Edit</a>
+@endif
+
+{{-- ✅ Option 2: FQCN with ->value --}}
+@can(\App\AzGuard\App\Permissions\DocumentsPermission::Edit->value)
     <a href="{{ route('documents.edit', $document) }}">Edit</a>
 @endcan
 
-@cannot('app.documents.delete')
+@cannot(\App\AzGuard\App\Permissions\DocumentsPermission::Delete->value)
     <span class="text-muted">No delete access</span>
 @endcannot
 
-@canany(['app.documents.create', 'app.documents.edit'])
+@canany([
+    \App\AzGuard\App\Permissions\DocumentsPermission::Create->value,
+    \App\AzGuard\App\Permissions\DocumentsPermission::Edit->value,
+])
     <div class="editor-toolbar">...</div>
 @endcanany
 ```
+
+::: tip Why `->value` in Blade?
+Blade templates have no `use` statements. Pass pre-resolved booleans from the controller whenever possible. When you must use the directive directly, append `->value` to the enum case, or use the fully-qualified class name.
+:::
 
 See [Blade Directives](./blade-directives.md) for role checks and custom directives.
 
