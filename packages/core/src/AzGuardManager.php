@@ -19,7 +19,7 @@ final class AzGuardManager implements AzGuardManagerInterface
 
     protected ?Panel $currentPanel = null;
 
-    // ─── Panels ───────────────────────────────────────────────────────────────
+    // ─── Panels ──────────────────────────────────────────────────────────────
 
     public function registerPanel(Closure $panel): void
     {
@@ -55,18 +55,18 @@ final class AzGuardManager implements AzGuardManagerInterface
         $panel = $this->panel(id: $panelId);
 
         if ($panel === null) {
-            throw new \RuntimeException("Панель AzGuard [{$panelId}] не зарегистрирована.");
+            throw new \RuntimeException("AzGuard panel [{$panelId}] is not registered.");
         }
 
         return $panel->resolvePermission(permission: $permission);
     }
 
-    // ─── Grants API ───────────────────────────────────────────────────────────
+    // ─── Grants API ─────────────────────────────────────────────────────────
 
     /**
-     * Возвращает fluent GrantBuilder для пользователя.
+     * Return a fluent GrantBuilder for a user.
      *
-     * Пример:
+     * Example:
      *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
      */
     public function forUser(Authenticatable $user): GrantBuilder
@@ -75,9 +75,9 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Короткий хелпер: выдать direct grant.
+     * Shorthand: issue a direct grant.
      *
-     * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
+     * @param  int|null  $ttl  TTL in seconds. null = permanent.
      */
     public function grantDirect(
         Authenticatable $user,
@@ -89,9 +89,9 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Короткий хелпер: отозвать direct grant.
+     * Shorthand: revoke a direct grant.
      *
-     * @return int  Количество удалённых записей.
+     * @return int Number of deleted records.
      */
     public function revokeDirect(
         Authenticatable $user,
@@ -102,7 +102,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     /**
-     * Короткий хелпер: список активных grants пользователя в панели.
+     * Shorthand: list active direct grants for a user in a panel.
      *
      * @return Collection<int, DirectGrant>
      */

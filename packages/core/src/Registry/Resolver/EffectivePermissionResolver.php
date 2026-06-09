@@ -13,7 +13,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Main entry point for obtaining a PermissionSet for a user.
  *
  * Aggregates all GrantSources, filters result through PermissionCatalog
- * (known keys only or '*'), caches per request.
+ * (known keys only or '*'), caches per request via PermissionCache.
  *
  * Phase 1: ClassRoleGrantSource.
  * Phase 3: + DatabaseRoleGrantSource, DirectGrantSource.
@@ -30,9 +30,8 @@ final class EffectivePermissionResolver
     public function __construct(
         private readonly PermissionCatalog $catalog,
         iterable $sources,
-        private readonly PermissionResolverCache $cache,
+        private readonly PermissionCache $cache,
     ) {
-        // Sort once at construction — priorities are static.
         $this->sources = collect($sources)
             ->sortByDesc(fn (GrantSource $s) => $s->priority())
             ->values()
@@ -41,7 +40,7 @@ final class EffectivePermissionResolver
 
     public function forUser(Authenticatable $user, string $panelId): PermissionSet
     {
-        $cacheKey = PermissionResolverCache::keyFor($user->getAuthIdentifier(), $panelId);
+        $cacheKey = PermissionCache::keyFor($user->getAuthIdentifier(), $panelId);
 
         return $this->cache->rememberForRequest(
             $cacheKey,

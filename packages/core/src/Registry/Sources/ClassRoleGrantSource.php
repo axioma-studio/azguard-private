@@ -10,11 +10,11 @@ use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Источник grants из PHP-классов ролей (RoleInterface::permissions()).
- * Это основной источник в Фазе 1 — соответствует текущей логике
- * HasAzGuard::loadAzPermissions().
+ * Grant source from PHP role classes (RoleInterface::permissions()).
  *
- * Только роли с class_name (code roles). Custom DB roles — Фаза 3.
+ * Only processes roles that have a class_name set (code-defined roles).
+ * Pure DB roles without a class_name are handled by DatabaseRoleGrantSource.
+ * Priority: 100 (highest).
  */
 final class ClassRoleGrantSource implements GrantSource
 {
@@ -32,7 +32,7 @@ final class ClassRoleGrantSource implements GrantSource
                 $permissions = $roleLogic->permissions();
                 $all = is_array($permissions) ? $permissions : [];
 
-                // Фильтруем по панели: берём '*' и ключи с префиксом панели
+                // Keep '*' (wildcard) and permissions prefixed with the current panel ID.
                 return array_filter(
                     $all,
                     static fn (string $p) => $p === '*' || str_starts_with($p, $panelId . '.'),

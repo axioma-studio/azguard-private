@@ -24,6 +24,8 @@ use Illuminate\Support\Collection;
  */
 trait HasAzGuard
 {
+    use ResolvesRole;
+
     public function roles(): MorphToMany
     {
         return $this->morphToMany(
@@ -130,14 +132,12 @@ trait HasAzGuard
             return;
         }
 
-        // Flush all panels registered in the manager
         $panels = app(\AzGuard\AzGuardManager::class)->getPanels();
 
         foreach (array_keys($panels) as $id) {
             $resolver->forgetForUser($this, $id);
         }
 
-        // Always flush the default 'app' panel even if not in manager
         if (! isset($panels['app'])) {
             $resolver->forgetForUser($this, 'app');
         }
@@ -237,21 +237,5 @@ trait HasAzGuard
     public function getRoleNames(): Collection
     {
         return $this->roles->pluck('name');
-    }
-
-    /**
-     * Resolve a Role model from a name string or Role instance.
-     * Delegates to Role::findByName() to avoid duplication with HasScopes.
-     */
-    protected function resolveRole(string|Role $role): ?Role
-    {
-        if ($role instanceof Role) {
-            return $role;
-        }
-
-        /** @var class-string<Role> $roleClass */
-        $roleClass = Config::roleModel();
-
-        return $roleClass::findByName($role);
     }
 }

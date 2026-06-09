@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace AzGuard\Support;
 
 /**
- * Centralized config accessor for AzGuard.
+ * Centralised config accessor for AzGuard.
  *
  * Replaces scattered config('az-guard.*') calls with typed static methods.
  * Inspired by spatie/laravel-permission Support\Config.
  *
  * Usage:
- *   Config::roleModel()          // 'AzGuard\Models\Role'
- *   Config::tableName('roles')   // 'roles'
- *   Config::isEnabled('teams')   // false
+ *   Config::roleModel()               // 'AzGuard\Models\Role'
+ *   Config::rolesTable()              // 'az_guard_roles'
+ *   Config::rolePermissionsTable()    // 'az_guard_role_permissions'
+ *   Config::isEnabled('teams')        // false
  */
 final class Config
 {
-    // ─── Models ───────────────────────────────────────────────────────────────
+    // ─── Models ────────────────────────────────────────────────────────────
 
     public static function roleModel(): string
     {
@@ -34,12 +35,17 @@ final class Config
         return (string) config('az-guard.models.direct_grant', \AzGuard\Models\DirectGrant::class);
     }
 
+    public static function rolePermissionModel(): string
+    {
+        return (string) config('az-guard.models.role_permission', \AzGuard\Models\RolePermission::class);
+    }
+
     public static function modelsNamespace(): string
     {
         return (string) config('az-guard.models_namespace', 'App\\Models\\');
     }
 
-    // ─── Tables ───────────────────────────────────────────────────────────────
+    // ─── Tables ────────────────────────────────────────────────────────────
 
     public static function rolesTable(): string
     {
@@ -56,18 +62,23 @@ final class Config
         return (string) config('az-guard.table_names.model_has_scopes', 'model_has_scopes');
     }
 
+    public static function rolePermissionsTable(): string
+    {
+        return (string) config('az-guard.table_names.role_permissions', 'az_guard_role_permissions');
+    }
+
     public static function directGrantsTable(): string
     {
         return (string) config('az-guard.table_names.direct_grants', 'az_direct_grants');
     }
 
-    /** @param 'roles'|'model_has_roles'|'model_has_scopes'|'direct_grants' $key */
+    /** @param 'roles'|'model_has_roles'|'model_has_scopes'|'role_permissions'|'direct_grants' $key */
     public static function tableName(string $key): string
     {
         return (string) config("az-guard.table_names.{$key}");
     }
 
-    // ─── Columns ──────────────────────────────────────────────────────────────
+    // ─── Columns ───────────────────────────────────────────────────────────
 
     public static function rolePivotKey(): ?string
     {
@@ -81,7 +92,7 @@ final class Config
         return (string) config('az-guard.column_names.model_morph_key', 'model_id');
     }
 
-    // ─── Features ─────────────────────────────────────────────────────────────
+    // ─── Features ──────────────────────────────────────────────────────────
 
     public static function isEnabled(string $feature): bool
     {
@@ -108,14 +119,14 @@ final class Config
         return static::isEnabled('audit_log');
     }
 
-    // ─── Teams ────────────────────────────────────────────────────────────────
+    // ─── Teams ────────────────────────────────────────────────────────────
 
     public static function teamForeignKey(): string
     {
         return (string) config('az-guard.teams.foreign_key', 'team_id');
     }
 
-    // ─── Cache ────────────────────────────────────────────────────────────────
+    // ─── Cache ────────────────────────────────────────────────────────────
 
     public static function cacheStore(): string
     {
@@ -144,14 +155,14 @@ final class Config
         return (string) config('az-guard.cache.key', 'azguard.permissions');
     }
 
-    // ─── Middleware ───────────────────────────────────────────────────────────
+    // ─── Middleware ─────────────────────────────────────────────────────────
 
     public static function checkAccessAlias(): string
     {
         return (string) config('az-guard.middleware.check_access_alias', 'check.access');
     }
 
-    // ─── Panels ───────────────────────────────────────────────────────────────
+    // ─── Panels ───────────────────────────────────────────────────────────
 
     /** @return array<string> */
     public static function panels(): array

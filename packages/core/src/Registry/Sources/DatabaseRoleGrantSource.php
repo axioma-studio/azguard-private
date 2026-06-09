@@ -6,11 +6,12 @@ namespace AzGuard\Registry\Sources;
 
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\Config;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Grant source from DB roles via az_guard_role_permissions.
+ * Grant source from DB roles via the role_permissions table.
  *
  * Covers roles without class_name (pure DB roles, not PHP classes).
  * Priority 90 (ClassRoleGrantSource = 100, DirectGrantSource = 80).
@@ -24,9 +25,9 @@ final class DatabaseRoleGrantSource implements GrantSource
         $userId    = $user->getAuthIdentifier();
         $userClass = $user::class;
 
-        $rolesTable = config('az-guard.table_names.roles', 'az_guard_roles');
-        $pivotTable = config('az-guard.table_names.model_has_roles', 'az_guard_model_has_roles');
-        $permTable  = config('az-guard.table_names.role_permissions', 'az_guard_role_permissions');
+        $rolesTable = Config::rolesTable();
+        $pivotTable = Config::modelHasRolesTable();
+        $permTable  = Config::rolePermissionsTable();
 
         $keys = DB::table($permTable)
             ->join($pivotTable, "{$pivotTable}.role_id", '=', "{$permTable}.role_id")

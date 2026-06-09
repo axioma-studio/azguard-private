@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -17,12 +18,12 @@ class Role extends Model
         return $this->morphedByMany(
             config('auth.providers.users.model'),
             'model',
-            config('az-guard.table_names.model_has_roles')
+            Config::modelHasRolesTable(),
         );
     }
 
     /**
-     * Permissions assigned to the role via DB (not via PHP class).
+     * Permissions assigned to the role via the DB (not via PHP class).
      * Used by DatabaseRoleGrantSource.
      */
     public function dbPermissions(): HasMany

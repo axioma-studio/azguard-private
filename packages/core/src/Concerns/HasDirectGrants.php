@@ -5,79 +5,73 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\DirectGrant;
-use AzGuard\Support\PanelResolver;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use AzGuard\Support\Config;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Trait for Eloquent models (User, Admin, …).
+ * Adds direct-grant support to a User model.
  *
- * Adds:
- *  - directGrants()     — relation
- *  - hasDirectGrant()   — check for an active direct grant
- *  - activeDirectGrants() — all active grants for a panel
+ * Direct grants are one-off permission assignments that bypass roles.
+ * They are checked by DirectGrantSource inside EffectivePermissionResolver.
  *
  * Usage:
- *   class User extends Authenticatable
- *   {
- *       use HasAzGuard, HasDirectGrants;
- *   }
- *
- * Note: direct grants are already included by EffectivePermissionResolver
- * via DirectGrantSource. hasPermission() covers them automatically.
- * Use hasDirectGrant() only when you specifically need to check
- * the direct-grant layer in isolation (e.g. middleware, policy).
+ *   $user->grantDirect('app.posts.edit');
+ *   $user->hasDirectGrant('app.posts.edit'); // true
+ *   $user->revokeGrant('app.posts.edit');
  */
 trait HasDirectGrants
 {
-    // ─── Relation ─────────────────────────────────────────────────────────────
-
     /**
-     * @return MorphMany<DirectGrant>
+     * All direct grants belonging to this model.
      */
-    public function directGrants(): MorphMany
+    public function activeGrants(): HasMany
     {
-        return $this->morphMany(DirectGrant::class, 'grantable');
+        return $this->hasMany(Config::directGrantModel(), 'model_id')
+            ->where('model_type', $this->getMorphClass());
     }
 
-    // ─── Queries ──────────────────────────────────────────────────────────────
-
     /**
-     * Check for an active direct grant for a specific permission key.
-     *
-     * @param  string       $permissionKey  e.g. 'app.documents.export'
-     * @param  string|null  $panelId        Explicit panel; falls back to current AzGuard panel.
+     * Check whether this model has a specific direct grant.
      */
-    public function hasDirectGrant(string $permissionKey, ?string $panelId = null): bool
+    public function hasDirectGrant(string $permission): bool
     {
-        $panel = PanelResolver::resolve($panelId);
-
-        if ($panel === null) {
-            return false;
-        }
-
-        return $this->directGrants()
-            ->where('panel_id', $panel)
-            ->where('permission_key', $permissionKey)
-            ->active()
+        return $this->activeGrants()
+            ->where('permission', $permission)
             ->exists();
     }
 
     /**
-     * Return all active grants for the given panel (or current panel).
-     *
-     * @return Collection<int, DirectGrant>
+     * Assign a direct grant for the given permission.
+     * Silently ignores duplicates via firstOrCreate.
      */
-    public function activeDirectGrants(?string $panelId = null): Collection
+    public function grantDirect(string $permission): static
     {
-        $panel = PanelResolver::resolve($panelId);
+        DirectGrant::firstOrCreate([
+            'model_type'  => $this->getMorphClass(),
+            'model_id'    => $this->getKey(),
+            'permission'  => $permission,
+        ]);
 
-        $query = $this->directGrants()->active();
-
-        if ($panel !== null) {
-            $query->forPanel($panel);
+        if (method_exists($this, 'flushPermissions')) {
+            $this->flushPermissions();
         }
 
-        return $query->get();
+        return $this;
+    }
+
+    /**
+     * Revoke a direct grant for the given permission.
+     */
+    public function revokeGrant(string $permission): static
+    {
+        $this->activeGrants()
+            ->where('permission', $permission)
+            ->delete();
+
+        if (method_exists($this, 'flushPermissions')) {
+            $this->flushPermissions();
+        }
+
+        return $this;
     }
 }

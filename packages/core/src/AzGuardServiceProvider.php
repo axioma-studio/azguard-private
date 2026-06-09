@@ -24,7 +24,7 @@ use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
-use AzGuard\Guard\Authorizer;
+use AzGuard\Guard\AzGuardDiagnostics;
 use AzGuard\Guard\GuardDoctor;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\CheckDirectGrant;
@@ -57,7 +57,11 @@ final class AzGuardServiceProvider extends ServiceProvider
         $this->app->bind(AzGuardManagerInterface::class, AzGuardManager::class);
 
         $this->app->singleton(PolicyAttributeRegistrar::class);
-        $this->app->singleton(GuardDoctor::class);
+
+        // Canonical binding — use AzGuardDiagnostics going forward.
+        $this->app->singleton(AzGuardDiagnostics::class);
+        // BC alias — resolving the old GuardDoctor name from the container still works.
+        $this->app->alias(AzGuardDiagnostics::class, GuardDoctor::class);
 
         // ─── Registry ─────────────────────────────────────────────────────────
 
@@ -153,10 +157,10 @@ final class AzGuardServiceProvider extends ServiceProvider
             return;
         }
 
-        $router->aliasMiddleware('azguard.roles',  LoadAzGuardRoles::class);
-        $router->aliasMiddleware('azguard.panel',  SetCurrentPanel::class);
-        $router->aliasMiddleware('azguard.check',  CheckAccess::class);
-        $router->aliasMiddleware('azguard.grant',  CheckDirectGrant::class);
+        $router->aliasMiddleware('azguard.roles', LoadAzGuardRoles::class);
+        $router->aliasMiddleware('azguard.panel', SetCurrentPanel::class);
+        $router->aliasMiddleware('azguard.check', CheckAccess::class);
+        $router->aliasMiddleware('azguard.grant', CheckDirectGrant::class);
 
         $alias = Config::checkAccessAlias();
 
@@ -169,6 +173,7 @@ final class AzGuardServiceProvider extends ServiceProvider
      * Blade directives.
      *
      * @azcan    / @endazcan    — permission check
+     * @elseazcan / @unlessazcan / @endunlessazcan — added in DX2
      * @azrole   / @endazrole   — role check
      * @azdirect / @endazdirect — direct grant check
      */
@@ -179,6 +184,16 @@ final class AzGuardServiceProvider extends ServiceProvider
         });
 
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
+
+        Blade::directive('elseazcan', function (string $expression): string {
+            return "<?php elseif (auth()->check() && auth()->user()->hasPermission({$expression})): ?>";
+        });
+
+        Blade::directive('unlessazcan', function (string $expression): string {
+            return "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>";
+        });
+
+        Blade::directive('endunlessazcan', fn (): string => '<?php endif; ?>');
 
         Blade::directive('azrole', function (string $expression): string {
             return "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>";

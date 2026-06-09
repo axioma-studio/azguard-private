@@ -29,15 +29,7 @@ final class DirectGrantSource implements GrantSource
             ->pluck('permission_key')
             ->all();
 
-        if ($keys === []) {
-            return PermissionSet::empty();
-        }
-
-        if (in_array('*', $keys, strict: true)) {
-            return PermissionSet::wildcard();
-        }
-
-        return PermissionSet::fromKeys($keys);
+        return PermissionSet::fromRawKeys($keys);
     }
 
     public function priority(): int
