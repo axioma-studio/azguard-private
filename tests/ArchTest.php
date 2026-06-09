@@ -6,7 +6,6 @@ declare(strict_types=1);
  * Architecture tests для AzGuard.
  * Проверяют соответствие структуры кода архитектурным соглашениям.
  */
-
 arch('no debugging calls in source')
     ->expect(['dd', 'dump', 'ray', 'var_dump', 'print_r'])
     ->not->toBeUsed()

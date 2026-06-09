@@ -7,12 +7,12 @@ namespace AzGuard\Events;
 use AzGuard\Models\DirectGrant;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final class GrantGiven
+final readonly class GrantGiven
 {
     public function __construct(
-        public readonly Authenticatable $user,
-        public readonly string $permissionKey,
-        public readonly string $panelId,
-        public readonly DirectGrant $grant,
+        public Authenticatable $user,
+        public string $permissionKey,
+        public string $panelId,
+        public DirectGrant $grant,
     ) {}
 }

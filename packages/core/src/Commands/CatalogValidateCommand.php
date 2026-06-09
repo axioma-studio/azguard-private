@@ -15,14 +15,14 @@ use ReflectionMethod;
 use UnitEnum;
 
 /**
- * Валидирует согласованность каталога с политиками.
+ * Validates consistency between the catalog and policies.
  *
- * Проверки:
- * 1. Каждый key в каталоге имеет policy-метод с #[GateAbility] (предупреждение в normal-режиме, ошибка в strict).
- * 2. Каждый key в каталоге не является дубликатом.
- * 3. Каждый #[GateAbility]-метод политики ссылается на enum-case из каталога.
+ * Checks:
+ * 1. Every key in the catalog has a policy method with #[GateAbility] (warning in normal mode, error in strict).
+ * 2. Every key in the catalog is unique (no duplicates).
+ * 3. Every #[GateAbility] policy method references an enum-case present in the catalog.
  *
- * Примеры:
+ * Examples:
  *   php artisan guard:catalog:validate
  *   php artisan guard:catalog:validate --panel=app
  *   php artisan guard:catalog:validate --strict
@@ -30,10 +30,10 @@ use UnitEnum;
 final class CatalogValidateCommand extends Command
 {
     protected $signature = 'guard:catalog:validate
-        {--panel= : Проверить только указанную панель}
-        {--strict : Превращать предупреждения в ошибки}';
+        {--panel= : Validate only the given panel}
+        {--strict : Treat warnings as errors}';
 
-    protected $description = 'Проверяет согласованность PermissionCatalog с политиками и enum';
+    protected $description = 'Validate consistency between PermissionCatalog, policies, and enums';
 
     protected $aliases = ['az-guard:catalog:validate'];
 
@@ -56,7 +56,7 @@ final class CatalogValidateCommand extends Command
             : $catalog->panels();
 
         if ($panelIds === []) {
-            $this->warn('Нет зарегистрированных панелей.');
+            $this->warn('No registered panels found.');
 
             return self::SUCCESS;
         }
@@ -77,12 +77,12 @@ final class CatalogValidateCommand extends Command
 
         if (! $hasIssues) {
             $panelLabel = $panelFilter ?? 'all';
-            $this->info("guard:catalog:validate: проверки панели [{$panelLabel}] пройдены.");
+            $this->info("guard:catalog:validate: panel [{$panelLabel}] checks passed.");
 
             return self::SUCCESS;
         }
 
-        $this->error('guard:catalog:validate: найдены ошибки согласованности каталога.');
+        $this->error('guard:catalog:validate: catalog consistency errors found.');
 
         return self::FAILURE;
     }
@@ -92,7 +92,7 @@ final class CatalogValidateCommand extends Command
         $panel = AzGuard::getPanel($panelId);
 
         if ($panel === null) {
-            $this->errors[] = "Панель [{$panelId}] не найдена в AzGuardManager.";
+            $this->errors[] = "Panel [{$panelId}] not found in AzGuardManager.";
 
             return;
         }
@@ -101,12 +101,11 @@ final class CatalogValidateCommand extends Command
         $baseNamespace = $panel->getNamespace();
 
         if ($basePath === '' || $baseNamespace === '') {
-            $this->warnings[] = "Панель [{$panelId}]: basePath/namespace не заданы.";
+            $this->warnings[] = "Panel [{$panelId}]: basePath/namespace not set.";
 
             return;
         }
 
-        // Построить карту ability -> handler из #[GateAbility]
         $abilityMap = $this->buildAbilityMap(
             basePath: $basePath,
             baseNamespace: $baseNamespace,
@@ -115,14 +114,12 @@ final class CatalogValidateCommand extends Command
 
         $definitions = $catalog->all($panelId);
 
-        // Проверка 1: каждый ключ каталога есть в политиках
         $this->checkCatalogKeysHavePolicies(
             definitions: $definitions,
             abilityMap: $abilityMap,
             panelId: $panelId,
         );
 
-        // Проверка 2: каждый #[GateAbility] ссылается на ключ в каталоге
         $this->checkAbilitiesAreCatalogued(
             abilityMap: $abilityMap,
             catalog: $catalog,
@@ -130,12 +127,12 @@ final class CatalogValidateCommand extends Command
         );
 
         $this->info(
-            "Панель [{$panelId}]: {$this->countLabel(count($definitions))} в каталоге, {$this->countLabel(count($abilityMap))} в политиках."
+            "Panel [{$panelId}]: {$this->countLabel(count($definitions))} in catalog, {$this->countLabel(count($abilityMap))} in policies."
         );
     }
 
     /**
-     * Строит мапу resolvedKey -> "Policy::method" из #[GateAbility]-методов.
+     * Builds a resolvedKey -> "Policy::method" map from #[GateAbility] methods.
      *
      * @return array<string, string>
      */
@@ -157,8 +154,10 @@ final class CatalogValidateCommand extends Command
                 foreach ($method->getAttributes(GateAbility::class) as $attribute) {
                     /** @var GateAbility $gateAbility */
                     $gateAbility = $attribute->newInstance();
-
-                    if (! $gateAbility->permission instanceof UnitEnum || $panel === null) {
+                    if (! $gateAbility->permission instanceof UnitEnum) {
+                        continue;
+                    }
+                    if ($panel === null) {
                         continue;
                     }
 
@@ -172,7 +171,7 @@ final class CatalogValidateCommand extends Command
     }
 
     /**
-     * Проверка: каждый key каталога имеет policy-метод.
+     * Check that every catalog key has a corresponding policy method.
      *
      * @param  list<PermissionDefinition>  $definitions
      * @param  array<string, string>  $abilityMap
@@ -186,7 +185,7 @@ final class CatalogValidateCommand extends Command
             $key = $definition->key();
 
             if (! isset($abilityMap[$key])) {
-                $message = "Панель [{$panelId}]: permission [{$key}] есть в каталоге, но нет policy-метода с #[GateAbility].";
+                $message = "Panel [{$panelId}]: permission [{$key}] is in the catalog but has no policy method with #[GateAbility].";
 
                 $this->warnings[] = $message;
             }
@@ -194,7 +193,7 @@ final class CatalogValidateCommand extends Command
     }
 
     /**
-     * Проверка: каждый ability-метод ссылается на ключ в каталоге.
+     * Check that every ability method references a key present in the catalog.
      *
      * @param  array<string, string>  $abilityMap
      */
@@ -205,14 +204,14 @@ final class CatalogValidateCommand extends Command
     ): void {
         foreach ($abilityMap as $resolvedKey => $handler) {
             if (! $catalog->has($panelId, $resolvedKey)) {
-                $this->errors[] = "Панель [{$panelId}]: {$handler} использует [{$resolvedKey}], который отсутствует в PermissionCatalog.";
+                $this->errors[] = "Panel [{$panelId}]: {$handler} uses [{$resolvedKey}] which is missing from PermissionCatalog.";
             }
         }
     }
 
     private function countLabel(int $count): string
     {
-        return "{$count} permission" . ($count !== 1 ? 's' : '');
+        return "{$count} permission".($count !== 1 ? 's' : '');
     }
 
     private function normalizeOption(string $name): ?string

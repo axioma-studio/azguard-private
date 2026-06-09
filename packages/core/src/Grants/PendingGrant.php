@@ -11,13 +11,13 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Неизменяемый value object, описывающий ожидающую операцию grant'a.
  * Создаётся через GrantManager::for() и передаётся в GrantManager через ->save().
  */
-final class PendingGrant
+final readonly class PendingGrant
 {
     public function __construct(
-        public readonly Authenticatable $user,
-        public readonly string          $panelId,
-        public readonly string          $permissionKey,
-        public readonly ?int            $ttlSeconds,
+        public Authenticatable $user,
+        public string $panelId,
+        public string $permissionKey,
+        public ?int $ttlSeconds,
     ) {}
 
     public function expiresAt(): ?CarbonImmutable

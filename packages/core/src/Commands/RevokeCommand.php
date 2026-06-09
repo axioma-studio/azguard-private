@@ -4,46 +4,56 @@ declare(strict_types=1);
 
 namespace AzGuard\Commands;
 
+use AzGuard\Commands\Concerns\ResolvesUserModel;
 use AzGuard\Models\DirectGrant;
 use Illuminate\Console\Command;
 
 /**
- * Отозвать прямой grant (или все гранты) у пользователя.
+ * Revoke a direct grant (or all grants) from a user.
  *
- * Примеры:
+ * Examples:
  *   php artisan guard:revoke 1 app.documents.export --panel=app
  *   php artisan guard:revoke 1 --all --panel=app
  *   php artisan guard:revoke 1 --all
  */
-class RevokeCommand extends Command
+final class RevokeCommand extends Command
 {
-    protected $signature = 'guard:revoke
-        {user_id        : ID пользователя (или модели)}
-        {permission_key? : Ключ разрешения (не нужен при --all)}
-        {--panel=app    : ID панели}
-        {--all          : Отозвать все гранты пользователя (в указанной панели или во всех)}
-        {--model=       : FQCN модели (по умолчанию — модель пользователя из auth config)}
-        {--force        : Не запрашивать подтверждение}';
+    use ResolvesUserModel;
 
-    protected $description = 'Отозвать прямой grant разрешения у пользователя';
+    protected $signature = 'guard:revoke
+        {user_id         : User ID (or model ID)}
+        {permission_key? : Permission key (not required with --all)}
+        {--panel=        : Panel ID (omit to target all panels when used with --all)}
+        {--all           : Revoke all grants for the user (in the given panel or all panels)}
+        {--model=        : User model FQCN (defaults to auth.providers.users.model)}
+        {--force         : Skip confirmation prompt}';
+
+    protected $description = 'Revoke a direct permission grant from a user';
 
     public function handle(): int
     {
-        $userId        = $this->argument('user_id');
+        $userId = $this->argument('user_id');
         $permissionKey = $this->argument('permission_key');
-        $panelId       = (string) $this->option('panel');
-        $revokeAll     = (bool) $this->option('all');
-        $force         = (bool) $this->option('force');
-        $modelClass    = $this->option('model')
-            ?? config('auth.providers.users.model', 'App\\Models\\User');
+        $panelId = $this->option('panel');
+        $revokeAll = (bool) $this->option('all');
+        $force = (bool) $this->option('force');
+        $modelClass = $this->resolveUserModelClass();
 
         if (! $revokeAll && $permissionKey === null) {
-            $this->error('Укажите permission_key или используйте --all.');
+            $this->error('Specify a permission_key or use --all.');
+
+            return self::FAILURE;
+        }
+
+        if (! $revokeAll && $panelId === null) {
+            $this->error('Specify --panel when revoking a specific permission.');
+
             return self::FAILURE;
         }
 
         if (! class_exists($modelClass)) {
-            $this->error("Класс модели [{$modelClass}] не найден.");
+            $this->error("Model class [{$modelClass}] not found.");
+
             return self::FAILURE;
         }
 
@@ -51,32 +61,36 @@ class RevokeCommand extends Command
             ->where('model_id', $userId);
 
         if ($revokeAll) {
-            // --all без --panel=* означает конкретную панель; можно пройти по всем
-            if ($this->option('panel') !== 'app' || $panelId !== 'app') {
+            if ($panelId !== null) {
                 $query->where('panel_id', $panelId);
             }
-            $count = $query->count();
-            $label = $revokeAll ? "все гранты (панель: {$panelId})" : "[{$permissionKey}] (панель: {$panelId})";
+
+            $panelLabel = $panelId ?? 'all panels';
+            $label = "all grants (panel: {$panelLabel})";
         } else {
             $query->where('permission_key', $permissionKey)
-                  ->where('panel_id', $panelId);
-            $count = $query->count();
-            $label = "[{$permissionKey}] (панель: {$panelId})";
+                ->where('panel_id', $panelId);
+
+            $label = "[{$permissionKey}] (panel: {$panelId})";
         }
 
+        $count = $query->count();
+
         if ($count === 0) {
-            $this->warn("Грантов не найдено: {$label} у user #{$userId}.");
+            $this->warn("No grants found: {$label} for user #{$userId}.");
+
             return self::SUCCESS;
         }
 
-        if (! $force && ! $this->confirm("Удалить {$count} грант(ов) {$label} у user #{$userId}?")) {
-            $this->line('Отменено.');
+        if (! $force && ! $this->confirm("Delete {$count} grant(s) {$label} for user #{$userId}?")) {
+            $this->line('Cancelled.');
+
             return self::SUCCESS;
         }
 
         $deleted = $query->delete();
 
-        $this->info("Отозвано {$deleted} грант(ов): {$label} у user #{$userId}.");
+        $this->info("Revoked {$deleted} grant(s): {$label} for user #{$userId}.");
 
         return self::SUCCESS;
     }

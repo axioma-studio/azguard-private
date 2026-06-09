@@ -7,45 +7,45 @@ namespace AzGuard\Registry\Contracts;
 use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
 
 /**
- * Реестр всех известных permissions.
- * Единственный источник истины: никакой ключ не попадает в БД
- * без прохождения через catalog->assert().
+ * Registry of all known permissions.
+ * Single source of truth: no key reaches the database without
+ * passing through catalog->assert().
  */
 interface PermissionCatalog
 {
     /**
-     * Все definitions для панели.
+     * All definitions for a panel.
      *
      * @return list<PermissionDefinition>
      */
     public function all(string $panelId): array;
 
     /**
-     * Проверить наличие ключа в каталоге.
+     * Whether the resolved key exists in the catalog.
      */
     public function has(string $panelId, string $resolvedKey): bool;
 
     /**
-     * Получить definition или null.
+     * Returns the definition or null if not found.
      */
     public function get(string $panelId, string $resolvedKey): ?PermissionDefinition;
 
     /**
-     * Получить definition или бросить исключение.
+     * Returns the definition or throws if not found.
      *
      * @throws InvalidPermissionKeyException
      */
     public function assert(string $panelId, string $resolvedKey): PermissionDefinition;
 
     /**
-     * Definitions, сгруппированные по group().
+     * Definitions grouped by group().
      *
      * @return array<string, list<PermissionDefinition>>
      */
     public function groups(string $panelId): array;
 
     /**
-     * Список всех зарегистрированных panelId.
+     * All registered panel IDs.
      *
      * @return list<string>
      */

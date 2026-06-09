@@ -14,12 +14,12 @@ final class MakeGuardPermissionCommand extends Command
     use ResolvesGuardNamespaces;
 
     protected $signature = 'make:guard-permission
-        {panel : Панель (App)}
-        {domain : Домен (Documents)}
-        {name? : Имя case (View)}
+        {panel : Panel name (e.g. App)}
+        {domain : Domain name (e.g. Documents)}
+        {name? : Enum case name (e.g. View)}
         {--path=app/Guards}';
 
-    protected $description = 'Добавляет case в enum Permissions или создаёт enum';
+    protected $description = 'Add a case to an existing Permissions enum or create one';
 
     public function handle(): int
     {
@@ -44,7 +44,7 @@ final class MakeGuardPermissionCommand extends Command
         }
 
         if (! is_string($caseName) || $caseName === '') {
-            $this->error('Укажите имя case: make:guard-permission App Documents Export');
+            $this->error('Specify a case name: make:guard-permission App Documents Export');
 
             return self::FAILURE;
         }
@@ -54,15 +54,16 @@ final class MakeGuardPermissionCommand extends Command
         $enumCase = "    case {$caseName} = '{$domainKey}.{$caseKey}';\n";
 
         $content = File::get(path: $enumPath);
+        $replaced = 0;
         $content = str_replace(
             search: "\n    case ",
-            replace: "\n".$enumCase."    case ",
+            replace: "\n".$enumCase.'    case ',
             subject: $content,
-            count: 1,
+            count: $replaced,
         );
 
         File::put(path: $enumPath, contents: $content);
-        $this->info("Добавлен case {$caseName} в {$enumPath}");
+        $this->info("Added case {$caseName} to {$enumPath}");
 
         return self::SUCCESS;
     }

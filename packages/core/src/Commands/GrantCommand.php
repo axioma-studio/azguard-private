@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AzGuard\Commands;
 
-use AzGuard\Models\DirectGrant;
+use AzGuard\Commands\Concerns\ResolvesUserModel;
 use AzGuard\Grants\GrantBuilder;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Artisan-команда для выдачи direct grant пользователю.
+ * Artisan command to issue a direct grant to a user.
  *
  * @example
  *   php artisan az-guard:grant 42 app.documents.export app --ttl=3600
@@ -19,28 +19,30 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class GrantCommand extends Command
 {
-    protected $signature = 'az-guard:grant
-        {user-id        : ID пользователя}
-        {permission     : Ключ разрешения (app.documents.export)}
-        {panel          : Идентификатор панели}
-        {--ttl=         : TTL в секундах (если не задан — бессрочно)}
-        {--model=       : FQCN User-модели (default: auth.providers.users.model)}';
+    use ResolvesUserModel;
 
-    protected $description = 'Выдать direct grant пользователю AzGuard';
+    protected $signature = 'az-guard:grant
+        {user-id        : User ID}
+        {permission     : Permission key (e.g. app.documents.export)}
+        {panel          : Panel ID}
+        {--ttl=         : TTL in seconds (omit for no expiry)}
+        {--model=       : User model FQCN (defaults to auth.providers.users.model)}';
+
+    protected $description = 'Issue a direct grant to an AzGuard user';
 
     public function handle(): int
     {
-        $userId    = $this->argument('user-id');
-        $permKey   = $this->argument('permission');
-        $panelId   = $this->argument('panel');
-        $ttl       = $this->option('ttl') !== null ? (int) $this->option('ttl') : null;
-        $modelClass = $this->resolveModelClass();
+        $userId = $this->argument('user-id');
+        $permKey = $this->argument('permission');
+        $panelId = $this->argument('panel');
+        $ttl = $this->option('ttl') !== null ? (int) $this->option('ttl') : null;
+        $modelClass = $this->resolveUserModelClass();
 
         /** @var Authenticatable|null $user */
         $user = $modelClass::find($userId);
 
         if ($user === null) {
-            $this->error("Пользователь [{$modelClass}] c ID={$userId} не найден.");
+            $this->error("User [{$modelClass}] with ID={$userId} not found.");
 
             return self::FAILURE;
         }
@@ -55,7 +57,7 @@ final class GrantCommand extends Command
 
         $expiresAt = $grant->expires_at instanceof CarbonImmutable
             ? $grant->expires_at->toDateTimeString()
-            : ($grant->expires_at ? (string) $grant->expires_at : 'бессрочно');
+            : ($grant->expires_at ? (string) $grant->expires_at : 'never');
 
         $this->table(
             ['User ID', 'Model', 'Permission', 'Panel', 'Expires at'],
@@ -68,20 +70,8 @@ final class GrantCommand extends Command
             ]],
         );
 
-        $this->info("✅ Grant выдан.");
+        $this->info('Grant issued.');
 
         return self::SUCCESS;
-    }
-
-    private function resolveModelClass(): string
-    {
-        /** @var string|null $option */
-        $option = $this->option('model');
-
-        if ($option !== null && $option !== '') {
-            return $option;
-        }
-
-        return (string) config('auth.providers.users.model', 'App\\Models\\User');
     }
 }

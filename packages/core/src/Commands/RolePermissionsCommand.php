@@ -9,9 +9,9 @@ use AzGuard\Models\RolePermission;
 use Illuminate\Console\Command;
 
 /**
- * Управление DB-разрешениями роли (az_guard_role_permissions).
+ * Manage DB-level role permissions (az_guard_role_permissions).
  *
- * Примеры:
+ * Examples:
  *   php artisan guard:role-permissions list editor
  *   php artisan guard:role-permissions list editor --panel=app
  *   php artisan guard:role-permissions add  editor app.documents.view --panel=app
@@ -22,13 +22,13 @@ class RolePermissionsCommand extends Command
 {
     protected $signature = 'guard:role-permissions
         {action          : list | add | remove | sync}
-        {role            : Имя роли или её ID}
-        {permission_key? : Ключ разрешения (для add / remove)}
-        {--panel=app     : ID панели}
-        {--keys=         : Список ключей через запятую (для sync)}
-        {--force         : Не запрашивать подтверждение для sync}';
+        {role            : Role name or its ID}
+        {permission_key? : Permission key (for add / remove)}
+        {--panel=app     : Panel ID}
+        {--keys=         : Comma-separated list of keys (for sync)}
+        {--force         : Skip confirmation prompt for sync}';
 
-    protected $description = 'Управление DB-разрешениями роли (role_permissions)';
+    protected $description = 'Manage DB-level role permissions (role_permissions)';
 
     public function handle(): int
     {
@@ -41,16 +41,17 @@ class RolePermissionsCommand extends Command
             : Role::where('name', $roleArg)->first();
 
         if ($role === null) {
-            $this->error("Роль [{$roleArg}] не найдена в БД.");
+            $this->error("Role [{$roleArg}] not found in the database.");
+
             return self::FAILURE;
         }
 
         return match ($action) {
-            'list'   => $this->actionList($role, $panelId),
-            'add'    => $this->actionAdd($role, $panelId),
+            'list' => $this->actionList($role, $panelId),
+            'add' => $this->actionAdd($role, $panelId),
             'remove' => $this->actionRemove($role, $panelId),
-            'sync'   => $this->actionSync($role, $panelId),
-            default  => $this->invalidAction($action),
+            'sync' => $this->actionSync($role, $panelId),
+            default => $this->invalidAction($action),
         };
     }
 
@@ -62,23 +63,24 @@ class RolePermissionsCommand extends Command
         $perms = $query->get(['permission_key', 'panel_id', 'created_at']);
 
         $this->line('');
-        $this->info("DB-разрешения роли <comment>{$role->name}</comment> (панель: {$panelId}):");
+        $this->info("DB permissions for role <comment>{$role->name}</comment> (panel: {$panelId}):");
 
         if ($perms->isEmpty()) {
-            $this->warn('  Разрешений нет.');
+            $this->warn('  No permissions assigned.');
+
             return self::SUCCESS;
         }
 
         $this->table(
-            ['Permission Key', 'Panel', 'Назначено'],
-            $perms->map(fn ($p) => [
+            ['Permission Key', 'Panel', 'Assigned At'],
+            $perms->map(fn ($p): array => [
                 $p->permission_key,
                 $p->panel_id,
                 $p->created_at?->toDateTimeString() ?? '—',
             ])->all(),
         );
 
-        $this->line('<fg=gray>Итого: ' . $perms->count() . ' запис(ей)</>');
+        $this->line('<fg=gray>Total: '.$perms->count().' record(s)</>');
 
         return self::SUCCESS;
     }
@@ -87,7 +89,8 @@ class RolePermissionsCommand extends Command
     {
         $key = $this->argument('permission_key');
         if ($key === null) {
-            $this->error('Укажите permission_key.');
+            $this->error('Specify a permission_key.');
+
             return self::FAILURE;
         }
 
@@ -97,17 +100,18 @@ class RolePermissionsCommand extends Command
             ->exists();
 
         if ($exists) {
-            $this->warn("Разрешение [{$key}] уже есть у роли [{$role->name}] (панель: {$panelId}).");
+            $this->warn("Permission [{$key}] already assigned to role [{$role->name}] (panel: {$panelId}).");
+
             return self::SUCCESS;
         }
 
         RolePermission::create([
-            'role_id'        => $role->id,
+            'role_id' => $role->id,
             'permission_key' => $key,
-            'panel_id'       => $panelId,
+            'panel_id' => $panelId,
         ]);
 
-        $this->info("Добавлено: [{$key}] → роль [{$role->name}] (панель: {$panelId}).");
+        $this->info("Added: [{$key}] → role [{$role->name}] (panel: {$panelId}).");
 
         return self::SUCCESS;
     }
@@ -116,7 +120,8 @@ class RolePermissionsCommand extends Command
     {
         $key = $this->argument('permission_key');
         if ($key === null) {
-            $this->error('Укажите permission_key.');
+            $this->error('Specify a permission_key.');
+
             return self::FAILURE;
         }
 
@@ -126,11 +131,12 @@ class RolePermissionsCommand extends Command
             ->delete();
 
         if ($deleted === 0) {
-            $this->warn("Разрешение [{$key}] не найдено у роли [{$role->name}] (панель: {$panelId}).");
+            $this->warn("Permission [{$key}] not found on role [{$role->name}] (panel: {$panelId}).");
+
             return self::SUCCESS;
         }
 
-        $this->info("Удалено: [{$key}] у роли [{$role->name}] (панель: {$panелId}).");
+        $this->info("Removed: [{$key}] from role [{$role->name}] (panel: {$panelId}).");
 
         return self::SUCCESS;
     }
@@ -139,7 +145,8 @@ class RolePermissionsCommand extends Command
     {
         $keysRaw = (string) $this->option('keys');
         if ($keysRaw === '') {
-            $this->error('Для sync укажите --keys="key1,key2,..."');
+            $this->error('Specify --keys="key1,key2,..." for sync.');
+
             return self::FAILURE;
         }
 
@@ -150,39 +157,39 @@ class RolePermissionsCommand extends Command
             ->pluck('permission_key')
             ->all();
 
-        $toAdd    = array_diff($newKeys, $existing);
+        $toAdd = array_diff($newKeys, $existing);
         $toRemove = array_diff($existing, $newKeys);
 
-        if (empty($toAdd) && empty($toRemove)) {
-            $this->info('Разрешения уже синхронизированы — изменений нет.');
+        if ($toAdd === [] && $toRemove === []) {
+            $this->info('Permissions already in sync — no changes.');
+
             return self::SUCCESS;
         }
 
         $this->line('');
-        if (! empty($toAdd)) {
-            $this->line('<fg=green>+ Будет добавлено:</>  ' . implode(', ', $toAdd));
+        if ($toAdd !== []) {
+            $this->line('<fg=green>+ To add:</>  '.implode(', ', $toAdd));
         }
-        if (! empty($toRemove)) {
-            $this->line('<fg=red>- Будет удалено:</> ' . implode(', ', $toRemove));
+        if ($toRemove !== []) {
+            $this->line('<fg=red>- To remove:</> '.implode(', ', $toRemove));
         }
         $this->line('');
 
-        if (! $this->option('force') && ! $this->confirm('Применить изменения?')) {
-            $this->line('Отменено.');
+        if (! $this->option('force') && ! $this->confirm('Apply changes?')) {
+            $this->line('Cancelled.');
+
             return self::SUCCESS;
         }
 
-        // Добавляем новые
         foreach ($toAdd as $key) {
             RolePermission::create([
-                'role_id'        => $role->id,
+                'role_id' => $role->id,
                 'permission_key' => $key,
-                'panel_id'       => $panelId,
+                'panel_id' => $panelId,
             ]);
         }
 
-        // Удаляем лишние
-        if (! empty($toRemove)) {
+        if ($toRemove !== []) {
             $role->dbPermissions()
                 ->where('panel_id', $panelId)
                 ->whereIn('permission_key', $toRemove)
@@ -190,7 +197,7 @@ class RolePermissionsCommand extends Command
         }
 
         $this->info(sprintf(
-            'Sync завершён: +%d добавлено, -%d удалено (роль: %s, панель: %s).',
+            'Sync complete: +%d added, -%d removed (role: %s, panel: %s).',
             count($toAdd),
             count($toRemove),
             $role->name,
@@ -202,7 +209,8 @@ class RolePermissionsCommand extends Command
 
     private function invalidAction(string $action): int
     {
-        $this->error("Неизвестный action [{$action}]. Допустимые: list, add, remove, sync.");
+        $this->error("Unknown action [{$action}]. Allowed: list, add, remove, sync.");
+
         return self::FAILURE;
     }
 }

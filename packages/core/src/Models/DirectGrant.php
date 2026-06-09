@@ -9,16 +9,17 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Override;
 
 /**
- * @property int         $id
- * @property string      $grantable_type
- * @property int         $grantable_id
- * @property string      $panel_id
- * @property string      $permission_key
+ * @property int $id
+ * @property string $grantable_type
+ * @property int $grantable_id
+ * @property string $panel_id
+ * @property string $permission_key
  * @property Carbon|null $expires_at
- * @property Carbon      $created_at
- * @property Carbon      $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  *
  * @method static Builder<self> active()
  * @method static Builder<self> forPanel(string $panelId)
@@ -37,6 +38,7 @@ class DirectGrant extends Model
         'expires_at' => 'datetime',
     ];
 
+    #[Override]
     public function getTable(): string
     {
         return Config::directGrantsTable();
@@ -60,7 +62,7 @@ class DirectGrant extends Model
     {
         $query->where(function (Builder $q): void {
             $q->whereNull('expires_at')
-              ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', now());
         });
     }
 

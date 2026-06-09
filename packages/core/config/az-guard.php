@@ -8,11 +8,11 @@ return [
     |--------------------------------------------------------------------------
     | Models
     |--------------------------------------------------------------------------
-    | Модели, используемые AzGuard. Можно заменить своими классами.
+    | Eloquent models used by AzGuard. Replace with your own subclasses if needed.
     */
     'models' => [
-        'role'         => \AzGuard\Models\Role::class,
-        'scope'        => \AzGuard\Models\ModelHasScope::class,
+        'role' => \AzGuard\Models\Role::class,
+        'scope' => \AzGuard\Models\ModelHasScope::class,
         'direct_grant' => \AzGuard\Models\DirectGrant::class,
     ],
 
@@ -20,7 +20,7 @@ return [
     |--------------------------------------------------------------------------
     | Models Namespace
     |--------------------------------------------------------------------------
-    | Пространство имён приложения для поиска моделей.
+    | Application namespace used when resolving model classes by name.
     */
     'models_namespace' => 'App\\Models\\',
 
@@ -28,24 +28,24 @@ return [
     |--------------------------------------------------------------------------
     | Table Names
     |--------------------------------------------------------------------------
-    | Имена таблиц. Измените, если уже существуют конфликтующие таблицы.
+    | Override these if the default names conflict with existing tables.
     */
     'table_names' => [
-        'roles'            => 'roles',
-        'model_has_roles'  => 'model_has_roles',
+        'roles' => 'roles',
+        'model_has_roles' => 'model_has_roles',
         'model_has_scopes' => 'model_has_scopes',
-        'direct_grants'    => 'az_direct_grants',
+        'direct_grants' => 'az_direct_grants',
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Column Names
     |--------------------------------------------------------------------------
-    | Настройка имён колонок (например, для UUID вместо auto-increment).
-    | Установите 'role_pivot_key' в 'uuid' для поддержки UUID.
+    | Customize column names (e.g. for UUID instead of auto-increment keys).
+    | Set 'role_pivot_key' to 'uuid' to enable UUID support.
     */
     'column_names' => [
-        'role_pivot_key'  => null,      // null = auto (id)
+        'role_pivot_key' => null,      // null = auto (id)
         'model_morph_key' => 'model_id',
     ],
 
@@ -53,7 +53,7 @@ return [
     |--------------------------------------------------------------------------
     | Panels
     |--------------------------------------------------------------------------
-    | Провайдеры панелей AzGuard. Каждый — FQCN класса, расширяющего PanelProvider.
+    | AzGuard panel providers. Each entry is the FQCN of a class extending PanelProvider.
     */
     'panels' => [],
 
@@ -63,7 +63,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'middleware' => [
-        'check_access_alias'                        => 'check.access',
+        'check_access_alias' => 'check.access',
         'register_middleware_in_appServiceProvider' => false,
     ],
 
@@ -71,36 +71,36 @@ return [
     |--------------------------------------------------------------------------
     | Cache
     |--------------------------------------------------------------------------
-    | Кэширование прав пользователей между запросами.
+    | Per-user permission caching across requests.
     | store: 'default' | 'redis' | 'memcached' | 'file' | 'array'
-    | Установите 'array' для отключения cross-request кэша (только in-memory).
-    | expiration_time: TTL в секундах. null — без истечения.
+    | Use 'array' to disable cross-request caching (in-memory only, good for tests).
+    | expiration_time: TTL in seconds. null = no expiry.
     */
     'cache' => [
-        'store'           => 'array',
+        'store' => 'array',
         'expiration_time' => 3600,
-        'key'             => 'azguard.permissions',
+        'key' => 'azguard.permissions',
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Features (Feature Flags)
     |--------------------------------------------------------------------------
-    | Включите нужные возможности. По умолчанию все отключены
-    | для максимальной обратной совместимости.
+    | Enable only what you need. All flags default to false for maximum
+    | backwards compatibility.
     */
     'features' => [
-        'wildcard_permission' => false, // Wildcards типа 'admin.*'
-        'teams'               => false, // Multi-team/tenant изоляция
-        'audit_log'           => false, // Логирование назначений/отзывов ролей
-        'direct_grants'       => true,  // Direct grants (HasDirectGrants + az_direct_grants)
+        'wildcard_permission' => false, // Wildcards like 'admin.*'
+        'teams' => false, // Multi-team / tenant isolation
+        'audit_log' => false, // Log role assignment and revocation events
+        'direct_grants' => true,  // Direct grants (HasDirectGrants + az_direct_grants table)
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Teams
     |--------------------------------------------------------------------------
-    | Настройки для multi-team режима (требует features.teams = true).
+    | Settings for multi-team mode (requires features.teams = true).
     */
     'teams' => [
         'foreign_key' => 'team_id',

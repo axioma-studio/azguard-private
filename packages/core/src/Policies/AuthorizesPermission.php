@@ -6,13 +6,15 @@ namespace AzGuard\Policies;
 
 use AzGuard\Facades\AzGuard;
 use AzGuard\Support\Panel;
+use BackedEnum;
 use Illuminate\Contracts\Auth\Authenticatable;
+use RuntimeException;
 
 trait AuthorizesPermission
 {
     abstract protected function panelId(): string;
 
-    protected function allows(\BackedEnum $permission, Authenticatable $user): bool
+    protected function allows(BackedEnum $permission, Authenticatable $user): bool
     {
         if (! method_exists($user, 'hasAzPermission')) {
             return false;
@@ -21,7 +23,7 @@ trait AuthorizesPermission
         return $user->hasAzPermission(permission: $this->resolvePermission(permission: $permission));
     }
 
-    protected function resolvePermission(\BackedEnum $permission): string
+    protected function resolvePermission(BackedEnum $permission): string
     {
         return $this->panel()->resolvePermission(permission: $permission);
     }
@@ -29,6 +31,6 @@ trait AuthorizesPermission
     protected function panel(): Panel
     {
         return AzGuard::panel(id: $this->panelId())
-            ?? throw new \RuntimeException("Панель AzGuard [{$this->panelId()}] не зарегистрирована.");
+            ?? throw new RuntimeException("Панель AzGuard [{$this->panelId()}] не зарегистрирована.");
     }
 }

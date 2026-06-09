@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace AzGuard\Commands;
 
+use AzGuard\Attributes\GateAbility;
 use AzGuard\Facades\AzGuard;
 use AzGuard\Guard\PolicyDiscovery;
-use AzGuard\Attributes\GateAbility;
 use Illuminate\Console\Command;
 use ReflectionClass;
 use ReflectionMethod;
 
 class ListPermissionsCommand extends Command
 {
-    protected $signature = 'azguard:list-permissions {panel? : ID панели (оставьте пустым для всех)}';
+    protected $signature = 'azguard:list-permissions {panel? : Panel ID (leave empty for all panels)}';
 
-    protected $description = 'Вывести все зарегистрированные разрешения AzGuard по панелям';
+    protected $description = 'List all registered AzGuard permissions grouped by panel';
 
     public function handle(): int
     {
@@ -23,7 +23,8 @@ class ListPermissionsCommand extends Command
         $panels = AzGuard::getPanels();
 
         if (empty($panels)) {
-            $this->warn('Нет зарегистрированных панелей AzGuard.');
+            $this->warn('No AzGuard panels registered.');
+
             return self::SUCCESS;
         }
 
@@ -33,13 +34,14 @@ class ListPermissionsCommand extends Command
             }
 
             $this->line('');
-            $this->info("Панель: <comment>{$panelId}</comment>");
+            $this->info("Panel: <comment>{$panelId}</comment>");
 
             $basePath = $panel->getBasePath();
             $baseNamespace = $panel->getNamespace();
 
             if ($basePath === '' || $baseNamespace === '') {
-                $this->warn("  Не задан basePath/namespace для панели [{$panelId}].");
+                $this->warn("  basePath/namespace not set for panel [{$panelId}].");
+
                 continue;
             }
 
@@ -57,17 +59,18 @@ class ListPermissionsCommand extends Command
                         /** @var GateAbility $ga */
                         $ga = $attribute->newInstance();
                         $ability = $panel->resolvePermission(permission: $ga->permission);
-                        $rows[] = [$ability, $policyClass . '::' . $method->getName()];
+                        $rows[] = [$ability, $policyClass.'::'.$method->getName()];
                     }
                 }
             }
 
-            if (empty($rows)) {
-                $this->line('  Разрешений не найдено.');
+            if ($rows === []) {
+                $this->line('  No permissions found.');
+
                 continue;
             }
 
-            $this->table(['Разрешение', 'Обработчик (Policy::method)'], $rows);
+            $this->table(['Permission', 'Handler (Policy::method)'], $rows);
         }
 
         $this->line('');

@@ -102,7 +102,7 @@ describe('PermissionSet', function () {
 
     it('merging with wildcard yields wildcard', function () {
         $regular = PermissionSet::fromKeys(['app.posts.view']);
-        $wild    = PermissionSet::wildcard();
+        $wild = PermissionSet::wildcard();
 
         expect($regular->merge($wild)->isWildcard())->toBeTrue()
             ->and($wild->merge($regular)->isWildcard())->toBeTrue();

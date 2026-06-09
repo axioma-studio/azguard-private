@@ -12,6 +12,4 @@ use RuntimeException;
  * Catch this class to handle any AzGuard-specific exception
  * without catching generic PHP errors (TypeError, Error, etc.).
  */
-class AzGuardException extends RuntimeException
-{
-}
+class AzGuardException extends RuntimeException {}

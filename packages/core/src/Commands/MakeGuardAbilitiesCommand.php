@@ -13,11 +13,11 @@ final class MakeGuardAbilitiesCommand extends Command
     use ResolvesGuardNamespaces;
 
     protected $signature = 'make:guard-abilities
-        {panel : Панель (App)}
-        {domain : Домен (Documents)}
+        {panel : Panel name (e.g. App)}
+        {domain : Domain name (e.g. Documents)}
         {--path=app/Guards}';
 
-    protected $description = 'Создаёт Abilities DTO на базе AbilitiesDto';
+    protected $description = 'Create an Abilities DTO based on AbilitiesDto';
 
     public function handle(): int
     {
@@ -30,12 +30,12 @@ final class MakeGuardAbilitiesCommand extends Command
         $abilitiesPath = $this->domainPath(basePath: $basePath, domain: $domain).'/Abilities/'.$domain.'Abilities.php';
 
         if (File::exists(path: $abilitiesPath)) {
-            $this->error("Abilities уже существуют: {$abilitiesPath}");
+            $this->error("Abilities already exist: {$abilitiesPath}");
 
             return self::FAILURE;
         }
 
-        File::ensureDirectoryExists(directory: dirname(path: $abilitiesPath));
+        File::ensureDirectoryExists(path: dirname(path: $abilitiesPath));
 
         $stub = File::get(path: __DIR__.'/../../stubs/panel/domain-abilities.stub');
         $replacements = [
@@ -49,7 +49,7 @@ final class MakeGuardAbilitiesCommand extends Command
         }
 
         File::put(path: $abilitiesPath, contents: $stub);
-        $this->info("Abilities созданы: {$abilitiesPath}");
+        $this->info("Abilities created: {$abilitiesPath}");
 
         return self::SUCCESS;
     }

@@ -9,6 +9,7 @@ use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\Config;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Override;
 
 /**
  * Grant source from DB roles via the role_permissions table.
@@ -20,14 +21,15 @@ use Illuminate\Support\Facades\DB;
  */
 final class DatabaseRoleGrantSource implements GrantSource
 {
+    #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
-        $userId    = $user->getAuthIdentifier();
+        $userId = $user->getAuthIdentifier();
         $userClass = $user::class;
 
-        $rolesTable = Config::rolesTable();
+        Config::rolesTable();
         $pivotTable = Config::modelHasRolesTable();
-        $permTable  = Config::rolePermissionsTable();
+        $permTable = Config::rolePermissionsTable();
 
         $keys = DB::table($permTable)
             ->join($pivotTable, "{$pivotTable}.role_id", '=', "{$permTable}.role_id")
@@ -48,6 +50,7 @@ final class DatabaseRoleGrantSource implements GrantSource
         return PermissionSet::fromKeys($keys);
     }
 
+    #[Override]
     public function priority(): int
     {
         return 90;

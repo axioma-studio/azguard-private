@@ -8,6 +8,7 @@ use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Override;
 
 /**
  * Grant source from the az_guard_direct_grants table.
@@ -19,6 +20,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class DirectGrantSource implements GrantSource
 {
+    #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
         $keys = DirectGrant::query()
@@ -32,6 +34,7 @@ final class DirectGrantSource implements GrantSource
         return PermissionSet::fromRawKeys($keys);
     }
 
+    #[Override]
     public function priority(): int
     {
         return 80;

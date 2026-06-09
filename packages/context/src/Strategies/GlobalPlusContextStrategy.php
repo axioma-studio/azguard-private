@@ -7,6 +7,7 @@ namespace AzGuard\Context\Strategies;
 use AzGuard\Context\Contracts\ContextMergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Override;
 
 /**
  * Стратегия: global ∪ context.
@@ -20,13 +21,14 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class GlobalPlusContextStrategy implements ContextMergeStrategy
 {
+    #[Override]
     public function merge(
         Authenticatable $user,
         string $panelId,
         PermissionSet $global,
         ?PermissionSet $context,
     ): PermissionSet {
-        if ($context === null) {
+        if (! $context instanceof PermissionSet) {
             return $global;
         }
 

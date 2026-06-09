@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament\Resources;
 
+use App\Models\User;
 use AzGuard\AzGuardManager;
 use AzGuard\Filament\Resources\DirectGrantResource\Pages\CreateDirectGrant;
 use AzGuard\Filament\Resources\DirectGrantResource\Pages\ListDirectGrants;
@@ -14,10 +15,13 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Override;
 
 /**
  * Filament Resource для просмотра, создания и отзыва Direct Grants.
@@ -42,9 +46,10 @@ final class DirectGrantResource extends Resource
 
     // ─── Form ─────────────────────────────────────────────────────────────────
 
+    #[Override]
     public static function form(Form $form): Form
     {
-        $userModel   = config('auth.providers.users.model', \App\Models\User::class);
+        $userModel = config('auth.providers.users.model', User::class);
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
         return $form->schema([
@@ -119,18 +124,19 @@ final class DirectGrantResource extends Resource
 
     // ─── Table ────────────────────────────────────────────────────────────────
 
+    #[Override]
     public static function table(Table $table): Table
     {
-        $userModel   = config('auth.providers.users.model', \App\Models\User::class);
+        $userModel = config('auth.providers.users.model', User::class);
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
         return $table
             ->columns([
                 TextColumn::make('grantable_id')
                     ->label('Пользователь')
-                    ->formatStateUsing(function ($state, DirectGrant $record) use ($userModel, $labelColumn): string {
+                    ->formatStateUsing(function (string $state, DirectGrant $record) use ($userModel, $labelColumn): string {
                         if ($record->grantable_type !== $userModel) {
-                            return $record->grantable_type . '#' . $state;
+                            return $record->grantable_type.'#'.$state;
                         }
 
                         $user = $userModel::find($state);
@@ -165,27 +171,28 @@ final class DirectGrantResource extends Resource
                     ->label('Панель')
                     ->options(fn () => DirectGrant::query()->distinct()->pluck('panel_id', 'panel_id')),
 
-                Tables\Filters\Filter::make('active')
+                Filter::make('active')
                     ->label('Только активные')
                     ->query(fn ($query) => $query->where(
                         fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now())
                     )),
             ])
             ->actions([
-                Tables\Actions\DeleteAction::make()->label('Отозвать'),
+                DeleteAction::make()->label('Отозвать'),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make()->label('Отозвать выбранные'),
+                DeleteBulkAction::make()->label('Отозвать выбранные'),
             ])
             ->defaultSort('created_at', 'desc');
     }
 
     // ─── Pages ────────────────────────────────────────────────────────────────
 
+    #[Override]
     public static function getPages(): array
     {
         return [
-            'index'  => ListDirectGrants::route('/'),
+            'index' => ListDirectGrants::route('/'),
             'create' => CreateDirectGrant::route('/create'),
         ];
     }

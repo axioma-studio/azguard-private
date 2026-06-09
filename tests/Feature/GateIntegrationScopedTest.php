@@ -12,20 +12,20 @@ use Illuminate\Support\Facades\Gate;
 describe('Gate integration — entity-scoped roles', function (): void {
 
     it('denies scoped permission when no scoped role is assigned', function (): void {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
 
         expect($user->hasScopedPermission('projects.edit', $project))->toBeFalse();
     });
 
     it('grants scoped permission via assigned scoped role', function (): void {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'project-editor',
+            'name' => 'project-editor',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->assignScopedRole($role, $project);
@@ -35,13 +35,13 @@ describe('Gate integration — entity-scoped roles', function (): void {
     });
 
     it('superadmin wildcard bypasses scoped permission check', function (): void {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'superadmin-scoped',
+            'name' => 'superadmin-scoped',
             'class_name' => \AzGuard\Tests\Stubs\Roles\SuperAdminRole::class,
-            'level'      => 1000,
+            'level' => 1000,
         ]);
 
         $user->roles()->attach($role);
@@ -52,14 +52,14 @@ describe('Gate integration — entity-scoped roles', function (): void {
     });
 
     it('scoped role on project A does not grant access to project B', function (): void {
-        $user     = User::factory()->create();
+        $user = User::factory()->create();
         $projectA = Project::factory()->create();
         $projectB = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'editor-isolation',
+            'name' => 'editor-isolation',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->assignScopedRole($role, $projectA);
@@ -69,19 +69,19 @@ describe('Gate integration — entity-scoped roles', function (): void {
     });
 
     it('global Gate::allows still works alongside scoped roles', function (): void {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
 
         $globalRole = Role::create([
-            'name'       => 'manager-combo',
+            'name' => 'manager-combo',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $scopedRole = Role::create([
-            'name'       => 'project-editor-combo',
+            'name' => 'project-editor-combo',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->roles()->attach($globalRole);
@@ -99,13 +99,13 @@ describe('Gate integration — entity-scoped roles', function (): void {
     });
 
     it('removeScopedRole revokes the permission', function (): void {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'editor-revoke',
+            'name' => 'editor-revoke',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->assignScopedRole($role, $project);

@@ -9,6 +9,7 @@ use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Override;
 
 /**
  * GrantSource: права из контекстных ролей.
@@ -25,24 +26,25 @@ use Illuminate\Support\Facades\DB;
  *   id, model_type, model_id, context_type, context_id, panel_id,
  *   permission_key, created_at, updated_at
  */
-final class ContextualRoleGrantSource implements GrantSource
+final readonly class ContextualRoleGrantSource implements GrantSource
 {
     public function __construct(
-        private readonly AuthorizationContextManager $manager,
-        private readonly ContextMergeStrategy $strategy,
+        private AuthorizationContextManager $manager,
+        private ContextMergeStrategy $strategy,
     ) {}
 
+    #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
         $context = $this->manager->current($panelId);
 
         // Контекст не установлен — стратегия решает (пустой или что-то ещё)
-        if ($context === null) {
+        if (! $context instanceof AuthorizationContext) {
             return $this->strategy->merge($user, $panelId, PermissionSet::empty(), null);
         }
 
-        $userId    = $user->getAuthIdentifier();
-        $userClass = get_class($user);
+        $userId = $user->getAuthIdentifier();
+        $userClass = $user::class;
 
         $table = config('az-guard.table_names.context_roles', 'az_guard_context_roles');
 
@@ -55,18 +57,17 @@ final class ContextualRoleGrantSource implements GrantSource
             ->pluck('permission_key')
             ->all();
 
-        $contextSet = $keys === []
+        // global-часть = пустой set: этот source отвечает только за context-слой.
+        // Merge с глобальными правами происходит в EffectivePermissionResolver
+        // через обычные источники (ClassRole, DatabaseRole).
+        return $keys === []
             ? PermissionSet::empty()
             : (in_array('*', $keys, strict: true)
                 ? PermissionSet::wildcard()
                 : PermissionSet::fromKeys($keys));
-
-        // global-часть = пустой set: этот source отвечает только за context-слой.
-        // Merge с глобальными правами происходит в EffectivePermissionResolver
-        // через обычные источники (ClassRole, DatabaseRole).
-        return $contextSet;
     }
 
+    #[Override]
     public function priority(): int
     {
         return 95;

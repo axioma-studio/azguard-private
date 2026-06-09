@@ -11,6 +11,9 @@ use AzGuard\Support\Panel;
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
+use Override;
+use RuntimeException;
+use UnitEnum;
 
 final class AzGuardManager implements AzGuardManagerInterface
 {
@@ -21,6 +24,7 @@ final class AzGuardManager implements AzGuardManagerInterface
 
     // ─── Panels ──────────────────────────────────────────────────────────────
 
+    #[Override]
     public function registerPanel(Closure $panel): void
     {
         $panelInstance = $panel();
@@ -30,32 +34,37 @@ final class AzGuardManager implements AzGuardManagerInterface
     /**
      * @return array<string, Panel>
      */
+    #[Override]
     public function getPanels(): array
     {
         return $this->panels;
     }
 
+    #[Override]
     public function panel(string $id): ?Panel
     {
         return $this->panels[$id] ?? null;
     }
 
+    #[Override]
     public function currentPanel(): ?Panel
     {
         return $this->currentPanel;
     }
 
+    #[Override]
     public function setCurrentPanel(?Panel $panel): void
     {
         $this->currentPanel = $panel;
     }
 
-    public function permission(string $panelId, string|\UnitEnum $permission): string
+    #[Override]
+    public function permission(string $panelId, string|UnitEnum $permission): string
     {
         $panel = $this->panel(id: $panelId);
 
-        if ($panel === null) {
-            throw new \RuntimeException("AzGuard panel [{$panelId}] is not registered.");
+        if (! $panel instanceof Panel) {
+            throw new RuntimeException("AzGuard panel [{$panelId}] is not registered.");
         }
 
         return $panel->resolvePermission(permission: $permission);
@@ -69,6 +78,7 @@ final class AzGuardManager implements AzGuardManagerInterface
      * Example:
      *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
      */
+    #[Override]
     public function forUser(Authenticatable $user): GrantBuilder
     {
         return new GrantBuilder(user: $user);
@@ -79,6 +89,7 @@ final class AzGuardManager implements AzGuardManagerInterface
      *
      * @param  int|null  $ttl  TTL in seconds. null = permanent.
      */
+    #[Override]
     public function grantDirect(
         Authenticatable $user,
         string $permissionKey,
@@ -93,6 +104,7 @@ final class AzGuardManager implements AzGuardManagerInterface
      *
      * @return int Number of deleted records.
      */
+    #[Override]
     public function revokeDirect(
         Authenticatable $user,
         string $permissionKey,
@@ -106,6 +118,7 @@ final class AzGuardManager implements AzGuardManagerInterface
      *
      * @return Collection<int, DirectGrant>
      */
+    #[Override]
     public function activeGrants(
         Authenticatable $user,
         string $panelId = 'app',

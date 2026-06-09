@@ -33,7 +33,7 @@ describe('AzGuardManagerInterface contract', function () {
 
     it('sets and gets current panel', function () {
         $manager = new AzGuardManager;
-        $panel   = Panel::make()->id('active');
+        $panel = Panel::make()->id('active');
 
         $manager->setCurrentPanel($panel);
         expect($manager->currentPanel())->toBe($panel);

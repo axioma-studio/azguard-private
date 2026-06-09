@@ -4,10 +4,10 @@ use AzGuard\Guard\DiscoveryService;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 
 test('it can discover role classes in a directory', function () {
-    $service = new DiscoveryService();
+    $service = new DiscoveryService;
 
     // Указываем путь к нашим тестовым заглушкам
-    $path = __DIR__ . '/../Stubs/Roles';
+    $path = __DIR__.'/../Stubs/Roles';
     $namespace = 'AzGuard\\Tests\\Stubs\\Roles\\';
 
     $discovered = $service->discoverRoles($path, $namespace);
@@ -20,7 +20,7 @@ test('it can discover role classes in a directory', function () {
 });
 
 test('it returns empty array for non-existent directory', function () {
-    $service = new DiscoveryService();
+    $service = new DiscoveryService;
 
     $discovered = $service->discoverRoles('/non/existent/path', 'App\\');
 

@@ -20,7 +20,7 @@ final class PanelNotFoundException extends RuntimeException
     {
         parent::__construct(
             "AzGuard panel [{$panelId}] is not registered. "
-            . 'Register it via AzGuard::registerPanel() before use.'
+            .'Register it via AzGuard::registerPanel() before use.'
         );
     }
 }

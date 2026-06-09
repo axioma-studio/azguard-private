@@ -24,6 +24,8 @@ use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Contracts\PermissionResolverInterface;
+use AzGuard\Guard\Authorizer;
 use AzGuard\Guard\AzGuardDiagnostics;
 use AzGuard\Guard\GuardDoctor;
 use AzGuard\Http\Middleware\CheckAccess;
@@ -33,7 +35,7 @@ use AzGuard\Http\Middleware\SetCurrentPanel;
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
-use AzGuard\Registry\Resolver\PermissionResolverCache;
+use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
@@ -43,13 +45,15 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Override;
 
 final class AzGuardServiceProvider extends ServiceProvider
 {
+    #[Override]
     public function register(): void
     {
         $this->mergeConfigFrom(
-            path: __DIR__ . '/../config/az-guard.php',
+            path: __DIR__.'/../config/az-guard.php',
             key: 'az-guard',
         );
 
@@ -75,11 +79,11 @@ final class AzGuardServiceProvider extends ServiceProvider
             DirectGrantSource::class,
         ], 'azguard.grant_sources');
 
-        $this->app->singleton(PermissionResolverCache::class);
+        $this->app->singleton(PermissionCache::class);
 
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
-            $manager  = $this->app->make(AzGuardManager::class);
+            $manager = $this->app->make(AzGuardManager::class);
             $panelIds = array_keys($manager->getPanels());
 
             $builders = iterator_to_array(
@@ -93,20 +97,20 @@ final class AzGuardServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
-            return new EffectivePermissionResolver(
-                catalog: $this->app->make(PermissionCatalog::class),
-                sources: $this->app->tagged('azguard.grant_sources'),
-                cache:   $this->app->make(PermissionResolverCache::class),
-            );
-        });
+        $this->app->singleton(EffectivePermissionResolver::class, fn (): EffectivePermissionResolver => new EffectivePermissionResolver(
+            catalog: $this->app->make(PermissionCatalog::class),
+            sources: $this->app->tagged('azguard.grant_sources'),
+            cache: $this->app->make(PermissionCache::class),
+        ));
+
+        $this->app->bind(PermissionResolverInterface::class, EffectivePermissionResolver::class);
 
         $this->registerPanelProviders();
     }
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(paths: __DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
 
         // Use instanceof instead of method_exists for a precise type check.
         Gate::before(function ($user, string $ability): ?bool {
@@ -124,7 +128,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/az-guard.php' => config_path('az-guard.php'),
+                __DIR__.'/../config/az-guard.php' => config_path('az-guard.php'),
             ], 'az-guard-config');
 
             $this->commands([
@@ -173,37 +177,30 @@ final class AzGuardServiceProvider extends ServiceProvider
      * Blade directives.
      *
      * @azcan    / @endazcan    — permission check
+     *
      * @elseazcan / @unlessazcan / @endunlessazcan — added in DX2
+     *
      * @azrole   / @endazrole   — role check
+     *
      * @azdirect / @endazdirect — direct grant check
      */
     protected function registerBladeDirectives(): void
     {
-        Blade::directive('azcan', function (string $expression): string {
-            return "<?php if (auth()->check() && auth()->user()->hasPermission({$expression})): ?>";
-        });
+        Blade::directive('azcan', fn (string $expression): string => "<?php if (auth()->check() && auth()->user()->hasPermission({$expression})): ?>");
 
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('elseazcan', function (string $expression): string {
-            return "<?php elseif (auth()->check() && auth()->user()->hasPermission({$expression})): ?>";
-        });
+        Blade::directive('elseazcan', fn (string $expression): string => "<?php elseif (auth()->check() && auth()->user()->hasPermission({$expression})): ?>");
 
-        Blade::directive('unlessazcan', function (string $expression): string {
-            return "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>";
-        });
+        Blade::directive('unlessazcan', fn (string $expression): string => "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>");
 
         Blade::directive('endunlessazcan', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('azrole', function (string $expression): string {
-            return "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>";
-        });
+        Blade::directive('azrole', fn (string $expression): string => "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>");
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('azdirect', function (string $expression): string {
-            return "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>";
-        });
+        Blade::directive('azdirect', fn (string $expression): string => "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>");
 
         Blade::directive('endazdirect', fn (): string => '<?php endif; ?>');
     }

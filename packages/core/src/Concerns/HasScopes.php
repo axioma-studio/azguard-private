@@ -68,13 +68,13 @@ trait HasScopes
         }
 
         ModelHasScope::firstOrCreate([
-            'model_type'        => $this->getMorphClass(),
-            'model_id'          => $this->getKey(),
+            'model_type' => $this->getMorphClass(),
+            'model_id' => $this->getKey(),
             'scope_entity_type' => $entity->getMorphClass(),
-            'scope_entity_id'   => $entity->getKey(),
-            'role_id'           => $roleModel->getKey(),
+            'scope_entity_id' => $entity->getKey(),
+            'role_id' => $roleModel->getKey(),
         ], [
-            'scope_class' => get_class($roleModel->getRoleLogic() ?? new class {}),
+            'scope_class' => ($roleModel->getRoleLogic() ?? new class {})::class,
         ]);
 
         $this->flushPermissions();

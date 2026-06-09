@@ -17,13 +17,13 @@ use Illuminate\Queue\SerializesModels;
  * - audit-лога (если features.audit_log = true)
  * - уведомлений
  */
-final class RoleAttached
+final readonly class RoleAttached
 {
     use Dispatchable;
     use SerializesModels;
 
     public function __construct(
-        public readonly Model $model,
-        public readonly Role $role,
+        public Model $model,
+        public Role $role,
     ) {}
 }

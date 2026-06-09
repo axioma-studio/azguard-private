@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Contracts;
 
 /**
- * Строит список PermissionDefinition для указанной панели.
- * Каждый builder покрывает один источник: enum, #[GateAbility], config.
+ * Builds the list of PermissionDefinition objects for a given panel.
+ * Each builder covers one source: enum, #[GateAbility], or config.
  */
 interface PermissionCatalogBuilder
 {
@@ -16,8 +16,8 @@ interface PermissionCatalogBuilder
     public function build(string $panelId): array;
 
     /**
-     * Поддерживает ли builder данную панель.
-     * CompositePermissionCatalog вызывает build() только если supports() === true.
+     * Whether this builder covers the given panel.
+     * CompositePermissionCatalog calls build() only when supports() returns true.
      */
     public function supports(string $panelId): bool;
 }

@@ -9,9 +9,9 @@ use AzGuard\Registry\Contracts\PermissionDefinition;
 use Illuminate\Console\Command;
 
 /**
- * Выводит все зарегистрированные permissions из PermissionCatalog.
+ * Lists all registered permissions from PermissionCatalog.
  *
- * Примеры:
+ * Examples:
  *   php artisan guard:catalog
  *   php artisan guard:catalog --panel=app
  *   php artisan guard:catalog --panel=app --group=Documents
@@ -21,11 +21,11 @@ use Illuminate\Console\Command;
 final class CatalogListCommand extends Command
 {
     protected $signature = 'guard:catalog
-        {--panel= : Фильтр по ID панели}
-        {--group= : Фильтр по группе}
-        {--format=table : Формат вывода: table, json, csv}';
+        {--panel= : Filter by panel ID}
+        {--group= : Filter by group}
+        {--format=table : Output format: table, json, csv}';
 
-    protected $description = 'Показывает все permissions из PermissionCatalog';
+    protected $description = 'List all permissions from PermissionCatalog';
 
     protected $aliases = ['az-guard:catalog'];
 
@@ -40,7 +40,7 @@ final class CatalogListCommand extends Command
             : $catalog->panels();
 
         if ($panelIds === []) {
-            $this->warn('Нет зарегистрированных панелей AzGuard.');
+            $this->warn('No AzGuard panels registered.');
 
             return self::SUCCESS;
         }
@@ -48,14 +48,14 @@ final class CatalogListCommand extends Command
         $rows = $this->collectRows($catalog, $panelIds, $groupFilter);
 
         if ($rows === []) {
-            $this->warn('Нет permissions по заданным фильтрам.');
+            $this->warn('No permissions match the given filters.');
 
             return self::SUCCESS;
         }
 
         match ($format) {
             'json' => $this->outputJson($rows),
-            'csv'  => $this->outputCsv($rows),
+            'csv' => $this->outputCsv($rows),
             default => $this->outputTable($rows),
         };
 
@@ -64,7 +64,6 @@ final class CatalogListCommand extends Command
 
     /**
      * @param  list<string>  $panelIds
-     * @param  string|null  $groupFilter
      * @return list<array{panel: string, group: string, key: string, label: string|null}>
      */
     private function collectRows(PermissionCatalog $catalog, array $panelIds, ?string $groupFilter): array
@@ -95,7 +94,7 @@ final class CatalogListCommand extends Command
         return [
             'panel' => $panelId,
             'group' => $definition->group() ?? '—',
-            'key'   => $definition->key(),
+            'key' => $definition->key(),
             'label' => $definition->meta()->label() ?? '—',
         ];
     }
@@ -106,7 +105,7 @@ final class CatalogListCommand extends Command
     private function outputTable(array $rows): void
     {
         $this->table(
-            headers: ['Панель', 'Группа', 'Key', 'Label'],
+            headers: ['Panel', 'Group', 'Key', 'Label'],
             rows: array_map(
                 static fn (array $r): array => [$r['panel'], $r['group'], $r['key'], $r['label'] ?? '—'],
                 $rows,
@@ -114,7 +113,7 @@ final class CatalogListCommand extends Command
         );
 
         $this->line(<<<TEXT
-        Итого: <info>{$this->countLabel(count($rows))}</info>
+        Total: <info>{$this->countLabel(count($rows))}</info>
         TEXT);
     }
 
@@ -146,7 +145,7 @@ final class CatalogListCommand extends Command
     private function csvEscape(string $value): string
     {
         if (str_contains($value, ',') || str_contains($value, '"') || str_contains($value, "\n")) {
-            return '"' . str_replace('"', '""', $value) . '"';
+            return '"'.str_replace('"', '""', $value).'"';
         }
 
         return $value;
@@ -155,8 +154,8 @@ final class CatalogListCommand extends Command
     private function countLabel(int $count): string
     {
         return match (true) {
-            $count === 1   => '1 permission',
-            default        => "{$count} permissions",
+            $count === 1 => '1 permission',
+            default => "{$count} permissions",
         };
     }
 

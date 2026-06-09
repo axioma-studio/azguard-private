@@ -4,9 +4,11 @@ namespace AzGuard\Roles;
 
 use AzGuard\Contracts\RoleInterface;
 use Illuminate\Support\Str;
+use Override;
 
 abstract class BaseRole implements RoleInterface
 {
+    #[Override]
     public function getName(): string
     {
         return (string) Str::of(class_basename(static::class))
@@ -15,10 +17,12 @@ abstract class BaseRole implements RoleInterface
             ->slug();
     }
 
+    #[Override]
     public function getLevel(): int
     {
         return 0;
     }
 
+    #[Override]
     abstract public function permissions(): array;
 }

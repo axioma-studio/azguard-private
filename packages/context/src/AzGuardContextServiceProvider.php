@@ -10,6 +10,7 @@ use AzGuard\Context\Middleware\SetAuthorizationContext;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
+use Override;
 
 /**
  * Service Provider для azguard/context.
@@ -23,10 +24,11 @@ use Illuminate\Support\ServiceProvider;
  */
 final class AzGuardContextServiceProvider extends ServiceProvider
 {
+    #[Override]
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/az-guard-context.php',
+            __DIR__.'/../config/az-guard-context.php',
             'az-guard-context',
         );
 
@@ -46,31 +48,27 @@ final class AzGuardContextServiceProvider extends ServiceProvider
             $this->app->tag($resolverClass, ResolvesContext::class);
         }
 
-        $this->app->bind(SetAuthorizationContext::class, function (Application $app): SetAuthorizationContext {
-            return new SetAuthorizationContext(
-                manager: $app->make(AuthorizationContextManager::class),
-                resolvers: $app->tagged(ResolvesContext::class),
-            );
-        });
+        $this->app->bind(SetAuthorizationContext::class, fn (Application $app): SetAuthorizationContext => new SetAuthorizationContext(
+            manager: $app->make(AuthorizationContextManager::class),
+            resolvers: $app->tagged(ResolvesContext::class),
+        ));
 
         // ContextualRoleGrantSource
-        $this->app->bind(ContextualRoleGrantSource::class, function (Application $app): ContextualRoleGrantSource {
-            return new ContextualRoleGrantSource(
-                manager: $app->make(AuthorizationContextManager::class),
-                strategy: $app->make(ContextMergeStrategy::class),
-            );
-        });
+        $this->app->bind(ContextualRoleGrantSource::class, fn (Application $app): ContextualRoleGrantSource => new ContextualRoleGrantSource(
+            manager: $app->make(AuthorizationContextManager::class),
+            strategy: $app->make(ContextMergeStrategy::class),
+        ));
     }
 
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/az-guard-context.php' => config_path('az-guard-context.php'),
+                __DIR__.'/../config/az-guard-context.php' => config_path('az-guard-context.php'),
             ], 'azguard-context-config');
 
             $this->publishes([
-                __DIR__ . '/../database/migrations/' => database_path('migrations'),
+                __DIR__.'/../database/migrations/' => database_path('migrations'),
             ], 'azguard-context-migrations');
         }
     }

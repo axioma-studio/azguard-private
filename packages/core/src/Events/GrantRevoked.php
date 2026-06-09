@@ -7,13 +7,13 @@ namespace AzGuard\Events;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * @property string $permissionKey  '*' если revokeAll()
+ * @property string $permissionKey '*' если revokeAll()
  */
-final class GrantRevoked
+final readonly class GrantRevoked
 {
     public function __construct(
-        public readonly Authenticatable $user,
-        public readonly string $permissionKey,
-        public readonly string $panelId,
+        public Authenticatable $user,
+        public string $permissionKey,
+        public string $panelId,
     ) {}
 }

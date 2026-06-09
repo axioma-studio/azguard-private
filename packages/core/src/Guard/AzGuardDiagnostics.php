@@ -40,16 +40,16 @@ final class AzGuardDiagnostics
      */
     public function diagnose(?string $panelFilter = null): array
     {
-        $this->errors   = [];
+        $this->errors = [];
         $this->warnings = [];
-        $abilityRows    = [];
+        $abilityRows = [];
 
         foreach (AzGuard::getPanels() as $panelId => $panel) {
             if ($panelFilter !== null && $panelFilter !== $panelId) {
                 continue;
             }
 
-            $basePath      = $panel->getBasePath();
+            $basePath = $panel->getBasePath();
             $baseNamespace = $panel->getNamespace();
 
             if ($basePath === '' || $baseNamespace === '') {
@@ -58,7 +58,7 @@ final class AzGuardDiagnostics
                 continue;
             }
 
-            $discovery    = new PolicyDiscovery;
+            $discovery = new PolicyDiscovery;
             $policyClasses = $discovery->discoverPolicyClasses(
                 basePath: $basePath,
                 baseNamespace: $baseNamespace,
@@ -71,7 +71,7 @@ final class AzGuardDiagnostics
 
             foreach ($registeredAbilities as $ability => $handler) {
                 $abilityRows[] = [
-                    'panel'   => $panelId,
+                    'panel' => $panelId,
                     'ability' => $ability,
                     'handler' => $handler,
                 ];
@@ -106,8 +106,8 @@ final class AzGuardDiagnostics
         }
 
         return [
-            'errors'    => $this->errors,
-            'warnings'  => $this->warnings,
+            'errors' => $this->errors,
+            'warnings' => $this->warnings,
             'abilities' => $abilityRows,
         ];
     }
@@ -127,7 +127,7 @@ final class AzGuardDiagnostics
                 foreach ($method->getAttributes(GateAbility::class) as $attribute) {
                     /** @var GateAbility $gateAbility */
                     $gateAbility = $attribute->newInstance();
-                    $ability     = $panel->resolvePermission(permission: $gateAbility->permission);
+                    $ability = $panel->resolvePermission(permission: $gateAbility->permission);
                     $abilities[$ability] = "{$policyClass}::{$method->getName()}";
                 }
             }
@@ -191,7 +191,7 @@ final class AzGuardDiagnostics
                 foreach ($method->getAttributes(GateAbility::class) as $attribute) {
                     /** @var GateAbility $gateAbility */
                     $gateAbility = $attribute->newInstance();
-                    $permission  = $gateAbility->permission;
+                    $permission = $gateAbility->permission;
 
                     if (! $permission instanceof UnitEnum) {
                         continue;
@@ -214,7 +214,7 @@ final class AzGuardDiagnostics
         Panel $panel,
         array $knownAbilities,
     ): void {
-        $rolesPath = $basePath . '/Roles';
+        $rolesPath = $basePath.'/Roles';
 
         if (! is_dir($rolesPath)) {
             return;
@@ -225,9 +225,11 @@ final class AzGuardDiagnostics
                 continue;
             }
 
-            $class = $baseNamespace . '\\Roles\\' . str_replace('.php', '', $file->getFilename());
-
-            if (! class_exists($class) || ! is_subclass_of($class, RoleInterface::class)) {
+            $class = $baseNamespace.'\\Roles\\'.str_replace('.php', '', $file->getFilename());
+            if (! class_exists($class)) {
+                continue;
+            }
+            if (! is_subclass_of($class, RoleInterface::class)) {
                 continue;
             }
 
@@ -243,7 +245,7 @@ final class AzGuardDiagnostics
                     $this->errors[] = "Role {$class}: references unknown permission [{$permission}].";
                 }
 
-                if (! str_starts_with(haystack: $permission, needle: $panel->getId() . '.')) {
+                if (! str_starts_with(haystack: (string) $permission, needle: $panel->getId().'.')) {
                     $this->warnings[] = "Role {$class}: permission [{$permission}] is missing the panel prefix [{$panel->getId()}.].";
                 }
             }
@@ -283,7 +285,7 @@ final class AzGuardDiagnostics
                 }
 
                 /** @var UnitEnum $enumCase */
-                $enumCase   = $case->getValue();
+                $enumCase = $case->getValue();
                 $abilities[] = $panel->resolvePermission(permission: $enumCase);
             }
         }
@@ -306,7 +308,7 @@ final class AzGuardDiagnostics
             }
 
             $relativePath = $file->getRelativePathname();
-            $class        = $baseNamespace . '\\' . str_replace(['/', '.php'], ['\\', ''], $relativePath);
+            $class = $baseNamespace.'\\'.str_replace(['/', '.php'], ['\\', ''], $relativePath);
 
             if (class_exists($class) && (new ReflectionClass($class))->isEnum()) {
                 $classes[] = $class;

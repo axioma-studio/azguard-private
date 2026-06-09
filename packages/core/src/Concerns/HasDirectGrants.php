@@ -47,9 +47,9 @@ trait HasDirectGrants
     public function grantDirect(string $permission): static
     {
         DirectGrant::firstOrCreate([
-            'model_type'  => $this->getMorphClass(),
-            'model_id'    => $this->getKey(),
-            'permission'  => $permission,
+            'model_type' => $this->getMorphClass(),
+            'model_id' => $this->getKey(),
+            'permission' => $permission,
         ]);
 
         if (method_exists($this, 'flushPermissions')) {

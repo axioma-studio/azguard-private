@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
-use AzGuard\Facades\AzGuard;
 use AzGuard\Exceptions\PanelNotSetException;
+use AzGuard\Facades\AzGuard;
 
 /**
  * Centralises the recurring pattern:
@@ -35,6 +35,6 @@ final class PanelResolver
     {
         return $panelId
             ?? AzGuard::currentPanel()?->getId()
-            ?? throw new PanelNotSetException();
+            ?? throw new PanelNotSetException;
     }
 }

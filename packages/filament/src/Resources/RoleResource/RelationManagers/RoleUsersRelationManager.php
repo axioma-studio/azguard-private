@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament\Resources\RoleResource\RelationManagers;
 
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Tables\Actions\AttachAction;
+use Filament\Tables\Actions\DetachAction;
+use Filament\Tables\Actions\DetachBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Override;
 
 /**
  * Relation Manager: пользователи DB-роли.
@@ -23,9 +27,10 @@ final class RoleUsersRelationManager extends RelationManager
 
     protected static ?string $title = 'Пользователи';
 
+    #[Override]
     public function form(Form $form): Form
     {
-        $userModel = config('auth.providers.users.model', \App\Models\User::class);
+        $userModel = config('auth.providers.users.model', User::class);
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
         return $form->schema([
@@ -37,6 +42,7 @@ final class RoleUsersRelationManager extends RelationManager
         ]);
     }
 
+    #[Override]
     public function table(Table $table): Table
     {
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
@@ -49,15 +55,15 @@ final class RoleUsersRelationManager extends RelationManager
                 TextColumn::make('email')->label('Email')->searchable()->toggleable(),
             ])
             ->headerActions([
-                Tables\Actions\AttachAction::make()
+                AttachAction::make()
                     ->label('Назначить роль')
                     ->preloadRecordSelect(),
             ])
             ->actions([
-                Tables\Actions\DetachAction::make()->label('Отозвать'),
+                DetachAction::make()->label('Отозвать'),
             ])
             ->bulkActions([
-                Tables\Actions\DetachBulkAction::make()->label('Отозвать выбранных'),
+                DetachBulkAction::make()->label('Отозвать выбранных'),
             ]);
     }
 }

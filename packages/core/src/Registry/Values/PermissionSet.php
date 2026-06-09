@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Values;
 
+use Closure;
+
 /**
  * Immutable set of resolved permission keys for one user+panel.
  * Supports wildcard '*' (SuperAdmin) and patterns like 'app.documents.*'.
  */
-final class PermissionSet
+final readonly class PermissionSet
 {
     /** @var list<string> */
-    private readonly array $keys;
+    private array $keys;
 
     private function __construct(array $keys)
     {
@@ -40,7 +42,7 @@ final class PermissionSet
      * Centralises the repeated empty / wildcard / fromKeys pattern
      * that previously appeared in every GrantSource implementation.
      *
-     * @param list<string> $keys
+     * @param  list<string>  $keys
      */
     public static function fromRawKeys(array $keys): self
     {
@@ -93,7 +95,7 @@ final class PermissionSet
                 continue;
             }
 
-            $regex = '/^' . str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')) . '$/';
+            $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')).'$/';
 
             if (preg_match($regex, $key)) {
                 return true;
@@ -108,7 +110,11 @@ final class PermissionSet
      */
     public function grants(string $key): bool
     {
-        return $this->has($key) || $this->matchesWildcard($key);
+        if ($this->has($key)) {
+            return true;
+        }
+
+        return $this->matchesWildcard($key);
     }
 
     public function isWildcard(): bool
@@ -124,7 +130,7 @@ final class PermissionSet
     /**
      * Filter keys (used for catalog validation).
      */
-    public function filter(\Closure $callback): self
+    public function filter(Closure $callback): self
     {
         return new self(array_filter($this->keys, $callback));
     }

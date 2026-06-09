@@ -13,11 +13,11 @@ final class MakeGuardPolicyCommand extends Command
     use ResolvesGuardNamespaces;
 
     protected $signature = 'make:guard-policy
-        {panel : Панель (App)}
-        {domain : Домен (Documents)}
+        {panel : Panel name (e.g. App)}
+        {domain : Domain name (e.g. Documents)}
         {--path=app/Guards}';
 
-    protected $description = 'Создаёт policy с GuardPolicy и GateAbility';
+    protected $description = 'Create a policy stub with GuardPolicy and GateAbility attributes';
 
     public function handle(): int
     {
@@ -30,12 +30,12 @@ final class MakeGuardPolicyCommand extends Command
         $policyPath = $this->domainPath(basePath: $basePath, domain: $domain).'/Policies/'.$domain.'Policy.php';
 
         if (File::exists(path: $policyPath)) {
-            $this->error("Policy уже существует: {$policyPath}");
+            $this->error("Policy already exists: {$policyPath}");
 
             return self::FAILURE;
         }
 
-        File::ensureDirectoryExists(directory: dirname(path: $policyPath));
+        File::ensureDirectoryExists(path: dirname(path: $policyPath));
 
         $stub = File::get(path: __DIR__.'/../../stubs/panel/domain-policy.stub');
         $replacements = [
@@ -49,7 +49,7 @@ final class MakeGuardPolicyCommand extends Command
         }
 
         File::put(path: $policyPath, contents: $stub);
-        $this->info("Policy создан: {$policyPath}");
+        $this->info("Policy created: {$policyPath}");
 
         return self::SUCCESS;
     }

@@ -27,23 +27,23 @@ final class CheckDirectGrant
 {
     /**
      * @param  Closure(Request): Response  $next
-     * @param  string                      $permissionKey  Permission key
-     * @param  string|null                 $panelId        Panel ID (optional)
+     * @param  string  $permissionKey  Permission key
+     * @param  string|null  $panelId  Panel ID (optional)
      */
     public function handle(
-        Request  $request,
-        Closure  $next,
-        string   $permissionKey,
-        ?string  $panelId = null,
+        Request $request,
+        Closure $next,
+        string $permissionKey,
+        ?string $panelId = null,
     ): Response {
         abort_if(
             boolean: ! $request->user(),
-            code:    Response::HTTP_UNAUTHORIZED,
+            code: Response::HTTP_UNAUTHORIZED,
             message: 'Unauthenticated.',
         );
 
         $resolvedPanel = PanelResolver::resolve($panelId);
-        $user          = $request->user();
+        $user = $request->user();
 
         $hasGrant = method_exists($user, 'hasDirectGrant')
             ? $user->hasDirectGrant($permissionKey, $resolvedPanel)
@@ -51,7 +51,7 @@ final class CheckDirectGrant
 
         abort_if(
             boolean: ! $hasGrant,
-            code:    Response::HTTP_FORBIDDEN,
+            code: Response::HTTP_FORBIDDEN,
             message: "Direct grant [{$permissionKey}] is required for this action.",
         );
 

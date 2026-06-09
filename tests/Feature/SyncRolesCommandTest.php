@@ -5,8 +5,6 @@ declare(strict_types=1);
 use AzGuard\Facades\AzGuard;
 use AzGuard\Models\Role;
 use AzGuard\Support\Panel;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 
 it('creates roles for panel from PHP role classes', function (): void {
     AzGuard::registerPanel(
@@ -40,8 +38,8 @@ it('supports dry-run mode without writing to database', function (): void {
 
     // Имитация существующей роли, чтобы команда что-то нашла
     Role::query()->create([
-        'name'       => 'existing-role',
-        'level'      => 10,
+        'name' => 'existing-role',
+        'level' => 10,
         'class_name' => 'AzGuard\\Tests\\Stubs\\Roles\\ExistingRole',
     ]);
 

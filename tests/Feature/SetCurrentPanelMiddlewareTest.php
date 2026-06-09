@@ -14,7 +14,7 @@ it('sets and resets current panel around request lifecycle', function (): void {
         panel: Panel::make()->id(id: 'web')->label(label: 'Web'),
     );
 
-    Route::middleware([SetCurrentPanel::class . ':web'])
+    Route::middleware([SetCurrentPanel::class.':web'])
         ->get('/set-current-panel-test', fn (): string => (string) AzGuard::currentPanel()?->id());
 
     $this->get('/set-current-panel-test')
@@ -25,7 +25,7 @@ it('sets and resets current panel around request lifecycle', function (): void {
 });
 
 it('fails with 500 when panel is not registered', function (): void {
-    Route::middleware([SetCurrentPanel::class . ':unknown'])
+    Route::middleware([SetCurrentPanel::class.':unknown'])
         ->get('/set-current-panel-unknown', fn (): string => 'ok');
 
     $this->get('/set-current-panel-unknown')

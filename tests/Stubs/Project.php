@@ -26,7 +26,7 @@ class Project extends Model
 
             public function definition(): array
             {
-                return ['name' => 'Test Project ' . fake()->unique()->numerify('###')];
+                return ['name' => 'Test Project '.fake()->unique()->numerify('###')];
             }
         };
     }

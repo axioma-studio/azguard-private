@@ -15,30 +15,55 @@ use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
  */
 function makeDefinition(string $key, string $group = 'General'): PermissionDefinition
 {
-    return new class ($key, $group) implements PermissionDefinition {
+    return new class($key, $group) implements PermissionDefinition
+    {
         public function __construct(private string $k, private string $g) {}
-        public function key(): string   { return $this->k; }
-        public function label(): string { return $this->k; }
-        public function group(): ?string { return $this->g; }
-        public function meta(): array   { return []; }
+
+        public function key(): string
+        {
+            return $this->k;
+        }
+
+        public function label(): string
+        {
+            return $this->k;
+        }
+
+        public function group(): ?string
+        {
+            return $this->g;
+        }
+
+        public function meta(): array
+        {
+            return [];
+        }
     };
 }
 
 /**
  * Заглушка PermissionCatalogBuilder, возвращающая фиксированный набор.
  *
- * @param list<PermissionDefinition> $definitions
+ * @param  list<PermissionDefinition>  $definitions
  */
 function makeBuilder(array $definitions, bool $supports = true): PermissionCatalogBuilder
 {
-    return new class ($definitions, $supports) implements PermissionCatalogBuilder {
+    return new class($definitions, $supports) implements PermissionCatalogBuilder
+    {
         public function __construct(
             private array $defs,
             private bool $sup,
         ) {}
 
-        public function build(string $panelId): array { return $this->defs; }
-        public function supports(string $panelId): bool { return $this->sup; }
+        public function build(string $panelId): array
+        {
+            return $this->defs;
+        }
+
+        public function supports(string $panelId): bool
+        {
+            return $this->sup;
+        }
     };
 }
 
@@ -146,11 +171,27 @@ describe('CompositePermissionCatalog', function () {
     });
 
     it('groups() uses Other for null group', function () {
-        $def = new class implements PermissionDefinition {
-            public function key(): string    { return 'app.x'; }
-            public function label(): string  { return 'x'; }
-            public function group(): ?string { return null; }
-            public function meta(): array    { return []; }
+        $def = new class implements PermissionDefinition
+        {
+            public function key(): string
+            {
+                return 'app.x';
+            }
+
+            public function label(): string
+            {
+                return 'x';
+            }
+
+            public function group(): ?string
+            {
+                return null;
+            }
+
+            public function meta(): array
+            {
+                return [];
+            }
         };
 
         $catalog = new CompositePermissionCatalog(
@@ -187,7 +228,7 @@ describe('CompositePermissionCatalog', function () {
     });
 
     it('skips builder that does not support panel', function () {
-        $supported   = makeBuilder([makeDefinition('app.posts.view')], supports: true);
+        $supported = makeBuilder([makeDefinition('app.posts.view')], supports: true);
         $unsupported = makeBuilder([makeDefinition('app.posts.edit')], supports: false);
 
         $catalog = new CompositePermissionCatalog(

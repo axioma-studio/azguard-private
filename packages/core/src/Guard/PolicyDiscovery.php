@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AzGuard\Guard;
 
 use AzGuard\Attributes\GuardPolicy;
-use AzGuard\Support\Panel;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
@@ -42,7 +41,7 @@ final class PolicyDiscovery
     /**
      * @param  class-string  $policyClass
      */
-    public function resolveModelClass(string $policyClass, string $basePath, string $baseNamespace): ?string
+    public function resolveModelClass(string $policyClass, string $basePath): ?string
     {
         $reflection = new ReflectionClass($policyClass);
 
@@ -60,7 +59,7 @@ final class PolicyDiscovery
             characters: '\\',
         );
 
-        $policyPath = $this->policyPath(policyClass: $policyClass, baseNamespace: $baseNamespace);
+        $policyPath = $this->policyPath(policyClass: $policyClass);
 
         if ($policyPath === null) {
             return null;
@@ -88,7 +87,7 @@ final class PolicyDiscovery
     /**
      * @param  class-string  $policyClass
      */
-    private function policyPath(string $policyClass, string $baseNamespace): ?string
+    private function policyPath(string $policyClass): ?string
     {
         $reflection = new ReflectionClass($policyClass);
         $filename = $reflection->getFileName();

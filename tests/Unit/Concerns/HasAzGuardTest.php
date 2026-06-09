@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-use AzGuard\Concerns\HasAzGuard;
-use AzGuard\Tests\Stubs\User;
 use AzGuard\Models\Role;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
+use AzGuard\Tests\Stubs\User;
 
 describe('HasAzGuard trait', function () {
     beforeEach(function () {
@@ -14,15 +13,15 @@ describe('HasAzGuard trait', function () {
 
     it('hasAzRole returns true for assigned role', function () {
         $user = User::create([
-            'name'     => 'John',
-            'email'    => 'john@example.com',
+            'name' => 'John',
+            'email' => 'john@example.com',
             'password' => 'secret',
         ]);
 
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 0,
+            'level' => 0,
         ]);
 
         $user->roles()->attach($role);
@@ -33,8 +32,8 @@ describe('HasAzGuard trait', function () {
 
     it('hasAzRole returns false for non-assigned role', function () {
         $user = User::create([
-            'name'     => 'Jane',
-            'email'    => 'jane@example.com',
+            'name' => 'Jane',
+            'email' => 'jane@example.com',
             'password' => 'secret',
         ]);
 
@@ -43,15 +42,15 @@ describe('HasAzGuard trait', function () {
 
     it('hasAzPermission returns true for permission granted via role', function () {
         $user = User::create([
-            'name'     => 'Bob',
-            'email'    => 'bob@example.com',
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
             'password' => 'secret',
         ]);
 
         $role = Role::create([
-            'name'       => 'manager2',
+            'name' => 'manager2',
             'class_name' => ManagerRole::class,
-            'level'      => 0,
+            'level' => 0,
         ]);
 
         $user->roles()->attach($role);
@@ -62,15 +61,15 @@ describe('HasAzGuard trait', function () {
 
     it('hasAzPermission returns false for ungranted permission', function () {
         $user = User::create([
-            'name'     => 'Alice',
-            'email'    => 'alice@example.com',
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
             'password' => 'secret',
         ]);
 
         $role = Role::create([
-            'name'       => 'manager3',
+            'name' => 'manager3',
             'class_name' => ManagerRole::class,
-            'level'      => 0,
+            'level' => 0,
         ]);
 
         $user->roles()->attach($role);
@@ -81,21 +80,21 @@ describe('HasAzGuard trait', function () {
 
     it('getAzPermissions caches result in-memory', function () {
         $user = User::create([
-            'name'     => 'Cache User',
-            'email'    => 'cache@example.com',
+            'name' => 'Cache User',
+            'email' => 'cache@example.com',
             'password' => 'secret',
         ]);
 
         $role = Role::create([
-            'name'       => 'manager4',
+            'name' => 'manager4',
             'class_name' => ManagerRole::class,
-            'level'      => 0,
+            'level' => 0,
         ]);
 
         $user->roles()->attach($role);
         $user->load('roles');
 
-        $first  = $user->getAzPermissions();
+        $first = $user->getAzPermissions();
         $second = $user->getAzPermissions();
 
         // Должен быть тот же объект (in-memory кэш)
@@ -104,15 +103,15 @@ describe('HasAzGuard trait', function () {
 
     it('clearAzPermissionsCache resets in-memory cache', function () {
         $user = User::create([
-            'name'     => 'Clear Cache User',
-            'email'    => 'clear@example.com',
+            'name' => 'Clear Cache User',
+            'email' => 'clear@example.com',
             'password' => 'secret',
         ]);
 
         $role = Role::create([
-            'name'       => 'manager5',
+            'name' => 'manager5',
             'class_name' => ManagerRole::class,
-            'level'      => 0,
+            'level' => 0,
         ]);
 
         $user->roles()->attach($role);
@@ -130,20 +129,24 @@ describe('HasAzGuard trait', function () {
 
     it('wildcard * grants all permissions when present', function () {
         // Создаём роль с wildcard через анонимный класс
-        $wildcardRole = new class extends \AzGuard\Roles\BaseRole {
-            public function permissions(): array { return ['*']; }
+        $wildcardRole = new class extends \AzGuard\Roles\BaseRole
+        {
+            public function permissions(): array
+            {
+                return ['*'];
+            }
         };
 
         $user = User::create([
-            'name'     => 'Super',
-            'email'    => 'super@example.com',
+            'name' => 'Super',
+            'email' => 'super@example.com',
             'password' => 'secret',
         ]);
 
         $role = Role::create([
-            'name'       => 'superadmin',
+            'name' => 'superadmin',
             'class_name' => get_class($wildcardRole),
-            'level'      => 100,
+            'level' => 100,
         ]);
 
         $user->roles()->attach($role);

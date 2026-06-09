@@ -16,8 +16,8 @@ use AzGuard\Registry\Values\PermissionSet;
 interface MergeStrategy
 {
     /**
-     * @param PermissionSet      $global   права из глобальных источников (ClassRole, DatabaseRole)
-     * @param PermissionSet|null $context  права из контекста (null = контекст не установлен)
+     * @param  PermissionSet  $global  права из глобальных источников (ClassRole, DatabaseRole)
+     * @param  PermissionSet|null  $context  права из контекста (null = контекст не установлен)
      */
     public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet;
 }

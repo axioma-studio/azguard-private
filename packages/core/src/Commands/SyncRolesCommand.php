@@ -5,25 +5,26 @@ declare(strict_types=1);
 namespace AzGuard\Commands;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Models\Role;
 use Illuminate\Console\Command;
 
 /**
- * Команда azguard:sync-roles
+ * Command azguard:sync-roles
  *
- * Синхронизирует PHP-классы ролей с таблицей ролей в БД.
- * Использует class_name, зарегистрированный через PanelProvider'ы.
+ * Syncs PHP role classes with the roles table in the database.
+ * Uses class_name registered via PanelProviders.
  *
- * Опции:
- *   --panel=   Синхронизировать только панель с указанным ID
- *   --dry-run  Показать изменения без записи в БД
+ * Options:
+ *   --panel=   Sync only the panel with the given ID
+ *   --dry-run  Preview changes without writing to the database
  */
 final class SyncRolesCommand extends Command
 {
     protected $signature = 'azguard:sync-roles
-                            {--panel= : ID панели для фильтрации (опционально)}
-                            {--dry-run : Показать изменения без записи в БД}';
+                            {--panel= : Sync only the given panel ID (optional)}
+                            {--dry-run : Preview changes without writing to the database}';
 
-    protected $description = 'Синхронизирует PHP-классы ролей с таблицей roles в БД';
+    protected $description = 'Sync PHP role classes with the roles table in the database';
 
     public function handle(AzGuardManagerInterface $manager): int
     {
@@ -32,15 +33,16 @@ final class SyncRolesCommand extends Command
         $isDryRun = (bool) $this->option('dry-run');
 
         if ($isDryRun) {
-            $this->warn('[dry-run] Изменения не будут записаны в БД.');
+            $this->warn('[dry-run] No changes will be written to the database.');
         }
 
         if ($panels === []) {
-            $this->warn('Панели AzGuard не зарегистрированы. Проверьте az-guard.panels в конфиге.');
+            $this->warn('No AzGuard panels registered. Check az-guard.panels in the config.');
+
             return self::SUCCESS;
         }
 
-        /** @var class-string<\AzGuard\Models\Role> $roleModel */
+        /** @var class-string<Role> $roleModel */
         $roleModel = config('az-guard.models.role');
 
         $created = 0;
@@ -53,32 +55,42 @@ final class SyncRolesCommand extends Command
                 continue;
             }
 
-            $basePath = $panel->getBasePath();
-            $namespace = $panel->getNamespace();
+            $explicitClasses = $panel->getRoleClasses();
 
-            if ($basePath === '' || $namespace === '') {
-                $this->warn("Панель [{$panelId}]: basePath или namespace не задан — пропускается.");
-                continue;
+            if ($explicitClasses !== []) {
+                $classNames = $explicitClasses;
+            } else {
+                $basePath = $panel->getBasePath();
+                $namespace = $panel->getNamespace();
+
+                if ($basePath === '' || $namespace === '') {
+                    $this->warn("Panel [{$panelId}]: basePath or namespace not set — skipping.");
+
+                    continue;
+                }
+
+                $rolesPath = rtrim($basePath, '/').'/Roles';
+
+                if (! is_dir($rolesPath)) {
+                    continue;
+                }
+
+                $classNames = array_map(
+                    fn (string $file): string => $namespace.'\\Roles\\'.basename($file, '.php'),
+                    glob($rolesPath.'/*Role.php') ?: [],
+                );
             }
 
-            $rolesPath = rtrim($basePath, '/') . '/Roles';
-
-            if (! is_dir($rolesPath)) {
-                continue;
-            }
-
-            $files = glob($rolesPath . '/*Role.php') ?: [];
-
-            foreach ($files as $file) {
-                $className = $namespace . '\\Roles\\' . basename($file, '.php');
-
+            foreach ($classNames as $className) {
                 if (! class_exists($className)) {
                     continue;
                 }
 
                 $roleLogic = new $className;
-
-                if (! method_exists($roleLogic, 'getName') || ! method_exists($roleLogic, 'getLevel')) {
+                if (! method_exists($roleLogic, 'getName')) {
+                    continue;
+                }
+                if (! method_exists($roleLogic, 'getLevel')) {
                     continue;
                 }
 
@@ -103,8 +115,8 @@ final class SyncRolesCommand extends Command
                     $created++;
                     if (! $isDryRun) {
                         $roleModel::query()->create([
-                            'name'       => $name,
-                            'level'      => $level,
+                            'name' => $name,
+                            'level' => $level,
                             'class_name' => $className,
                         ]);
                     }
@@ -114,13 +126,13 @@ final class SyncRolesCommand extends Command
 
         if ($rows !== []) {
             $this->table(
-                headers: ['Панель', 'Имя', 'Уровень', 'Класс', 'Статус'],
+                headers: ['Panel', 'Name', 'Level', 'Class', 'Status'],
                 rows: $rows,
             );
         }
 
         $suffix = $isDryRun ? ' (dry-run)' : '';
-        $this->info("Синхронизация завершена{$suffix}: создано={$created}, обновлено={$updated}, без изменений={$unchanged}");
+        $this->info("Sync complete{$suffix}: created={$created}, updated={$updated}, unchanged={$unchanged}");
 
         return self::SUCCESS;
     }

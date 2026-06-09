@@ -7,6 +7,7 @@ namespace AzGuard\Context\Strategies;
 use AzGuard\Context\Contracts\ContextMergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Override;
 
 /**
  * Стратегия: только контекстные права.
@@ -20,6 +21,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class ContextOnlyStrategy implements ContextMergeStrategy
 {
+    #[Override]
     public function merge(
         Authenticatable $user,
         string $panelId,

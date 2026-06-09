@@ -8,8 +8,8 @@ use AzGuard\Attributes\GateAbility;
 use AzGuard\Facades\AzGuard;
 use AzGuard\Guard\PolicyDiscovery;
 use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
-use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
+use Override;
 use ReflectionClass;
 use ReflectionMethod;
 use UnitEnum;
@@ -21,6 +21,7 @@ use UnitEnum;
  */
 final class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
 {
+    #[Override]
     public function build(string $panelId): array
     {
         $panel = AzGuard::getPanel($panelId);
@@ -71,6 +72,7 @@ final class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
         return $definitions;
     }
 
+    #[Override]
     public function supports(string $panelId): bool
     {
         return AzGuard::getPanel($panelId) !== null;

@@ -16,9 +16,9 @@ describe('HasAzGuard — role management API', function (): void {
 
         $user = User::factory()->create();
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $user->assignRole('manager');
@@ -26,8 +26,7 @@ describe('HasAzGuard — role management API', function (): void {
 
         expect($user->hasAzRole('manager'))->toBeTrue();
 
-        Event::assertDispatched(RoleAttached::class, fn (RoleAttached $e): bool =>
-            $e->role->getKey() === $role->getKey()
+        Event::assertDispatched(RoleAttached::class, fn (RoleAttached $e): bool => $e->role->getKey() === $role->getKey()
         );
     });
 
@@ -36,9 +35,9 @@ describe('HasAzGuard — role management API', function (): void {
 
         $user = User::factory()->create();
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $user->assignRole($role);
@@ -63,9 +62,9 @@ describe('HasAzGuard — role management API', function (): void {
 
         $user = User::factory()->create();
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $user->roles()->attach($role);
@@ -76,8 +75,7 @@ describe('HasAzGuard — role management API', function (): void {
 
         expect($user->hasAzRole('manager'))->toBeFalse();
 
-        Event::assertDispatched(RoleDetached::class, fn (RoleDetached $e): bool =>
-            $e->role->getKey() === $role->getKey()
+        Event::assertDispatched(RoleDetached::class, fn (RoleDetached $e): bool => $e->role->getKey() === $role->getKey()
         );
     });
 
@@ -87,15 +85,15 @@ describe('HasAzGuard — role management API', function (): void {
         $user = User::factory()->create();
 
         $oldRole = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $newRole = Role::create([
-            'name'       => 'editor',
+            'name' => 'editor',
             'class_name' => ManagerRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->roles()->attach($oldRole);
@@ -114,9 +112,9 @@ describe('HasAzGuard — role management API', function (): void {
     it('getRoleNames returns collection of role name strings', function (): void {
         $user = User::factory()->create();
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $user->roles()->attach($role);
@@ -129,9 +127,9 @@ describe('HasAzGuard — role management API', function (): void {
         $user = User::factory()->create();
 
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         // Populate cache

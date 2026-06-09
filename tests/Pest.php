@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AzGuard\Tests\TestCase;
 use AzGuard\Tests\Stubs\User;
+use AzGuard\Tests\TestCase;
 
 uses(TestCase::class)
     ->in('Feature', 'Unit');

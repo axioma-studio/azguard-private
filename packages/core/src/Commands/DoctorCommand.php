@@ -11,7 +11,7 @@ final class DoctorCommand extends Command
 {
     protected $signature = 'guard:doctor {--panel=}';
 
-    protected $description = 'Проверяет согласованность enum, политик и ролей AzGuard';
+    protected $description = 'Check consistency of AzGuard enums, policies, and roles';
 
     protected $aliases = ['azguard:doctor'];
 
@@ -27,7 +27,7 @@ final class DoctorCommand extends Command
 
         if ($result['abilities'] !== []) {
             $this->table(
-                headers: ['Панель', 'Ability', 'Policy::method'],
+                headers: ['Panel', 'Ability', 'Policy::method'],
                 rows: array_map(
                     callback: static fn (array $row): array => [$row['panel'], $row['ability'], $row['handler']],
                     array: $result['abilities'],
@@ -44,12 +44,12 @@ final class DoctorCommand extends Command
         }
 
         if ($result['errors'] !== []) {
-            $this->error('guard:doctor: найдены ошибки согласованности.');
+            $this->error('guard:doctor: consistency errors found.');
 
             return self::FAILURE;
         }
 
-        $this->info('guard:doctor: проверки пройдены.');
+        $this->info('guard:doctor: all checks passed.');
 
         return self::SUCCESS;
     }

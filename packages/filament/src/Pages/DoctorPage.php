@@ -7,6 +7,8 @@ namespace AzGuard\Filament\Pages;
 use AzGuard\Filament\AzGuardPlugin;
 use AzGuard\Guard\GuardDoctor;
 use Filament\Pages\Page;
+use Override;
+use Throwable;
 
 /**
  * Страница диагностики AzGuard в Filament UI.
@@ -32,6 +34,7 @@ final class DoctorPage extends Page
 
     // ─── Badge: кол-во ошибок в навигации ─────────────────────────────────
 
+    #[Override]
     public static function getNavigationBadge(): ?string
     {
         $result = self::runDiagnose();
@@ -40,6 +43,7 @@ final class DoctorPage extends Page
         return $errorCount > 0 ? (string) $errorCount : null;
     }
 
+    #[Override]
     public static function getNavigationBadgeColor(): ?string
     {
         $result = self::runDiagnose();
@@ -79,7 +83,7 @@ final class DoctorPage extends Page
             /** @var AzGuardPlugin $plugin */
             $plugin = filament()->getCurrentPanel()?->getPlugin('az-guard');
             $panelFilter = $plugin->getPanelId();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Плагин недоступен — диагностируем все панели
         }
 

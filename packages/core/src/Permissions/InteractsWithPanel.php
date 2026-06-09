@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AzGuard\Permissions;
 
-use AzGuard\Contracts\ResolvesPermission;
 use AzGuard\Support\Panel;
+use BackedEnum;
 
 trait InteractsWithPanel
 {
     public function resolve(Panel $panel): string
     {
-        if (! $this instanceof \BackedEnum) {
+        if (! $this instanceof BackedEnum) {
             return '';
         }
 

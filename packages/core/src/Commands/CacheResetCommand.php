@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AzGuard\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 
 class CacheResetCommand extends Command
 {
     protected $signature = 'azguard:cache-reset';
 
-    protected $description = 'Сбросить кэш разрешений AzGuard';
+    protected $description = 'Flush the AzGuard permission cache';
 
     public function handle(): int
     {
@@ -18,17 +19,18 @@ class CacheResetCommand extends Command
         $key = config('az-guard.cache.key', 'azguard.permissions');
 
         if ($store === 'array') {
-            $this->warn('Кэш AzGuard использует store "array" (in-memory) — сброс не требуется.');
+            $this->warn('AzGuard cache uses the "array" store (in-memory) — nothing to flush.');
+
             return self::SUCCESS;
         }
 
-        // Сбрасываем через тег если возможно, иначе просто выводим инфо
         try {
             cache()->store($store)->flush();
-            $this->info("Кэш AzGuard ({$store}) сброшен. Ключ-префикс: {$key}");
-        } catch (\Exception $e) {
-            $this->warn("Не удалось сбросить кэш: {$e->getMessage()}");
-            $this->line("Выполните вручную: cache()->store('{$store}')->flush()");
+            $this->info("AzGuard cache ({$store}) flushed. Key prefix: {$key}");
+        } catch (Exception $e) {
+            $this->warn("Failed to flush cache: {$e->getMessage()}");
+            $this->line("Run manually: cache()->store('{$store}')->flush()");
+
             return self::FAILURE;
         }
 

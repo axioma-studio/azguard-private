@@ -12,10 +12,13 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Override;
 
 /**
  * Relation Manager: права DB-роли.
@@ -29,12 +32,14 @@ final class RolePermissionsRelationManager extends RelationManager
 
     protected static ?string $title = 'Права';
 
+    #[Override]
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         // Для PHP-класс-ролей права определяет класс — скрываем вкладку.
         return $ownerRecord->class_name === null;
     }
 
+    #[Override]
     public function form(Form $form): Form
     {
         return $form->schema([
@@ -43,6 +48,7 @@ final class RolePermissionsRelationManager extends RelationManager
         ]);
     }
 
+    #[Override]
     public function table(Table $table): Table
     {
         return $table
@@ -58,18 +64,18 @@ final class RolePermissionsRelationManager extends RelationManager
                     ->searchable(),
             ])
             ->headerActions([
-                Tables\Actions\Action::make('sync_permissions')
+                Action::make('sync_permissions')
                     ->label('Редактировать права')
                     ->icon('heroicon-o-pencil-square')
-                    ->form(fn () => $this->buildPermissionsForm())
-                    ->fillForm(fn () => $this->currentPermissionsFormData())
+                    ->form(fn (): array => $this->buildPermissionsForm())
+                    ->fillForm(fn (): array => $this->currentPermissionsFormData())
                     ->action(fn (array $data) => $this->syncPermissions($data)),
             ])
             ->actions([
-                Tables\Actions\DeleteAction::make()->label('Отзыв'),
+                DeleteAction::make()->label('Отзыв'),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make()->label('Отзыв выбранных'),
+                DeleteBulkAction::make()->label('Отзыв выбранных'),
             ]);
     }
 
@@ -112,7 +118,7 @@ final class RolePermissionsRelationManager extends RelationManager
             }
 
             $sections[] = Section::make($panelId)
-                ->heading('Panel: ' . $panelId)
+                ->heading('Panel: '.$panelId)
                 ->schema($checkboxLists)
                 ->collapsible();
         }
@@ -181,11 +187,11 @@ final class RolePermissionsRelationManager extends RelationManager
         foreach ($desired as $panelId => $keys) {
             foreach (array_unique($keys) as $key) {
                 $rows[] = [
-                    'role_id'        => $role->id,
+                    'role_id' => $role->id,
                     'permission_key' => $key,
-                    'panel_id'       => $panelId,
-                    'created_at'     => $now,
-                    'updated_at'     => $now,
+                    'panel_id' => $panelId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
             }
         }

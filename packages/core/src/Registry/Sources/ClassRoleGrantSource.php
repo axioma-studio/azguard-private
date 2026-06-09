@@ -8,6 +8,7 @@ use AzGuard\Concerns\HasAzGuard;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Override;
 
 /**
  * Grant source from PHP role classes (RoleInterface::permissions()).
@@ -18,6 +19,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class ClassRoleGrantSource implements GrantSource
 {
+    #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
         if (! in_array(HasAzGuard::class, class_uses_recursive($user), strict: true)) {
@@ -25,7 +27,7 @@ final class ClassRoleGrantSource implements GrantSource
         }
 
         $keys = $user->roles
-            ->filter(fn ($role) => $role->class_name !== null)
+            ->filter(fn ($role): bool => $role->class_name !== null)
             ->map(fn ($role) => $role->getRoleLogic())
             ->filter()
             ->flatMap(function ($roleLogic) use ($panelId): array {
@@ -35,7 +37,7 @@ final class ClassRoleGrantSource implements GrantSource
                 // Keep '*' (wildcard) and permissions prefixed with the current panel ID.
                 return array_filter(
                     $all,
-                    static fn (string $p) => $p === '*' || str_starts_with($p, $panelId . '.'),
+                    static fn (string $p): bool => $p === '*' || str_starts_with($p, $panelId.'.'),
                 );
             })
             ->unique()
@@ -49,6 +51,7 @@ final class ClassRoleGrantSource implements GrantSource
         return PermissionSet::fromKeys($keys);
     }
 
+    #[Override]
     public function priority(): int
     {
         return 100;

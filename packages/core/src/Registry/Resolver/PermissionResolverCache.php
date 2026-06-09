@@ -14,6 +14,4 @@ namespace AzGuard\Registry\Resolver;
  *   Replace PermissionResolverCache with PermissionCache
  *   in all type-hints, service container bindings, and tests.
  */
-class PermissionResolverCache extends PermissionCache
-{
-}
+class PermissionResolverCache extends PermissionCache {}

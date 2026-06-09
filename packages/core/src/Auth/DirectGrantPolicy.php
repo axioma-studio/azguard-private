@@ -30,7 +30,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 final class DirectGrantPolicy
 {
     /**
-     * @param  Authenticatable      $user
      * @param  string|array<mixed>  $arguments  Ключ или [ключ, панель]
      */
     public function check(Authenticatable $user, string|array $arguments): bool
@@ -54,7 +53,7 @@ final class DirectGrantPolicy
             return [$arguments, AzGuard::currentPanel()?->getId()];
         }
 
-        $key   = (string) ($arguments[0] ?? '');
+        $key = (string) ($arguments[0] ?? '');
         $panel = isset($arguments[1]) ? (string) $arguments[1] : AzGuard::currentPanel()?->getId();
 
         return [$key, $panel];

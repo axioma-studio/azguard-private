@@ -26,7 +26,7 @@ class ContextTestCase extends TestCase
         parent::setUp();
 
         $this->loadMigrationsFrom(
-            __DIR__ . '/../packages/context/database/migrations'
+            __DIR__.'/../packages/context/database/migrations'
         );
     }
 }

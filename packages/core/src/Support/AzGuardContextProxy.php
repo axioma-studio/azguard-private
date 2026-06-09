@@ -6,6 +6,7 @@ namespace AzGuard\Support;
 
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Throwable;
 
 /**
  * Thin adapter that isolates the core package from packages/context.
@@ -17,12 +18,14 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * or when any error occurs.
  *
  * Previously named AzGuardContextBridge. The old class is kept as a
+ *
  * @deprecated alias for backwards compatibility.
  */
 final class AzGuardContextProxy
 {
-    private const CONTEXT_MANAGER = 'AzGuard\\Context\\AuthorizationContextManager';
-    private const CONTEXT_CLASS   = 'AzGuard\\Context\\AuthorizationContext';
+    private const string CONTEXT_MANAGER = 'AzGuard\\Context\\AuthorizationContextManager';
+
+    private const string CONTEXT_CLASS = 'AzGuard\\Context\\AuthorizationContext';
 
     /**
      * One-off check with an arbitrary $context object.
@@ -53,13 +56,13 @@ final class AzGuardContextProxy
                 : $panelId;
 
             $contextObj = app(self::CONTEXT_CLASS, [
-                'panelId'     => $effectivePanelId,
+                'panelId' => $effectivePanelId,
                 'contextType' => $context->contextType,
-                'contextId'   => $context->contextId,
+                'contextId' => $context->contextId,
             ]);
 
             return self::resolveWithIsolatedContext($user, $permission, $effectivePanelId, $contextObj);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }
@@ -81,13 +84,13 @@ final class AzGuardContextProxy
 
         try {
             $contextObj = app(self::CONTEXT_CLASS, [
-                'panelId'     => $panelId,
+                'panelId' => $panelId,
                 'contextType' => $contextType,
-                'contextId'   => $contextId,
+                'contextId' => $contextId,
             ]);
 
             return self::resolveWithIsolatedContext($user, $permission, $panelId, $contextObj);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }
@@ -107,7 +110,7 @@ final class AzGuardContextProxy
         object $contextObj,
     ): bool {
         /** @var object $manager */
-        $manager  = app(self::CONTEXT_MANAGER);
+        $manager = app(self::CONTEXT_MANAGER);
         $resolver = app(EffectivePermissionResolver::class);
 
         // Save the current context so we can restore it in the finally block.

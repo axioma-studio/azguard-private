@@ -14,13 +14,13 @@ final class MakeGuardPanelCommand extends Command
     use ResolvesGuardNamespaces;
 
     protected $signature = 'make:guard-panel
-        {panel : Имя панели (например App)}
-        {domain=Documents : Домен внутри панели}
-        {--path=app/Guards : Базовый путь}
-        {--role=Admin : Первая роль}
-        {--with-abilities : Создать Abilities DTO}';
+        {panel : Panel name (e.g. App)}
+        {domain=Documents : Domain inside the panel}
+        {--path=app/Guards : Base path}
+        {--role=Admin : Initial role name}
+        {--with-abilities : Also generate an Abilities DTO}';
 
-    protected $description = 'Создаёт guard-панель с доменной структурой Permissions/Policies/Abilities';
+    protected $description = 'Scaffold a guard panel with Permissions/Policies/Abilities domain structure';
 
     public function handle(): int
     {
@@ -36,7 +36,7 @@ final class MakeGuardPanelCommand extends Command
         $domainKey = $this->domainKey(domain: $domain);
 
         if (File::isDirectory(directory: $basePath)) {
-            $this->error("Панель уже существует: {$basePath}");
+            $this->error("Panel already exists: {$basePath}");
 
             return self::FAILURE;
         }
@@ -93,7 +93,7 @@ final class MakeGuardPanelCommand extends Command
             );
         }
 
-        $this->info("Панель [{$panel}] создана в {$basePath}");
+        $this->info("Panel [{$panel}] created at {$basePath}");
 
         return self::SUCCESS;
     }
@@ -106,7 +106,7 @@ final class MakeGuardPanelCommand extends Command
         $stubPath = __DIR__.'/../../stubs/panel/'.$stubName.'.stub';
 
         if (! File::exists(path: $stubPath)) {
-            $this->warn("Stub не найден: {$stubName}");
+            $this->warn("Stub not found: {$stubName}");
 
             return;
         }

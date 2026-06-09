@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
 final class GrantBuilder
 {
     private ?string $panelId = null;
+
     private ?int $ttlSeconds = null;
 
     public function __construct(
@@ -69,10 +70,10 @@ final class GrantBuilder
         /** @var DirectGrant $grant */
         $grant = DirectGrant::query()->updateOrCreate(
             [
-                'grantable_type'  => $this->user::class,
-                'grantable_id'    => $this->user->getAuthIdentifier(),
-                'panel_id'        => $panel,
-                'permission_key'  => $permissionKey,
+                'grantable_type' => $this->user::class,
+                'grantable_id' => $this->user->getAuthIdentifier(),
+                'panel_id' => $panel,
+                'permission_key' => $permissionKey,
             ],
             ['expires_at' => $expiresAt],
         );
@@ -91,11 +92,12 @@ final class GrantBuilder
      * Revoke a specific permission.
      *
      * @return int Number of deleted records (0 or 1).
+     *
      * @throws PanelNotSetException
      */
     public function revoke(string $permissionKey): int
     {
-        $panel   = PanelResolver::resolveOrFail($this->panelId);
+        $panel = PanelResolver::resolveOrFail($this->panelId);
         $deleted = $this->baseQuery($panel)
             ->where('permission_key', $permissionKey)
             ->delete();
@@ -115,11 +117,12 @@ final class GrantBuilder
      * Revoke all permissions for the user on the panel.
      *
      * @return int Number of deleted records.
+     *
      * @throws PanelNotSetException
      */
     public function revokeAll(): int
     {
-        $panel   = PanelResolver::resolveOrFail($this->panelId);
+        $panel = PanelResolver::resolveOrFail($this->panelId);
         $deleted = $this->baseQuery($panel)->delete();
 
         if ($deleted > 0) {
@@ -137,6 +140,7 @@ final class GrantBuilder
      * Return all active grants for the user on the panel.
      *
      * @return Collection<int, DirectGrant>
+     *
      * @throws PanelNotSetException
      */
     public function list(): Collection

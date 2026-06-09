@@ -10,5 +10,4 @@ use RuntimeException;
  * Выбрасывается DenyWithoutContextStrategy, когда контекст обязателен,
  * но не был установлен через SetAuthorizationContext middleware.
  */
-final class MissingAuthorizationContextException extends RuntimeException
-{}
+final class MissingAuthorizationContextException extends RuntimeException {}

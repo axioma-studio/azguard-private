@@ -16,17 +16,19 @@ describe('PermissionResolverCache', function () {
     });
 
     it('remembers result for same key', function () {
-        $cache = new PermissionResolverCache();
+        $cache = new PermissionResolverCache;
         $calls = 0;
 
         $set = $cache->rememberForRequest('azguard.perms.1.app', function () use (&$calls): PermissionSet {
             $calls++;
+
             return PermissionSet::fromKeys(['app.posts.view']);
         });
 
         // Second call — must NOT invoke callback again
         $set2 = $cache->rememberForRequest('azguard.perms.1.app', function () use (&$calls): PermissionSet {
             $calls++;
+
             return PermissionSet::fromKeys(['different']);
         });
 
@@ -35,7 +37,7 @@ describe('PermissionResolverCache', function () {
     });
 
     it('stores separate entries for different keys', function () {
-        $cache = new PermissionResolverCache();
+        $cache = new PermissionResolverCache;
 
         $setA = $cache->rememberForRequest('azguard.perms.1.app', fn () => PermissionSet::fromKeys(['app.posts.view']));
         $setB = $cache->rememberForRequest('azguard.perms.2.app', fn () => PermissionSet::fromKeys(['app.tags.view']));
@@ -45,11 +47,12 @@ describe('PermissionResolverCache', function () {
     });
 
     it('forgetAll clears entire request cache', function () {
-        $cache = new PermissionResolverCache();
+        $cache = new PermissionResolverCache;
         $calls = 0;
 
         $cache->rememberForRequest('azguard.perms.1.app', function () use (&$calls): PermissionSet {
             $calls++;
+
             return PermissionSet::fromKeys(['app.posts.view']);
         });
 
@@ -57,6 +60,7 @@ describe('PermissionResolverCache', function () {
 
         $cache->rememberForRequest('azguard.perms.1.app', function () use (&$calls): PermissionSet {
             $calls++;
+
             return PermissionSet::fromKeys(['app.posts.view']);
         });
 
@@ -64,7 +68,7 @@ describe('PermissionResolverCache', function () {
     });
 
     it('forgetForUser removes entries matching user+panel prefix', function () {
-        $cache = new PermissionResolverCache();
+        $cache = new PermissionResolverCache;
         $calls = 0;
 
         $cache->rememberForRequest('azguard.perms.1.app', fn () => PermissionSet::fromKeys(['app.posts.view']));
@@ -77,12 +81,14 @@ describe('PermissionResolverCache', function () {
         // user=1 app — пересчитывается
         $cache->rememberForRequest('azguard.perms.1.app', function () use (&$calls): PermissionSet {
             $calls++;
+
             return PermissionSet::fromKeys(['app.posts.view']);
         });
 
         // user=1 admin — остался в кэше, callback НЕ вызывается
         $cache->rememberForRequest('azguard.perms.1.admin', function () use (&$calls): PermissionSet {
             $calls++;
+
             return PermissionSet::fromKeys(['admin.users.view']);
         });
 

@@ -48,7 +48,7 @@ final class PermissionCache
 
         $this->requestCache = array_filter(
             $this->requestCache,
-            static fn (string $k) => ! str_starts_with($k, $prefix),
+            static fn (string $k): bool => ! str_starts_with($k, $prefix),
             ARRAY_FILTER_USE_KEY,
         );
 

@@ -7,11 +7,13 @@ namespace AzGuard\Http\Middleware;
 use AzGuard\Attributes\CheckPermission as CheckPermissionAttribute;
 use AzGuard\Attributes\SkipGuardCheck;
 use AzGuard\Facades\AzGuard;
+use BackedEnum;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use ReflectionMethod;
 use Symfony\Component\HttpFoundation\Response;
+use UnitEnum;
 
 final class CheckAccess
 {
@@ -90,18 +92,18 @@ final class CheckAccess
         ));
     }
 
-    private function resolveAbility(\UnitEnum $permission): string
+    private function resolveAbility(UnitEnum $permission): string
     {
         $panel = AzGuard::currentPanel();
 
-        if ($panel !== null && $permission instanceof \BackedEnum) {
+        if ($panel !== null && $permission instanceof BackedEnum) {
             return $panel->resolvePermission(permission: $permission);
         }
 
-        if ($permission instanceof \BackedEnum) {
+        if ($permission instanceof BackedEnum) {
             return $permission->value;
         }
 
-        return (string) $permission->name;
+        return $permission->name;
     }
 }

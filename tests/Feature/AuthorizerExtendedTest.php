@@ -7,7 +7,6 @@ use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
 use Illuminate\Support\Facades\Gate;
 
-
 describe('Authorizer — Gate integration', function (): void {
 
     it('denies access for user without any role', function (): void {
@@ -22,9 +21,9 @@ describe('Authorizer — Gate integration', function (): void {
         $user = User::factory()->create();
 
         $role = Role::create([
-            'name'       => 'viewer',
+            'name' => 'viewer',
             'class_name' => ManagerRole::class,
-            'level'      => 1,
+            'level' => 1,
         ]);
 
         $user->roles()->attach($role);
@@ -35,16 +34,20 @@ describe('Authorizer — Gate integration', function (): void {
     });
 
     it('grants wildcard * superadmin all permissions via Gate::before', function (): void {
-        $superAdminRole = new class extends \AzGuard\Roles\BaseRole {
-            public function permissions(): array { return ['*']; }
+        $superAdminRole = new class extends \AzGuard\Roles\BaseRole
+        {
+            public function permissions(): array
+            {
+                return ['*'];
+            }
         };
 
         $user = User::factory()->create();
 
         $role = Role::create([
-            'name'       => 'superadmin',
+            'name' => 'superadmin',
             'class_name' => get_class($superAdminRole),
-            'level'      => 1000,
+            'level' => 1000,
         ]);
 
         $user->roles()->attach($role);
@@ -59,9 +62,9 @@ describe('Authorizer — Gate integration', function (): void {
         $user = User::factory()->create();
 
         $role = Role::create([
-            'name'       => 'manager',
+            'name' => 'manager',
             'class_name' => ManagerRole::class,
-            'level'      => 10,
+            'level' => 10,
         ]);
 
         $user->roles()->attach($role);

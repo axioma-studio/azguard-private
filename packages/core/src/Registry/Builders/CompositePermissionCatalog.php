@@ -9,6 +9,7 @@ use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Exceptions\InvalidCatalogException;
 use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
+use Override;
 
 /**
  * Агрегирует несколько PermissionCatalogBuilder в единый каталог.
@@ -28,8 +29,8 @@ final class CompositePermissionCatalog implements PermissionCatalog
     private bool $built = false;
 
     /**
-     * @param list<PermissionCatalogBuilder> $builders
-     * @param list<string> $panelIds
+     * @param  list<PermissionCatalogBuilder>  $builders
+     * @param  list<string>  $panelIds
      */
     public function __construct(
         private readonly array $builders,
@@ -81,6 +82,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
         $this->built = true;
     }
 
+    #[Override]
     public function all(string $panelId): array
     {
         $this->ensureBuilt();
@@ -88,6 +90,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
         return array_values($this->definitions[$panelId] ?? []);
     }
 
+    #[Override]
     public function has(string $panelId, string $resolvedKey): bool
     {
         $this->ensureBuilt();
@@ -95,6 +98,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
         return isset($this->definitions[$panelId][$resolvedKey]);
     }
 
+    #[Override]
     public function get(string $panelId, string $resolvedKey): ?PermissionDefinition
     {
         $this->ensureBuilt();
@@ -102,6 +106,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
         return $this->definitions[$panelId][$resolvedKey] ?? null;
     }
 
+    #[Override]
     public function assert(string $panelId, string $resolvedKey): PermissionDefinition
     {
         $this->ensureBuilt();
@@ -110,6 +115,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
             ?? throw InvalidPermissionKeyException::forKey($resolvedKey, $panelId);
     }
 
+    #[Override]
     public function groups(string $panelId): array
     {
         $this->ensureBuilt();
@@ -126,6 +132,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
         return $grouped;
     }
 
+    #[Override]
     public function panels(): array
     {
         return $this->panelIds;

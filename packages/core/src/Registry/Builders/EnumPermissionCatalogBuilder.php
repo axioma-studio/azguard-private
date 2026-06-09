@@ -9,6 +9,8 @@ use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
 use Illuminate\Support\Facades\File;
+use Override;
+use ReflectionClass;
 use ReflectionEnum;
 use UnitEnum;
 
@@ -19,6 +21,7 @@ use UnitEnum;
  */
 final class EnumPermissionCatalogBuilder implements PermissionCatalogBuilder
 {
+    #[Override]
     public function build(string $panelId): array
     {
         $panel = AzGuard::getPanel($panelId);
@@ -55,6 +58,7 @@ final class EnumPermissionCatalogBuilder implements PermissionCatalogBuilder
         return $definitions;
     }
 
+    #[Override]
     public function supports(string $panelId): bool
     {
         return AzGuard::getPanel($panelId) !== null;
@@ -77,9 +81,9 @@ final class EnumPermissionCatalogBuilder implements PermissionCatalogBuilder
             }
 
             $relative = $file->getRelativePathname();
-            $class = $baseNamespace . '\\' . str_replace(['/', '.php'], ['\\', ''], $relative);
+            $class = $baseNamespace.'\\'.str_replace(['/', '.php'], ['\\', ''], $relative);
 
-            if (class_exists($class) && (new \ReflectionClass($class))->isEnum()) {
+            if (class_exists($class) && (new ReflectionClass($class))->isEnum()) {
                 $classes[] = $class;
             }
         }

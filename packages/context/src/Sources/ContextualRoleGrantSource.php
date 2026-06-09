@@ -9,6 +9,7 @@ use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Override;
 
 /**
  * GrantSource: контекстные права пользователя.
@@ -24,13 +25,14 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Важно: этот источник НЕ дублирует глобальные права — он дополняет или
  * переопределяет их согласно стратегии. Финальный merge происходит в стратегии.
  */
-final class ContextualRoleGrantSource implements GrantSource
+final readonly class ContextualRoleGrantSource implements GrantSource
 {
     public function __construct(
-        private readonly AuthorizationContextManager $manager,
-        private readonly MergeStrategy $strategy,
+        private AuthorizationContextManager $manager,
+        private MergeStrategy $strategy,
     ) {}
 
+    #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
         // Контекстные права для текущего контекста.
@@ -41,6 +43,7 @@ final class ContextualRoleGrantSource implements GrantSource
         return $this->strategy->merge(PermissionSet::empty(), $contextSet);
     }
 
+    #[Override]
     public function priority(): int
     {
         return 95;

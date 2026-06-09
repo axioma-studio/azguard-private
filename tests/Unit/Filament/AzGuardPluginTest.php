@@ -46,6 +46,7 @@ it('register() injects RoleResource and DirectGrantResource into panel', functio
         ->once()
         ->withArgs(function (array $resources) use (&$registered) {
             $registered = $resources;
+
             return true;
         });
 

@@ -11,7 +11,8 @@ use Illuminate\Support\Collection;
  */
 function makeAuthorizable(array $permissions): Authorizable
 {
-    return new class ($permissions) implements Authorizable {
+    return new class($permissions) implements Authorizable
+    {
         private Collection $perms;
 
         public function __construct(array $permissions)
@@ -25,16 +26,21 @@ function makeAuthorizable(array $permissions): Authorizable
         }
 
         public function can($abilities, $arguments = []) {}
+
         public function cant($abilities, $arguments = []) {}
+
         public function cannot($abilities, $arguments = []) {}
     };
 }
 
 describe('Authorizer', function () {
     it('returns null for user without getAzPermissions', function () {
-        $user = new class implements Authorizable {
+        $user = new class implements Authorizable
+        {
             public function can($abilities, $arguments = []) {}
+
             public function cant($abilities, $arguments = []) {}
+
             public function cannot($abilities, $arguments = []) {}
         };
 

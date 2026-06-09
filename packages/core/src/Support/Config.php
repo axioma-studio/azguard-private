@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Models\DirectGrant;
+use AzGuard\Models\ModelHasScope;
+use AzGuard\Models\Role;
+use AzGuard\Models\RolePermission;
+
 /**
  * Centralised config accessor for AzGuard.
  *
@@ -22,22 +27,22 @@ final class Config
 
     public static function roleModel(): string
     {
-        return (string) config('az-guard.models.role', \AzGuard\Models\Role::class);
+        return (string) config('az-guard.models.role', Role::class);
     }
 
     public static function scopeModel(): string
     {
-        return (string) config('az-guard.models.scope', \AzGuard\Models\ModelHasScope::class);
+        return (string) config('az-guard.models.scope', ModelHasScope::class);
     }
 
     public static function directGrantModel(): string
     {
-        return (string) config('az-guard.models.direct_grant', \AzGuard\Models\DirectGrant::class);
+        return (string) config('az-guard.models.direct_grant', DirectGrant::class);
     }
 
     public static function rolePermissionModel(): string
     {
-        return (string) config('az-guard.models.role_permission', \AzGuard\Models\RolePermission::class);
+        return (string) config('az-guard.models.role_permission', RolePermission::class);
     }
 
     public static function modelsNamespace(): string
@@ -101,22 +106,22 @@ final class Config
 
     public static function teamsEnabled(): bool
     {
-        return static::isEnabled('teams');
+        return self::isEnabled('teams');
     }
 
     public static function wildcardEnabled(): bool
     {
-        return static::isEnabled('wildcard_permission');
+        return self::isEnabled('wildcard_permission');
     }
 
     public static function directGrantsEnabled(): bool
     {
-        return static::isEnabled('direct_grants');
+        return self::isEnabled('direct_grants');
     }
 
     public static function auditLogEnabled(): bool
     {
-        return static::isEnabled('audit_log');
+        return self::isEnabled('audit_log');
     }
 
     // ─── Teams ────────────────────────────────────────────────────────────
@@ -147,7 +152,7 @@ final class Config
     /** @alias cacheTtl() */
     public static function cacheExpiration(): ?int
     {
-        return static::cacheTtl();
+        return self::cacheTtl();
     }
 
     public static function cacheKey(): string

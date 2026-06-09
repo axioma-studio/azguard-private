@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Commands;
 
+use AzGuard\Commands\Concerns\ResolvesUserModel;
 use AzGuard\Models\ModelHasScope;
 use Illuminate\Console\Command;
 
@@ -20,17 +21,18 @@ use Illuminate\Console\Command;
  */
 class ListScopedRolesCommand extends Command
 {
-    protected $signature = 'azguard:list-scoped-roles
-                            {user : ID или email пользователя}
-                            {--entity= : Фильтр по типу сущности (FQCN, например App\\Models\\Project)}';
+    use ResolvesUserModel;
 
-    protected $description = 'Вывести все entity-scoped роли пользователя';
+    protected $signature = 'azguard:list-scoped-roles
+                            {user : User ID or email}
+                            {--entity= : Filter by entity type (FQCN, e.g. App\\Models\\Project)}
+                            {--model=  : User model FQCN (defaults to auth.providers.users.model)}';
+
+    protected $description = 'List all entity-scoped role assignments for a user';
 
     public function handle(): int
     {
-        /** @var class-string $userModelClass */
-        $userModelClass = config('auth.providers.users.model', \App\Models\User::class);
-
+        $userModelClass = $this->resolveUserModelClass();
         $identifier = $this->argument('user');
 
         $user = is_numeric($identifier)
@@ -38,7 +40,7 @@ class ListScopedRolesCommand extends Command
             : $userModelClass::where('email', $identifier)->first();
 
         if ($user === null) {
-            $this->error("Пользователь [{$identifier}] не найден.");
+            $this->error("User [{$identifier}] not found.");
 
             return self::FAILURE;
         }
@@ -56,12 +58,12 @@ class ListScopedRolesCommand extends Command
         $scopes = $query->get();
 
         if ($scopes->isEmpty()) {
-            $this->warn("У пользователя [{$identifier}] нет scoped-ролей.");
+            $this->warn("User [{$identifier}] has no scoped roles.");
 
             return self::SUCCESS;
         }
 
-        $this->info("Scoped-роли пользователя: <comment>{$identifier}</comment>");
+        $this->info("Scoped roles for user: <comment>{$identifier}</comment>");
         $this->line('');
 
         $rows = $scopes->map(fn ($scope): array => [
@@ -72,7 +74,7 @@ class ListScopedRolesCommand extends Command
         ])->toArray();
 
         $this->table(
-            ['Роль', 'Тип сущности', 'ID сущности', 'Scope Class'],
+            ['Role', 'Entity Type', 'Entity ID', 'Scope Class'],
             $rows,
         );
 

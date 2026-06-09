@@ -18,13 +18,13 @@ describe('azguard:list-scoped-roles command', function (): void {
     });
 
     it('lists scoped roles for user by ID', function (): void {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'project-editor',
+            'name' => 'project-editor',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->assignScopedRole($role, $project);
@@ -36,13 +36,13 @@ describe('azguard:list-scoped-roles command', function (): void {
     });
 
     it('lists scoped roles for user by email', function (): void {
-        $user    = User::factory()->create(['email' => 'editor@example.com']);
+        $user = User::factory()->create(['email' => 'editor@example.com']);
         $project = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'project-editor-email',
+            'name' => 'project-editor-email',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->assignScopedRole($role, $project);
@@ -59,20 +59,20 @@ describe('azguard:list-scoped-roles command', function (): void {
     });
 
     it('filters by entity type via --entity option', function (): void {
-        $user     = User::factory()->create();
-        $project  = Project::factory()->create();
+        $user = User::factory()->create();
+        $project = Project::factory()->create();
 
         $role = Role::create([
-            'name'       => 'filtered-editor',
+            'name' => 'filtered-editor',
             'class_name' => ProjectEditorRole::class,
-            'level'      => 5,
+            'level' => 5,
         ]);
 
         $user->assignScopedRole($role, $project);
 
         // Filter matches — should show the role
         $this->artisan('azguard:list-scoped-roles', [
-            'user'     => $user->id,
+            'user' => $user->id,
             '--entity' => AzGuard\Tests\Stubs\Project::class,
         ])
             ->expectsOutputToContain('filtered-editor')
@@ -80,7 +80,7 @@ describe('azguard:list-scoped-roles command', function (): void {
 
         // Filter does NOT match — should warn no scoped roles
         $this->artisan('azguard:list-scoped-roles', [
-            'user'     => $user->id,
+            'user' => $user->id,
             '--entity' => 'App\\Models\\Team',
         ])
             ->expectsOutputToContain('нет scoped-ролей')

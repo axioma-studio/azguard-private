@@ -24,14 +24,14 @@ use Symfony\Component\HttpFoundation\Response;
  * Применение на роуте:
  *   Route::middleware('azguard.context')->group(function () { ... });
  */
-final class SetAuthorizationContext
+final readonly class SetAuthorizationContext
 {
     /**
-     * @param iterable<ResolvesContext> $resolvers
+     * @param  iterable<ResolvesContext>  $resolvers
      */
     public function __construct(
-        private readonly AuthorizationContextManager $manager,
-        private readonly iterable $resolvers,
+        private AuthorizationContextManager $manager,
+        private iterable $resolvers,
     ) {}
 
     public function handle(Request $request, Closure $next): Response

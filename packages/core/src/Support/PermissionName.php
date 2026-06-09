@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use UnitEnum;
+
 final class PermissionName
 {
-    public static function for(Panel $panel, string|\UnitEnum $ability): string
+    public static function for(Panel $panel, string|UnitEnum $ability): string
     {
         return $panel->resolvePermission(permission: $ability);
     }

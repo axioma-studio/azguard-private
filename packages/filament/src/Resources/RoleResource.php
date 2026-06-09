@@ -14,11 +14,15 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
+use Override;
 
 /**
  * Filament Resource для управления DB-ролями.
@@ -43,6 +47,7 @@ final class RoleResource extends Resource
 
     protected static ?string $pluralLabel = 'Роли';
 
+    #[Override]
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -87,23 +92,24 @@ final class RoleResource extends Resource
             // ── Code-role: информационный placeholder ─────────────────────────────
             Placeholder::make('code_role_info')
                 ->label('')
-                ->content(fn () => new HtmlString(
+                ->content(fn (): HtmlString => new HtmlString(
                     '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;'
-                    . 'background:oklch(0.96 0.02 220);border:1px solid oklch(0.88 0.04 220);'
-                    . 'border-radius:6px;font-size:0.875rem;color:oklch(0.35 0.08 220);">' 
-                    . '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" '
-                    . 'viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">'
-                    . '<path stroke-linecap="round" stroke-linejoin="round" '
-                    . 'd="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>'
-                    . '</svg>'
-                    . 'Права этой роли определяет PHP-класс. Вкладка «Права» в режиме редактирования скрыта.'
-                    . '</div>'
+                    .'background:oklch(0.96 0.02 220);border:1px solid oklch(0.88 0.04 220);'
+                    .'border-radius:6px;font-size:0.875rem;color:oklch(0.35 0.08 220);">'
+                    .'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" '
+                    .'viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">'
+                    .'<path stroke-linecap="round" stroke-linejoin="round" '
+                    .'d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>'
+                    .'</svg>'
+                    .'Права этой роли определяет PHP-класс. Вкладка «Права» в режиме редактирования скрыта.'
+                    .'</div>'
                 ))
                 ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
                 ->columnSpan('full'),
         ])->columns(2);
     }
 
+    #[Override]
     public static function table(Table $table): Table
     {
         return $table
@@ -128,7 +134,7 @@ final class RoleResource extends Resource
                     ->trueColor('warning')
                     ->falseColor('success')
                     ->tooltip(fn (Role $record): string => $record->class_name !== null
-                        ? 'Code role: ' . $record->class_name
+                        ? 'Code role: '.$record->class_name
                         : 'Custom role: права из БД'
                     ),
 
@@ -149,7 +155,7 @@ final class RoleResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_code_role')
+                TernaryFilter::make('is_code_role')
                     ->label('Тип роли')
                     ->placeholder('Все')
                     ->trueLabel('Code roles')
@@ -160,21 +166,22 @@ final class RoleResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                DeleteBulkAction::make(),
             ])
             ->defaultSort('level', 'desc');
     }
 
+    #[Override]
     public static function getPages(): array
     {
         return [
-            'index'  => ListRoles::route('/'),
+            'index' => ListRoles::route('/'),
             'create' => CreateRole::route('/create'),
-            'edit'   => EditRole::route('/{record}/edit'),
+            'edit' => EditRole::route('/{record}/edit'),
         ];
     }
 }

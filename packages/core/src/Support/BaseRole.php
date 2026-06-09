@@ -9,6 +9,4 @@ namespace AzGuard\Support;
  *             Этот класс будет удалён в v2.0.
  * @see \AzGuard\Roles\BaseRole
  */
-abstract class BaseRole extends \AzGuard\Roles\BaseRole
-{
-}
+abstract class BaseRole extends \AzGuard\Roles\BaseRole {}

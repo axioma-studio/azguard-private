@@ -45,15 +45,16 @@ final class DiagnosticsService
                 continue;
             }
 
-            $basePath      = $panel->getBasePath();
+            $basePath = $panel->getBasePath();
             $baseNamespace = $panel->getNamespace();
 
             if ($basePath === '' || $baseNamespace === '') {
                 $this->warnings[] = "Panel [{$panelId}]: basePath/namespace not set in provider.";
+
                 continue;
             }
 
-            $discovery   = new PolicyDiscovery;
+            $discovery = new PolicyDiscovery;
             $policyClasses = $discovery->discoverPolicyClasses(
                 basePath: $basePath,
                 baseNamespace: $baseNamespace,
@@ -97,8 +98,8 @@ final class DiagnosticsService
         }
 
         return [
-            'errors'    => $this->errors,
-            'warnings'  => $this->warnings,
+            'errors' => $this->errors,
+            'warnings' => $this->warnings,
             'abilities' => $abilityRows,
         ];
     }
@@ -132,6 +133,7 @@ final class DiagnosticsService
         foreach ($abilities as $ability => $handler) {
             if (isset($seen[$ability])) {
                 $this->errors[] = "Panel [{$panelId}]: duplicate ability [{$ability}] — {$seen[$ability]} and {$handler}.";
+
                 continue;
             }
 
@@ -200,7 +202,7 @@ final class DiagnosticsService
         Panel $panel,
         array $knownAbilities,
     ): void {
-        $rolesPath = $basePath . '/Roles';
+        $rolesPath = $basePath.'/Roles';
 
         if (! is_dir($rolesPath)) {
             return;
@@ -211,9 +213,11 @@ final class DiagnosticsService
                 continue;
             }
 
-            $class = $baseNamespace . '\\Roles\\' . str_replace('.php', '', $file->getFilename());
-
-            if (! class_exists($class) || ! is_subclass_of($class, RoleInterface::class)) {
+            $class = $baseNamespace.'\\Roles\\'.str_replace('.php', '', $file->getFilename());
+            if (! class_exists($class)) {
+                continue;
+            }
+            if (! is_subclass_of($class, RoleInterface::class)) {
                 continue;
             }
 
@@ -229,7 +233,7 @@ final class DiagnosticsService
                     $this->errors[] = "Role {$class}: unknown permission [{$permission}].";
                 }
 
-                if (! str_starts_with($permission, $panel->getId() . '.')) {
+                if (! str_starts_with((string) $permission, $panel->getId().'.')) {
                     $this->warnings[] = "Role {$class}: [{$permission}] missing panel prefix [{$panel->getId()}.].";
                 }
             }
@@ -268,7 +272,7 @@ final class DiagnosticsService
                 }
 
                 /** @var UnitEnum $enumCase */
-                $enumCase  = $case->getValue();
+                $enumCase = $case->getValue();
                 $abilities[] = $panel->resolvePermission(permission: $enumCase);
             }
         }
@@ -290,7 +294,7 @@ final class DiagnosticsService
                 continue;
             }
 
-            $class = $baseNamespace . '\\' . str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
+            $class = $baseNamespace.'\\'.str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
 
             if (class_exists($class) && (new ReflectionClass($class))->isEnum()) {
                 $classes[] = $class;

@@ -39,8 +39,8 @@ class GrantBuilderTest extends TestCase
         $this->assertNull($grant->expires_at);
         $this->assertDatabaseHas('az_direct_grants', [
             'permission_key' => 'app.documents.export',
-            'panel_id'       => 'app',
-            'expires_at'     => null,
+            'panel_id' => 'app',
+            'expires_at' => null,
         ]);
 
         Event::assertDispatched(GrantGiven::class);
@@ -127,11 +127,11 @@ class GrantBuilderTest extends TestCase
         $builder->ttl(null)->give('app.a');
         // Истёкший — вставим напрямую
         DirectGrant::create([
-            'grantable_type'  => $this->user::class,
-            'grantable_id'    => $this->user->getAuthIdentifier(),
-            'panel_id'        => 'app',
-            'permission_key'  => 'app.b',
-            'expires_at'      => Carbon::parse('2025-01-01'),
+            'grantable_type' => $this->user::class,
+            'grantable_id' => $this->user->getAuthIdentifier(),
+            'panel_id' => 'app',
+            'permission_key' => 'app.b',
+            'expires_at' => Carbon::parse('2025-01-01'),
         ]);
 
         $list = $builder->list();

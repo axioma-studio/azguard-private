@@ -6,6 +6,7 @@ namespace AzGuard\Registry\Definitions;
 
 use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Contracts\PermissionMeta;
+use Override;
 use UnitEnum;
 
 /**
@@ -14,15 +15,15 @@ use UnitEnum;
  * Пример:
  *   DocumentsPermission::View → key "app.documents.view"
  */
-final class EnumPermissionDefinition implements PermissionDefinition
+final readonly class EnumPermissionDefinition implements PermissionDefinition
 {
     public function __construct(
-        private readonly string $resolvedKey,
-        private readonly string $panelId,
-        private readonly ?string $group,
-        private readonly PermissionMeta $meta,
-        private readonly string $enumClass,
-        private readonly string $caseName,
+        private string $resolvedKey,
+        private string $panelId,
+        private ?string $group,
+        private PermissionMeta $meta,
+        private string $enumClass,
+        private string $caseName,
     ) {}
 
     /**
@@ -43,35 +44,41 @@ final class EnumPermissionDefinition implements PermissionDefinition
         );
     }
 
+    #[Override]
     public function key(): string
     {
         return $this->resolvedKey;
     }
 
+    #[Override]
     public function shortKey(): string
     {
-        $prefix = $this->panelId . '.';
+        $prefix = $this->panelId.'.';
 
         return str_starts_with($this->resolvedKey, $prefix)
             ? substr($this->resolvedKey, strlen($prefix))
             : $this->resolvedKey;
     }
 
+    #[Override]
     public function panelId(): string
     {
         return $this->panelId;
     }
 
+    #[Override]
     public function group(): ?string
     {
         return $this->group;
     }
 
+    #[Override]
     public function meta(): PermissionMeta
     {
         return $this->meta;
     }
 
+    #[Override]
     public function isDynamic(): bool
     {
         return false;
@@ -104,6 +111,6 @@ final class EnumPermissionDefinition implements PermissionDefinition
      */
     private static function formatLabel(string $caseName): string
     {
-        return trim(preg_replace('/([A-Z])/', ' $1', $caseName));
+        return trim((string) preg_replace('/([A-Z])/', ' $1', $caseName));
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AzGuard\Context\Contracts;
 
-use AzGuard\Context\AuthorizationContext;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -22,8 +21,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 interface ContextMergeStrategy
 {
     /**
-     * @param PermissionSet      $global  Права из глобальных источников (ClassRole, DatabaseRole, Direct)
-     * @param PermissionSet|null $context Права из контекстного источника (null = контекст не установлен)
+     * @param  PermissionSet  $global  Права из глобальных источников (ClassRole, DatabaseRole, Direct)
+     * @param  PermissionSet|null  $context  Права из контекстного источника (null = контекст не установлен)
      */
     public function merge(
         Authenticatable $user,

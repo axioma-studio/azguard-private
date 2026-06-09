@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use BackedEnum;
+use UnitEnum;
+
 final class Panel
 {
     protected string $id = '';
@@ -16,9 +19,15 @@ final class Panel
 
     protected bool $isScopedByPanelId = true;
 
+    /** @var list<class-string> */
+    protected array $permissionEnums = [];
+
+    /** @var list<class-string> */
+    protected array $roleClasses = [];
+
     public static function make(): static
     {
-        return new static;
+        return new self;
     }
 
     public function id(string $id): static
@@ -64,6 +73,34 @@ final class Panel
         return $this->namespace;
     }
 
+    /** @param list<class-string> $enums */
+    public function permissionEnums(array $enums): static
+    {
+        $this->permissionEnums = $enums;
+
+        return $this;
+    }
+
+    /** @return list<class-string> */
+    public function getPermissionEnums(): array
+    {
+        return $this->permissionEnums;
+    }
+
+    /** @param list<class-string> $classes */
+    public function roleClasses(array $classes): static
+    {
+        $this->roleClasses = $classes;
+
+        return $this;
+    }
+
+    /** @return list<class-string> */
+    public function getRoleClasses(): array
+    {
+        return $this->roleClasses;
+    }
+
     public function scopedByPanelId(bool $condition = true): static
     {
         $this->isScopedByPanelId = $condition;
@@ -78,13 +115,13 @@ final class Panel
             : $permission;
     }
 
-    public function resolvePermission(string|\UnitEnum $permission): string
+    public function resolvePermission(string|UnitEnum $permission): string
     {
-        if ($permission instanceof \BackedEnum) {
+        if ($permission instanceof BackedEnum) {
             return $this->getPermissionName(permission: $permission->value);
         }
 
-        if ($permission instanceof \UnitEnum) {
+        if ($permission instanceof UnitEnum) {
             return $this->getPermissionName(permission: $permission->name);
         }
 

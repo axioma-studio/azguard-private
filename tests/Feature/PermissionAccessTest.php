@@ -1,7 +1,6 @@
 <?php
 
 use AzGuard\Models\Role;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
 
 // Создаем "фейковый" класс роли для теста, чтобы не зависеть от генератора

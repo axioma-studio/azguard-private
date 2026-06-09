@@ -10,6 +10,8 @@ use AzGuard\Support\Panel;
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
+use RuntimeException;
+use UnitEnum;
 
 /**
  * Контракт для AzGuardManager.
@@ -49,9 +51,9 @@ interface AzGuardManagerInterface
     /**
      * Разрешает полное имя разрешения для панели.
      *
-     * @throws \RuntimeException если панель не зарегистрирована
+     * @throws RuntimeException если панель не зарегистрирована
      */
-    public function permission(string $panelId, string|\UnitEnum $permission): string;
+    public function permission(string $panelId, string|UnitEnum $permission): string;
 
     // ─── Grants API ───────────────────────────────────────────────────────────
 
@@ -77,7 +79,7 @@ interface AzGuardManagerInterface
     /**
      * Короткий хелпер: отозвать direct grant.
      *
-     * @return int  Количество удалённых записей.
+     * @return int Количество удалённых записей.
      */
     public function revokeDirect(
         Authenticatable $user,

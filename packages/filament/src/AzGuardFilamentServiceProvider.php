@@ -10,7 +10,7 @@ final class AzGuardFilamentServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $viewsPath = __DIR__ . '/../resources/views';
+        $viewsPath = __DIR__.'/../resources/views';
 
         if (is_dir($viewsPath)) {
             $this->loadViewsFrom($viewsPath, 'az-guard');

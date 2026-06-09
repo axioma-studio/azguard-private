@@ -19,7 +19,7 @@ class DirectGrantPolicyTest extends TestCase
         $this->policy = new DirectGrantPolicy;
     }
 
-    public function test_returns_false_if_model_lacks_hasDirectGrant(): void
+    public function test_returns_false_if_model_lacks_has_direct_grant(): void
     {
         $user = $this->createUserWithoutGrantsTrait();
 
@@ -28,7 +28,7 @@ class DirectGrantPolicyTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function test_delegates_to_hasDirectGrant_with_string_arg(): void
+    public function test_delegates_to_has_direct_grant_with_string_arg(): void
     {
         $user = $this->createUser();
         $user->expects($this->once())

@@ -8,11 +8,11 @@ use AzGuard\Models\DirectGrant;
 use Illuminate\Console\Command;
 
 /**
- * Artisan-команда для удаления истёкших direct grants.
+ * Artisan command to delete expired direct grants.
  *
- * Пригодна для подключения через Laravel Scheduler:
+ * Suitable for use with Laravel Scheduler:
  *
- *   // bootstrap/app.php или Console/Kernel.php
+ *   // bootstrap/app.php or Console/Kernel.php
  *   Schedule::command('az-guard:prune-grants')->daily();
  *
  * @example
@@ -22,9 +22,9 @@ use Illuminate\Console\Command;
 final class PruneGrantsCommand extends Command
 {
     protected $signature = 'az-guard:prune-grants
-        {--panel= : Очистить только указанную панель}';
+        {--panel= : Restrict to a specific panel}';
 
-    protected $description = 'Удалить все истёкшие direct grants';
+    protected $description = 'Delete all expired direct grants';
 
     public function handle(): int
     {
@@ -41,7 +41,7 @@ final class PruneGrantsCommand extends Command
         $deleted = $query->delete();
 
         $suffix = $panel ? " (panel: {$panel})" : '';
-        $this->info("✅ Удалено {$deleted} истёкших grant(s){$suffix}.");
+        $this->info("Pruned {$deleted} expired grant(s){$suffix}.");
 
         return self::SUCCESS;
     }

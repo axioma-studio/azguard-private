@@ -33,13 +33,17 @@ describe('Panel', function () {
     it('resolves BackedEnum permission with panel prefix', function () {
         $panel = Panel::make()->id('crm')->scopedByPanelId(true);
 
-        $enum = new class ('view') extends \BackedEnum {
-        };
+        $enum = new class('view') extends \BackedEnum {};
 
         // Используем реальный BackedEnum через анонимный stub
-        $mockEnum = new readonly class implements \UnitEnum {
+        $mockEnum = new readonly class implements \UnitEnum
+        {
             public string $name = 'view';
-            public static function cases(): array { return []; }
+
+            public static function cases(): array
+            {
+                return [];
+            }
         };
 
         // Проверяем через строку (наиболее надёжный тест без enum)

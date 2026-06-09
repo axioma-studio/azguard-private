@@ -9,6 +9,7 @@ use AzGuard\Filament\Resources\DirectGrantResource;
 use AzGuard\Filament\Resources\RoleResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Override;
 
 /**
  * AzGuard Filament plugin (supports Filament 4 and 5).
@@ -25,9 +26,10 @@ final class AzGuardPlugin implements Plugin
 
     public static function make(): static
     {
-        return new static;
+        return new self;
     }
 
+    #[Override]
     public function getId(): string
     {
         return 'az-guard';
@@ -49,6 +51,7 @@ final class AzGuardPlugin implements Plugin
         return $this->panelId;
     }
 
+    #[Override]
     public function register(Panel $panel): void
     {
         $panel
@@ -61,6 +64,7 @@ final class AzGuardPlugin implements Plugin
             ]);
     }
 
+    #[Override]
     public function boot(Panel $panel): void
     {
         //

@@ -6,6 +6,7 @@ namespace AzGuard\Filament\Resources;
 
 use AzGuard\Filament\Concerns\AuthorizesAzGuardPermissions;
 use Filament\Resources\Resource;
+use Override;
 
 abstract class AzGuardResource extends Resource
 {
@@ -13,6 +14,7 @@ abstract class AzGuardResource extends Resource
 
     protected static ?string $viewAnyPermission = null;
 
+    #[Override]
     public static function canViewAny(): bool
     {
         $permission = static::$viewAnyPermission;

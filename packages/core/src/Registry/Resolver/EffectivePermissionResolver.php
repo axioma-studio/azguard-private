@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Resolver;
 
+use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Override;
 
 /**
  * Main entry point for obtaining a PermissionSet for a user.
@@ -19,32 +21,33 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Phase 3: + DatabaseRoleGrantSource, DirectGrantSource.
  * Phase 4: + ContextualRoleGrantSource.
  */
-final class EffectivePermissionResolver
+final readonly class EffectivePermissionResolver implements PermissionResolverInterface
 {
     /** @var list<GrantSource> Sorted by priority DESC once at construction time. */
-    private readonly array $sources;
+    private array $sources;
 
     /**
-     * @param iterable<GrantSource> $sources
+     * @param  iterable<GrantSource>  $sources
      */
     public function __construct(
-        private readonly PermissionCatalog $catalog,
+        private PermissionCatalog $catalog,
         iterable $sources,
-        private readonly PermissionCache $cache,
+        private PermissionCache $cache,
     ) {
         $this->sources = collect($sources)
-            ->sortByDesc(fn (GrantSource $s) => $s->priority())
+            ->sortByDesc(fn (GrantSource $s): int => $s->priority())
             ->values()
             ->all();
     }
 
+    #[Override]
     public function forUser(Authenticatable $user, string $panelId): PermissionSet
     {
         $cacheKey = PermissionCache::keyFor($user->getAuthIdentifier(), $panelId);
 
         return $this->cache->rememberForRequest(
             $cacheKey,
-            fn () => $this->resolve($user, $panelId),
+            fn (): PermissionSet => $this->resolve($user, $panelId),
         );
     }
 
@@ -60,12 +63,13 @@ final class EffectivePermissionResolver
             }
         }
 
-        return $set->filter(fn (string $key) => $this->catalog->has($panelId, $key));
+        return $set->filter(fn (string $key): bool => $this->catalog->has($panelId, $key));
     }
 
     /**
      * Flush cache for a specific user (call when roles change).
      */
+    #[Override]
     public function forgetForUser(Authenticatable $user, string $panelId): void
     {
         $this->cache->forgetForUser($user->getAuthIdentifier(), $panelId);

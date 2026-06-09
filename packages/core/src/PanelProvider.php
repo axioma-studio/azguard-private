@@ -12,6 +12,7 @@ use AzGuard\Registry\Builders\PolicyAbilityCatalogBuilder;
 use AzGuard\Support\Panel;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Override;
 use ReflectionClass;
 
 abstract class PanelProvider extends ServiceProvider
@@ -20,6 +21,7 @@ abstract class PanelProvider extends ServiceProvider
 
     abstract public function panel(Panel $panel): Panel;
 
+    #[Override]
     public function register(): void
     {
         AzGuard::registerPanel(function (): Panel {
@@ -53,7 +55,6 @@ abstract class PanelProvider extends ServiceProvider
             $modelClass = $discovery->resolveModelClass(
                 policyClass: $policyClass,
                 basePath: $basePath,
-                baseNamespace: $baseNamespace,
             );
 
             if ($modelClass !== null) {
@@ -70,14 +71,14 @@ abstract class PanelProvider extends ServiceProvider
     }
 
     /**
-     * Регистрирует EnumPermissionCatalogBuilder и PolicyAbilityCatalogBuilder
-     * для данной панели в теге azguard.catalog_builders, чтобы
-     * CompositePermissionCatalog мог собрать полный каталог прав.
+     * Registers EnumPermissionCatalogBuilder and PolicyAbilityCatalogBuilder
+     * for this panel under the azguard.catalog_builders tag so that
+     * CompositePermissionCatalog can assemble the full permission catalog.
      *
-     * Можно переопределить в конкретном PanelProvider для добавления
-     * собственных builders или замены стандартных.
+     * Override in a concrete PanelProvider to add custom builders or
+     * replace the default ones.
      *
-     * @param list<string> $policyClasses
+     * @param  list<string>  $policyClasses
      */
     protected function registerCatalogBuilders(
         Panel $panel,
@@ -91,7 +92,7 @@ abstract class PanelProvider extends ServiceProvider
         if ($permissionEnums !== []) {
             $this->app->tag([
                 $this->app->instance(
-                    'azguard.catalog_builder.' . $panelId . '.enum',
+                    'azguard.catalog_builder.'.$panelId.'.enum',
                     new EnumPermissionCatalogBuilder(
                         panelId: $panelId,
                         enumClasses: $permissionEnums,
@@ -103,7 +104,7 @@ abstract class PanelProvider extends ServiceProvider
         if ($policyClasses !== []) {
             $this->app->tag([
                 $this->app->instance(
-                    'azguard.catalog_builder.' . $panelId . '.policy',
+                    'azguard.catalog_builder.'.$panelId.'.policy',
                     new PolicyAbilityCatalogBuilder(
                         panelId: $panelId,
                         policyClasses: $policyClasses,
@@ -115,7 +116,7 @@ abstract class PanelProvider extends ServiceProvider
 
     protected function getPanel(): Panel
     {
-        if ($this->cachedPanel === null) {
+        if (! $this->cachedPanel instanceof Panel) {
             $reflection = new ReflectionClass($this);
             $this->cachedPanel = $this->panel(panel: Panel::make());
             $this->cachedPanel->setNamespace(namespace: $reflection->getNamespaceName());
