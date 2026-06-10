@@ -37,6 +37,9 @@ trait HasScopedRoles
      */
     public const SCOPE_KEY = 'azguard_scope_filter';
 
+    /** @var array<string, \Illuminate\Support\Collection<int, \AzGuard\Models\ModelHasScope>> */
+    private static array $scopeCache = [];
+
     public static function bootHasScopedRoles(): void
     {
         static::addGlobalScope(self::SCOPE_KEY, function (Builder $builder): void {
@@ -50,16 +53,25 @@ trait HasScopedRoles
                 return;
             }
 
-            $scopes = $user->scopes()
-                ->where('scope_entity_type', static::class)
-                ->get();
+            $cacheKey = $user->getAuthIdentifier().'|'.static::class;
 
-            foreach ($scopes as $scope) {
+            if (! isset(self::$scopeCache[$cacheKey])) {
+                self::$scopeCache[$cacheKey] = $user->scopes()
+                    ->where('scope_entity_type', static::class)
+                    ->get();
+            }
+
+            foreach (self::$scopeCache[$cacheKey] as $scope) {
                 if (class_exists($scope->scope_class)) {
                     app($scope->scope_class)->apply($builder, $user, $scope->scopeEntity);
                 }
             }
         });
+    }
+
+    public static function flushScopeCache(): void
+    {
+        self::$scopeCache = [];
     }
 
     /**
