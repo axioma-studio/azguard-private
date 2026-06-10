@@ -33,17 +33,17 @@ return new class extends Migration
         // Прямые grants пользователю (без роли)
         Schema::create($t['direct_grants'] ?? 'az_guard_direct_grants', function (Blueprint $table) {
             $table->id();
-            $table->morphs('model');                // пользователь (User или любая модель)
+            $table->morphs('grantable');            // пользователь (User или любая модель)
             $table->string('permission_key');       // resolved key
             $table->string('panel_id');             // "app"
             $table->timestamp('expires_at')->nullable(); // null = бессрочно
             $table->timestamps();
 
             $table->unique(
-                ['model_type', 'model_id', 'permission_key', 'panel_id'],
+                ['grantable_type', 'grantable_id', 'permission_key', 'panel_id'],
                 'az_direct_grant_unique',
             );
-            $table->index(['model_type', 'model_id', 'panel_id'], 'az_direct_grant_lookup');
+            $table->index(['grantable_type', 'grantable_id', 'panel_id'], 'az_direct_grant_lookup');
         });
     }
 

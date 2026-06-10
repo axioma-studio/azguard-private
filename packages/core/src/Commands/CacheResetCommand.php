@@ -16,20 +16,12 @@ class CacheResetCommand extends Command
     public function handle(): int
     {
         $store = config('az-guard.cache.store', 'array');
-        $key = config('az-guard.cache.key', 'azguard.permissions');
-
-        if ($store === 'array') {
-            $this->warn('AzGuard cache uses the "array" store (in-memory) — nothing to flush.');
-
-            return self::SUCCESS;
-        }
 
         try {
             cache()->store($store)->flush();
-            $this->info("AzGuard cache ({$store}) flushed. Key prefix: {$key}");
+            $this->info('AzGuard cache has been reset');
         } catch (Exception $e) {
-            $this->warn("Failed to flush cache: {$e->getMessage()}");
-            $this->line("Run manually: cache()->store('{$store}')->flush()");
+            $this->error("Failed to flush cache: {$e->getMessage()}");
 
             return self::FAILURE;
         }

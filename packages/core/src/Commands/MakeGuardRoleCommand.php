@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard\Commands;
 
 use AzGuard\Facades\AzGuard;
@@ -70,6 +72,7 @@ class MakeGuardRoleCommand extends Command
         foreach (app()->getLoadedProviders() as $providerClass => $bool) {
             if (is_subclass_of($providerClass, PanelProvider::class)) {
                 $instance = app()->getProvider($providerClass);
+
                 if ($instance->panel(Panel::make())->getId() === $id) {
                     return $providerClass;
                 }

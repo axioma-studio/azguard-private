@@ -9,6 +9,7 @@ use AzGuard\Models\Role;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -37,7 +38,7 @@ trait HasScopedRoles
      */
     public const SCOPE_KEY = 'azguard_scope_filter';
 
-    /** @var array<string, \Illuminate\Support\Collection<int, \AzGuard\Models\ModelHasScope>> */
+    /** @var array<string, Collection<int, ModelHasScope>> */
     private static array $scopeCache = [];
 
     public static function bootHasScopedRoles(): void
@@ -161,8 +162,12 @@ trait HasScopedRoles
      */
     public function hasScopedPermission(string $permission, Model $entity): bool
     {
-        if (method_exists($this, 'hasPermission') && $this->hasPermission($permission)) {
-            return true;
+        if (method_exists($this, 'hasPermission')) {
+            $panelId = str_contains($permission, '.') ? explode('.', $permission)[0] : 'app';
+
+            if ($this->hasPermission($permission, $panelId)) {
+                return true;
+            }
         }
 
         $scopedRoleIds = ModelHasScope::query()

@@ -2,21 +2,86 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Auth;
+namespace AzGuard\Tests\Unit\Auth;
 
 use AzGuard\Auth\DirectGrantPolicy;
 use AzGuard\Facades\AzGuard;
 use AzGuard\Support\Panel;
-use Tests\TestCase;
+use AzGuard\Tests\Stubs\UserWithDirectGrants;
+use AzGuard\Tests\TestCase;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
+use PHPUnit\Framework\MockObject\MockObject;
 
 class DirectGrantPolicyTest extends TestCase
 {
+    use RefreshDatabase;
+
     private DirectGrantPolicy $policy;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->policy = new DirectGrantPolicy;
+    }
+
+    protected function createUserMock(): MockObject
+    {
+        return $this->getMockBuilder(UserWithDirectGrants::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['hasDirectGrant'])
+            ->getMock();
+    }
+
+    protected function createUserWithoutGrantsTrait(): Authenticatable
+    {
+        return new class implements Authenticatable
+        {
+            public function getAuthIdentifierName(): string
+            {
+                return 'id';
+            }
+
+            public function getAuthIdentifier(): int
+            {
+                return 1;
+            }
+
+            public function getAuthPasswordName(): string
+            {
+                return 'password';
+            }
+
+            public function getAuthPassword(): string
+            {
+                return '';
+            }
+
+            public function getRememberToken(): ?string
+            {
+                return null;
+            }
+
+            public function setRememberToken($value): void {}
+
+            public function getRememberTokenName(): string
+            {
+                return 'remember_token';
+            }
+        };
+    }
+
+    protected function createUserWithDirectGrant(string $permission, string $panelId): UserWithDirectGrants
+    {
+        $user = UserWithDirectGrants::factory()->create();
+        $user->directGrants()->create([
+            'panel_id' => $panelId,
+            'permission_key' => $permission,
+            'expires_at' => null,
+        ]);
+
+        return $user;
     }
 
     public function test_returns_false_if_model_lacks_has_direct_grant(): void
@@ -30,7 +95,7 @@ class DirectGrantPolicyTest extends TestCase
 
     public function test_delegates_to_has_direct_grant_with_string_arg(): void
     {
-        $user = $this->createUser();
+        $user = $this->createUserMock();
         $user->expects($this->once())
             ->method('hasDirectGrant')
             ->with('app.x', null)
@@ -43,7 +108,7 @@ class DirectGrantPolicyTest extends TestCase
 
     public function test_delegates_with_array_arg(): void
     {
-        $user = $this->createUser();
+        $user = $this->createUserMock();
         $user->expects($this->once())
             ->method('hasDirectGrant')
             ->with('app.x', 'app')
@@ -56,11 +121,10 @@ class DirectGrantPolicyTest extends TestCase
 
     public function test_uses_current_panel_when_panel_not_set(): void
     {
-        $panel = $this->createMock(Panel::class);
-        $panel->method('getId')->willReturn('app');
+        $panel = Panel::make()->id('app');
         AzGuard::setCurrentPanel($panel);
 
-        $user = $this->createUser();
+        $user = $this->createUserMock();
         $user->expects($this->once())
             ->method('hasDirectGrant')
             ->with('app.x', 'app')
@@ -76,7 +140,7 @@ class DirectGrantPolicyTest extends TestCase
         $user = $this->createUserWithDirectGrant('app.documents.export', 'app');
         $this->actingAs($user);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Gate::allows('direct-grant', 'app.documents.export'));
-        $this->assertFalse(\Illuminate\Support\Facades\Gate::allows('direct-grant', 'app.documents.delete'));
+        $this->assertTrue(Gate::allows('direct-grant', 'app.documents.export'));
+        $this->assertFalse(Gate::allows('direct-grant', 'app.documents.delete'));
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Commands;
 
-use AzGuard\Guard\GuardDoctor;
+use AzGuard\Guard\AzGuardDiagnostics;
 use Illuminate\Console\Command;
 
 final class DoctorCommand extends Command
@@ -15,7 +15,7 @@ final class DoctorCommand extends Command
 
     protected $aliases = ['azguard:doctor'];
 
-    public function handle(GuardDoctor $doctor): int
+    public function handle(AzGuardDiagnostics $doctor): int
     {
         $panel = $this->option(key: 'panel');
 

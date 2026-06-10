@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Orchestra\Testbench\TestCase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class CheckDirectGrantMiddlewareTest extends TestCase
 {
@@ -133,6 +134,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
     private function makeRequest(?Authenticatable $user = null): Request
     {
         $request = Request::create('/test');
+
         if ($user !== null) {
             $request->setUserResolver(fn () => $user);
         }
@@ -144,7 +146,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
 
     public function test_unauthenticated_gets_401(): void
     {
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         $middleware = new CheckDirectGrant;
         $middleware->handle(
@@ -157,7 +159,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
 
     public function test_user_without_grant_gets_403(): void
     {
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
         $this->expectExceptionMessage('app.x.view');
 
         $middleware = new CheckDirectGrant;
@@ -240,7 +242,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
 
     public function test_user_without_has_direct_grant_method_gets_403(): void
     {
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         // У пользователя нет метода hasDirectGrant — fallback false
         $user = new class implements Authenticatable

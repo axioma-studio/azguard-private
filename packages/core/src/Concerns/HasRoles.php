@@ -21,7 +21,7 @@ trait HasRoles
         return $this->morphToMany(
             Config::roleModel(),
             'model',
-            Config::modelHasRolesTable()
+            Config::modelHasRolesTable(),
         );
     }
 

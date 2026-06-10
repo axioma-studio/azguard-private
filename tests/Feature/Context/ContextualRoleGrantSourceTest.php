@@ -8,10 +8,10 @@ use AzGuard\Context\ContextualRoleGrantSource;
 use AzGuard\Context\Strategies\DenyWithoutContextStrategy;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
 use AzGuard\Tests\Stubs\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
-uses(AzGuard\Tests\ContextTestCase::class);
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->manager = app(AuthorizationContextManager::class);
@@ -149,5 +149,5 @@ it('has priority 95', function () {
         new GlobalPlusContextStrategy,
     );
 
-    expect($source->priority())->toBe(95);
+    expect($source->priority()->value)->toBe(95);
 });

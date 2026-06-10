@@ -22,7 +22,7 @@ use Closure;
  * Concurrent in-process calls compute the value twice and last writer wins
  * in the array — harmless and far safer than any locking strategy.
  */
-final class PermissionCache
+class PermissionCache
 {
     /** @var array<string, array<string, PermissionSet>> userId => panelId => PermissionSet */
     private array $requestCache = [];

@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace AzGuard\Tests\Stubs;
 
+use AzGuard\Facades\AzGuard;
 use AzGuard\PanelProvider;
+use AzGuard\Registry\Builders\EnumPermissionCatalogBuilder;
 use AzGuard\Support\Panel;
+use AzGuard\Tests\Stubs\Permissions\TestPermission;
+use AzGuard\Tests\Stubs\Roles\ManagerRole;
+use AzGuard\Tests\Stubs\Roles\ProjectEditorRole;
+use AzGuard\Tests\Stubs\Roles\SuperAdminRole;
 
 final class TestGuardPanelProvider extends PanelProvider
 {
@@ -13,6 +19,29 @@ final class TestGuardPanelProvider extends PanelProvider
     {
         return $panel
             ->id(id: 'test')
-            ->path(path: 'test');
+            ->path(path: 'test')
+            ->permissionEnums([TestPermission::class])
+            ->roleClasses([ManagerRole::class, ProjectEditorRole::class, SuperAdminRole::class]);
+    }
+
+    public function register(): void
+    {
+        AzGuard::registerPanel(function (): Panel {
+            $panel = $this->getPanel();
+            $panel->setBasePath(basePath: __DIR__.'/Posts');
+            $panel->setNamespace(namespace: 'AzGuard\Tests\Stubs\Posts');
+
+            return $panel;
+        });
+    }
+
+    public function boot(): void
+    {
+        $abstract = 'azguard.catalog_builder.test.enum';
+        $this->app->instance($abstract, new EnumPermissionCatalogBuilder(
+            panelId: 'test',
+            enumClasses: [TestPermission::class],
+        ));
+        $this->app->tag([$abstract], 'azguard.catalog_builders');
     }
 }

@@ -127,7 +127,7 @@ final class CatalogValidateCommand extends Command
         );
 
         $this->info(
-            "Panel [{$panelId}]: {$this->countLabel(count($definitions))} in catalog, {$this->countLabel(count($abilityMap))} in policies."
+            "Panel [{$panelId}]: {$this->countLabel(count($definitions))} in catalog, {$this->countLabel(count($abilityMap))} in policies.",
         );
     }
 
@@ -154,9 +154,11 @@ final class CatalogValidateCommand extends Command
                 foreach ($method->getAttributes(GateAbility::class) as $attribute) {
                     /** @var GateAbility $gateAbility */
                     $gateAbility = $attribute->newInstance();
+
                     if (! $gateAbility->permission instanceof UnitEnum) {
                         continue;
                     }
+
                     if ($panel === null) {
                         continue;
                     }

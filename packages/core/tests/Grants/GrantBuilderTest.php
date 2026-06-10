@@ -100,7 +100,7 @@ final class GrantBuilderTest extends TestCase
 
         Event::assertDispatched(GrantGiven::class, fn ($e) => $e->permissionKey === 'app.documents.view' &&
             $e->panelId === 'app' &&
-            $e->expiresAt === null
+            $e->expiresAt === null,
         );
     }
 
@@ -148,7 +148,7 @@ final class GrantBuilderTest extends TestCase
             'model_id' => 4,
             'permission_key' => 'app.z.delete',
         ]);
-        Event::assertDispatched(GrantRevoked::class, fn ($e) => $e->permissionKey === 'app.z.delete'
+        Event::assertDispatched(GrantRevoked::class, fn ($e) => $e->permissionKey === 'app.z.delete',
         );
     }
 

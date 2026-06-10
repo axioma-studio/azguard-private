@@ -55,7 +55,7 @@ describe('AzGuardManagerInterface contract', function () {
         $manager = new AzGuardManager;
 
         expect(fn () => $manager->permission('ghost', 'users.view'))
-            ->toThrow(\RuntimeException::class);
+            ->toThrow(RuntimeException::class);
     });
 
     it('getPanels returns all registered panels', function () {

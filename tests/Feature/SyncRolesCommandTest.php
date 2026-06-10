@@ -7,10 +7,6 @@ use AzGuard\Models\Role;
 use AzGuard\Support\Panel;
 
 it('creates roles for panel from PHP role classes', function (): void {
-    AzGuard::registerPanel(
-        panel: Panel::make()->id(id: 'test')->label(label: 'Test Panel'),
-    );
-
     // Ensure roles table is empty
     expect(Role::query()->count())->toBe(0);
 
@@ -22,10 +18,6 @@ it('creates roles for panel from PHP role classes', function (): void {
 });
 
 it('filters by panel option', function (): void {
-    AzGuard::registerPanel(
-        panel: Panel::make()->id(id: 'test')->label(label: 'Test Panel'),
-    );
-
     $this->artisan('azguard:sync-roles', ['--panel' => 'test'])
         ->expectsOutputToContain('Синхронизация завершена')
         ->assertSuccessful();

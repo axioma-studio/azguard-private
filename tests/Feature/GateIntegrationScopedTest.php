@@ -6,6 +6,7 @@ use AzGuard\Models\Role;
 use AzGuard\Tests\Stubs\Project;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\Roles\ProjectEditorRole;
+use AzGuard\Tests\Stubs\Roles\SuperAdminRole;
 use AzGuard\Tests\Stubs\User;
 use Illuminate\Support\Facades\Gate;
 
@@ -40,7 +41,7 @@ describe('Gate integration — entity-scoped roles', function (): void {
 
         $role = Role::create([
             'name' => 'superadmin-scoped',
-            'class_name' => \AzGuard\Tests\Stubs\Roles\SuperAdminRole::class,
+            'class_name' => SuperAdminRole::class,
             'level' => 1000,
         ]);
 

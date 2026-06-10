@@ -33,7 +33,7 @@ final class SyncRolesCommand extends Command
         $isDryRun = (bool) $this->option('dry-run');
 
         if ($isDryRun) {
-            $this->warn('[dry-run] No changes will be written to the database.');
+            $this->warn('[dry-run] Изменения не будут записаны в БД.');
         }
 
         if ($panels === []) {
@@ -87,9 +87,11 @@ final class SyncRolesCommand extends Command
                 }
 
                 $roleLogic = new $className;
+
                 if (! method_exists($roleLogic, 'getName')) {
                     continue;
                 }
+
                 if (! method_exists($roleLogic, 'getLevel')) {
                     continue;
                 }
@@ -103,6 +105,7 @@ final class SyncRolesCommand extends Command
                     if ($existing->name !== $name || $existing->level !== $level) {
                         $rows[] = [$panelId, $name, $level, $className, '<fg=yellow>updated</fg=yellow>'];
                         $updated++;
+
                         if (! $isDryRun) {
                             $existing->update(['name' => $name, 'level' => $level]);
                         }
@@ -113,6 +116,7 @@ final class SyncRolesCommand extends Command
                 } else {
                     $rows[] = [$panelId, $name, $level, $className, '<fg=green>created</fg=green>'];
                     $created++;
+
                     if (! $isDryRun) {
                         $roleModel::query()->create([
                             'name' => $name,
@@ -132,7 +136,7 @@ final class SyncRolesCommand extends Command
         }
 
         $suffix = $isDryRun ? ' (dry-run)' : '';
-        $this->info("Sync complete{$suffix}: created={$created}, updated={$updated}, unchanged={$unchanged}");
+        $this->info("Синхронизация завершена{$suffix}: created={$created}, updated={$updated}, unchanged={$unchanged}");
 
         return self::SUCCESS;
     }

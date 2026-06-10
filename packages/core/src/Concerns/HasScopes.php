@@ -31,7 +31,7 @@ trait HasScopes
 
     public static function bootHasScopes(): void
     {
-        static::addGlobalScope(HasScopedRoles::SCOPE_KEY, function (Builder $builder): void {
+        static::addGlobalScope('azguard_scope_filter', function (Builder $builder): void {
             if (app()->runningInConsole() || ! Auth::check()) {
                 return;
             }
@@ -141,8 +141,12 @@ trait HasScopes
      */
     public function hasScopedPermission(string $permission, Model $entity): bool
     {
-        if (method_exists($this, 'hasPermission') && $this->hasPermission($permission)) {
-            return true;
+        if (method_exists($this, 'hasPermission')) {
+            $panelId = str_contains($permission, '.') ? explode('.', $permission)[0] : 'app';
+
+            if ($this->hasPermission($permission, $panelId)) {
+                return true;
+            }
         }
 
         $scopedRoleIds = ModelHasScope::query()

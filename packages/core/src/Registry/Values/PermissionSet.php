@@ -144,6 +144,7 @@ final readonly class PermissionSet
 
     /**
      * @deprecated Use {@see keys()} instead. This alias will be removed in v2.0.
+     *
      * @return list<string>
      */
     public function toArray(): array

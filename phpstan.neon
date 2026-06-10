@@ -4,6 +4,8 @@ includes:
 parameters:
   paths:
     - packages/core/src
+    - packages/context/src
+    - packages/filament/src
 
   level: 6
 

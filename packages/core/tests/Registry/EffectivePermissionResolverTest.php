@@ -8,6 +8,7 @@ use AzGuard\Registry\Builders\CompositePermissionCatalog;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
+use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Resolver\PermissionCache;
@@ -87,7 +88,7 @@ final class EffectivePermissionResolverTest extends TestCase
 
     private function makeCatalog(array $definitions, string $panelId = 'app'): PermissionCatalog
     {
-        $builder = new class($definitions) implements \AzGuard\Registry\Contracts\PermissionCatalogBuilder
+        $builder = new class($definitions) implements PermissionCatalogBuilder
         {
             public function __construct(private readonly array $defs) {}
 
@@ -134,7 +135,7 @@ final class EffectivePermissionResolverTest extends TestCase
 
         // Source выдаёт также orphan-ключ
         $source = $this->makeGrantSource(
-            PermissionSet::fromKeys(['app.docs.view', 'app.orphan.key'])
+            PermissionSet::fromKeys(['app.docs.view', 'app.orphan.key']),
         );
 
         $resolver = new EffectivePermissionResolver(

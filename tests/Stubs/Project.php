@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Tests\Stubs;
 
 use AzGuard\Concerns\InteractsWithAzScopes;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,9 +19,9 @@ class Project extends Model
 
     protected $fillable = ['name'];
 
-    protected static function newFactory(): \Illuminate\Database\Eloquent\Factories\Factory
+    protected static function newFactory(): Factory
     {
-        return new class extends \Illuminate\Database\Eloquent\Factories\Factory
+        return new class extends Factory
         {
             protected $model = Project::class;
 

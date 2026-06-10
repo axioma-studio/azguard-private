@@ -48,9 +48,11 @@ class GrantsListCommand extends Command
         if ($userId !== null) {
             $query->where('model_id', $userId);
         }
+
         if ($panelId !== null) {
             $query->where('panel_id', $panelId);
         }
+
         if (! $includeAll) {
             $query->where(function ($q): void {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());

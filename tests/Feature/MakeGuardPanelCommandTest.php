@@ -48,7 +48,7 @@ it('создаёт Abilities при флаге --with-abilities', function (): v
 
 it('отказывается если панель уже существует', function (): void {
     $path = base_path('app/Guards/ExistingPanel');
-    File::makeDirectory(directory: $path, mode: 0755, recursive: true);
+    File::makeDirectory(path: $path, mode: 0755, recursive: true);
 
     $this->artisan(
         command: 'make:guard-panel',

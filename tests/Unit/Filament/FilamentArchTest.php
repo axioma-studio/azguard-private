@@ -1,14 +1,17 @@
 <?php
 
 declare(strict_types=1);
+use Filament\Contracts\Plugin;
+use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Support\ServiceProvider;
 
 arch('filament plugin implements Filament Plugin contract')
     ->expect('AzGuard\\Filament\\AzGuardPlugin')
-    ->toImplement(\Filament\Contracts\Plugin::class);
+    ->toImplement(Plugin::class);
 
 arch('filament service provider extends ServiceProvider')
     ->expect('AzGuard\\Filament\\AzGuardFilamentServiceProvider')
-    ->toExtend(\Illuminate\Support\ServiceProvider::class);
+    ->toExtend(ServiceProvider::class);
 
 arch('no debugging calls in filament package')
     ->expect(['dd', 'dump', 'ray', 'var_dump', 'print_r'])
@@ -17,7 +20,7 @@ arch('no debugging calls in filament package')
 
 arch('filament resources extend Filament Resource')
     ->expect('AzGuard\\Filament\\Resources')
-    ->toExtend(\Filament\Resources\Resource::class)
+    ->toExtend(Filament\Resources\Resource::class)
     ->ignoring([
         'AzGuard\\Filament\\Resources\\RoleResource\\Pages',
         'AzGuard\\Filament\\Resources\\RoleResource\\RelationManagers',
@@ -28,4 +31,4 @@ arch('filament resources extend Filament Resource')
 
 arch('filament relation managers extend RelationManager')
     ->expect('AzGuard\\Filament\\Resources\\RoleResource\\RelationManagers')
-    ->toExtend(\Filament\Resources\RelationManagers\RelationManager::class);
+    ->toExtend(RelationManager::class);

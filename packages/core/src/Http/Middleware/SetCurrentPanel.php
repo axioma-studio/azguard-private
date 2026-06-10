@@ -19,7 +19,7 @@ final class SetCurrentPanel
         $panel = AzGuard::panel(id: $panelId);
 
         if ($panel === null) {
-            abort(code: 500, message: "AzGuard panel [{$panelId}] is not registered.");
+            abort(response("AzGuard panel [{$panelId}] is not registered.", 500));
         }
 
         AzGuard::setCurrentPanel(panel: $panel);

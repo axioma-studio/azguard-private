@@ -8,7 +8,6 @@ use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
-use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use Override;

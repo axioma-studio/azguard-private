@@ -8,12 +8,13 @@ use AzGuard\Filament\Resources\RoleResource\Pages\CreateRole;
 use AzGuard\Filament\Resources\RoleResource\Pages\EditRole;
 use AzGuard\Filament\Resources\RoleResource\Pages\ListRoles;
 use AzGuard\Models\Role;
+use BackedEnum;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
@@ -23,6 +24,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
 use Override;
+use UnitEnum;
 
 /**
  * Filament Resource для управления DB-ролями.
@@ -39,18 +41,18 @@ final class RoleResource extends Resource
 {
     protected static ?string $model = Role::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-shield-check';
 
-    protected static ?string $navigationGroup = 'AzGuard';
+    protected static string|UnitEnum|null $navigationGroup = 'AzGuard';
 
     protected static ?string $label = 'Роль';
 
     protected static ?string $pluralLabel = 'Роли';
 
     #[Override]
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->components([
             TextInput::make('name')
                 ->label('Название')
                 ->required()
@@ -102,7 +104,7 @@ final class RoleResource extends Resource
                     .'d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>'
                     .'</svg>'
                     .'Права этой роли определяет PHP-класс. Вкладка «Права» в режиме редактирования скрыта.'
-                    .'</div>'
+                    .'</div>',
                 ))
                 ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
                 ->columnSpan('full'),
@@ -135,7 +137,7 @@ final class RoleResource extends Resource
                     ->falseColor('success')
                     ->tooltip(fn (Role $record): string => $record->class_name !== null
                         ? 'Code role: '.$record->class_name
-                        : 'Custom role: права из БД'
+                        : 'Custom role: права из БД',
                     ),
 
                 TextColumn::make('level')

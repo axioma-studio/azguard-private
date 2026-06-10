@@ -88,6 +88,7 @@ class RolePermissionsCommand extends Command
     private function actionAdd(Role $role, string $panelId): int
     {
         $key = $this->argument('permission_key');
+
         if ($key === null) {
             $this->error('Specify a permission_key.');
 
@@ -119,6 +120,7 @@ class RolePermissionsCommand extends Command
     private function actionRemove(Role $role, string $panelId): int
     {
         $key = $this->argument('permission_key');
+
         if ($key === null) {
             $this->error('Specify a permission_key.');
 
@@ -144,6 +146,7 @@ class RolePermissionsCommand extends Command
     private function actionSync(Role $role, string $panelId): int
     {
         $keysRaw = (string) $this->option('keys');
+
         if ($keysRaw === '') {
             $this->error('Specify --keys="key1,key2,..." for sync.');
 
@@ -167,9 +170,11 @@ class RolePermissionsCommand extends Command
         }
 
         $this->line('');
+
         if ($toAdd !== []) {
             $this->line('<fg=green>+ To add:</>  '.implode(', ', $toAdd));
         }
+
         if ($toRemove !== []) {
             $this->line('<fg=red>- To remove:</> '.implode(', ', $toRemove));
         }

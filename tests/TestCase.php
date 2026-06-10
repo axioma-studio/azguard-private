@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AzGuard\Tests;
 
 use AzGuard\AzGuardServiceProvider;
+use AzGuard\Tests\Stubs\TestGuardPanelProvider;
+use AzGuard\Tests\Stubs\User;
+use AzGuard\Tests\Stubs\UserWithDirectGrants;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -18,6 +21,9 @@ class TestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app['config']->set('app.debug', true);
+
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
             'driver' => 'sqlite',
@@ -25,21 +31,34 @@ class TestCase extends Orchestra
             'prefix' => '',
         ]);
 
-        $app['config']->set('auth.providers.users.model', \AzGuard\Tests\Stubs\User::class);
+        $app['config']->set('auth.providers.users.model', User::class);
 
         $app['config']->set('az-guard.panels', [
-            \AzGuard\Tests\Stubs\TestGuardPanelProvider::class,
+            TestGuardPanelProvider::class,
         ]);
 
-        // Всегда используем in-memory кэш в тестах
         $app['config']->set('az-guard.cache.store', 'array');
     }
 
-    protected function setUp(): void
+    protected function defineDatabaseMigrations(): void
     {
-        parent::setUp();
-
-        $this->loadMigrationsFrom(__DIR__.'/../packages/core/database/migrations');
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+    }
+
+    protected function createUser(array $attributes = []): User
+    {
+        return User::factory()->create($attributes);
+    }
+
+    protected function createUserWithDirectGrant(string $permission, string $panelId): UserWithDirectGrants
+    {
+        $user = UserWithDirectGrants::factory()->create();
+        $user->directGrants()->create([
+            'panel_id' => $panelId,
+            'permission_key' => $permission,
+            'expires_at' => null,
+        ]);
+
+        return $user;
     }
 }

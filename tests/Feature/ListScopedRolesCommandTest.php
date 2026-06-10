@@ -73,7 +73,7 @@ describe('azguard:list-scoped-roles command', function (): void {
         // Filter matches — should show the role
         $this->artisan('azguard:list-scoped-roles', [
             'user' => $user->id,
-            '--entity' => AzGuard\Tests\Stubs\Project::class,
+            '--entity' => Project::class,
         ])
             ->expectsOutputToContain('filtered-editor')
             ->assertExitCode(0);

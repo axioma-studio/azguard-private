@@ -29,7 +29,10 @@ final class AzGuardContextProxy
     private const string CONTEXT_CLASS = 'AzGuard\\Context\\AuthorizationContext';
 
     /**
-     * One-off check with a PermissionContext.
+     * One-off check with a PermissionContext or duck-typed object.
+     *
+     * Accepts any object that either implements PermissionContext (via contextType()/contextId()
+     * methods) or exposes public $contextType/$contextId properties.
      *
      * Does NOT mutate the global AuthorizationContextManager.
      */
@@ -37,7 +40,7 @@ final class AzGuardContextProxy
         Authenticatable $user,
         string $permission,
         string $panelId,
-        PermissionContext $context,
+        object $context,
     ): bool {
         if (! class_exists(self::CONTEXT_MANAGER)) {
             // context package not installed — fall back to global permission check
@@ -47,15 +50,21 @@ final class AzGuardContextProxy
         }
 
         try {
-            $effectivePanelId = $panelId;
+            $contextType = $context instanceof PermissionContext
+                ? $context->contextType()
+                : (string) $context->contextType;
+
+            $contextId = $context instanceof PermissionContext
+                ? $context->contextId()
+                : $context->contextId;
 
             $contextObj = app(self::CONTEXT_CLASS, [
-                'panelId' => $effectivePanelId,
-                'contextType' => $context->contextType(),
-                'contextId' => $context->contextId(),
+                'panelId' => $panelId,
+                'contextType' => $contextType,
+                'contextId' => $contextId,
             ]);
 
-            return self::resolveWithIsolatedContext($user, $permission, $effectivePanelId, $contextObj);
+            return self::resolveWithIsolatedContext($user, $permission, $panelId, $contextObj);
         } catch (Throwable) {
             return false;
         }

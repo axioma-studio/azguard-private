@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit;
+namespace AzGuard\Tests\Unit;
 
 use AzGuard\Facades\AzGuard;
 use AzGuard\Support\Panel;
-use Tests\TestCase;
+use AzGuard\Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class BladeDirectiveTest extends TestCase
 {
+    use RefreshDatabase;
     // ─── @azdirect ────────────────────────────────────────────────────────────
 
     public function test_azdirect_renders_content_when_grant_exists(): void
@@ -17,12 +19,11 @@ class BladeDirectiveTest extends TestCase
         $user = $this->createUserWithDirectGrant('app.documents.export', 'app');
         $this->actingAs($user);
 
-        $panel = $this->createMock(Panel::class);
-        $panel->method('getId')->willReturn('app');
+        $panel = Panel::make()->id('app');
         AzGuard::setCurrentPanel($panel);
 
-        $html = $this->blade(
-            '@azdirect(\'app.documents.export\') <span>OK</span> @endazdirect'
+        $html = (string) $this->blade(
+            '@azdirect(\'app.documents.export\') <span>OK</span> @endazdirect',
         );
 
         $this->assertStringContainsString('<span>OK</span>', $html);
@@ -33,12 +34,11 @@ class BladeDirectiveTest extends TestCase
         $user = $this->createUser();
         $this->actingAs($user);
 
-        $panel = $this->createMock(Panel::class);
-        $panel->method('getId')->willReturn('app');
+        $panel = Panel::make()->id('app');
         AzGuard::setCurrentPanel($panel);
 
-        $html = $this->blade(
-            '@azdirect(\'app.documents.export\') <span>SECRET</span> @endazdirect'
+        $html = (string) $this->blade(
+            '@azdirect(\'app.documents.export\') <span>SECRET</span> @endazdirect',
         );
 
         $this->assertStringNotContainsString('<span>SECRET</span>', $html);
@@ -46,8 +46,8 @@ class BladeDirectiveTest extends TestCase
 
     public function test_azdirect_hidden_when_not_authenticated(): void
     {
-        $html = $this->blade(
-            '@azdirect(\'app.x\') <span>HIDDEN</span> @endazdirect'
+        $html = (string) $this->blade(
+            '@azdirect(\'app.x\') <span>HIDDEN</span> @endazdirect',
         );
 
         $this->assertStringNotContainsString('<span>HIDDEN</span>', $html);

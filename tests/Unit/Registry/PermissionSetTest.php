@@ -30,19 +30,19 @@ describe('PermissionSet', function () {
             ->and($set->toArray())->toBe(['app.posts.view', 'app.posts.edit']);
     });
 
-    // ─── contains ───────────────────────────────────────────────────────────
+    // ─── has / grants ───────────────────────────────────────────────────────
 
     it('contains returns true for exact match', function () {
         $set = PermissionSet::fromKeys(['app.posts.view']);
 
-        expect($set->contains('app.posts.view'))->toBeTrue()
-            ->and($set->contains('app.posts.edit'))->toBeFalse();
+        expect($set->has('app.posts.view'))->toBeTrue()
+            ->and($set->has('app.posts.edit'))->toBeFalse();
     });
 
     it('wildcard set contains any key', function () {
         $set = PermissionSet::wildcard();
 
-        expect($set->contains('anything.at.all'))->toBeTrue();
+        expect($set->grants('anything.at.all'))->toBeTrue();
     });
 
     // ─── matchesWildcard ─────────────────────────────────────────────────────

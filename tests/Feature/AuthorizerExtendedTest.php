@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AzGuard\Models\Role;
+use AzGuard\Roles\BaseRole;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
 use Illuminate\Support\Facades\Gate;
@@ -34,7 +35,7 @@ describe('Authorizer — Gate integration', function (): void {
     });
 
     it('grants wildcard * superadmin all permissions via Gate::before', function (): void {
-        $superAdminRole = new class extends \AzGuard\Roles\BaseRole
+        $superAdminRole = new class extends BaseRole
         {
             public function permissions(): array
             {

@@ -19,7 +19,7 @@ final class PanelNotSetException extends RuntimeException
     {
         parent::__construct(
             'No panel ID provided and no current panel is set. '
-            .'Call ->on("panel-id") or ensure SetCurrentPanel middleware has run.'
+            .'Call ->on("panel-id") or ensure SetCurrentPanel middleware has run.',
         );
     }
 }

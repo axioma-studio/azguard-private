@@ -40,7 +40,7 @@ class ListScopedRolesCommand extends Command
             : $userModelClass::where('email', $identifier)->first();
 
         if ($user === null) {
-            $this->error("User [{$identifier}] not found.");
+            $this->error("Пользователь [{$identifier}] не найден.");
 
             return self::FAILURE;
         }
@@ -58,19 +58,21 @@ class ListScopedRolesCommand extends Command
         $scopes = $query->get();
 
         if ($scopes->isEmpty()) {
-            $this->warn("User [{$identifier}] has no scoped roles.");
+            $this->warn("У пользователя [{$identifier}] нет scoped-ролей.");
 
             return self::SUCCESS;
         }
 
-        $this->info("Scoped roles for user: <comment>{$identifier}</comment>");
+        $entityType = $scopes->first()?->scope_entity_type;
+        $entityLabel = $entityType !== null ? class_basename($entityType) : '';
+        $this->info("Scoped roles for user: <comment>{$identifier}</comment>".($entityLabel !== '' ? " (entity: {$entityLabel})" : ''));
         $this->line('');
 
         $rows = $scopes->map(fn ($scope): array => [
             $scope->role?->name ?? '—',
-            $scope->scope_entity_type ?? '—',
+            $scope->scope_entity_type !== null ? class_basename($scope->scope_entity_type) : '—',
             (string) ($scope->scope_entity_id ?? '—'),
-            $scope->scope_class,
+            $scope->scope_class !== null ? class_basename($scope->scope_class) : '—',
         ])->toArray();
 
         $this->table(

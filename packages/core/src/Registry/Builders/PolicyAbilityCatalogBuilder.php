@@ -15,37 +15,40 @@ use ReflectionMethod;
 use UnitEnum;
 
 /**
- * Строит каталог из методов политик с атрибутом #[GateAbility].
- * Используется для перекрёстной проверки с EnumPermissionCatalogBuilder
- * (пересечение = канонический каталог).
+ * Builds permission catalog entries from policy methods annotated with #[GateAbility].
+ *
+ * When $policyClasses are provided explicitly (via PanelProvider::registerCatalogBuilders()),
+ * those classes are used directly. Otherwise falls back to filesystem discovery.
  */
 final class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
 {
+    /**
+     * @param  string|null  $panelId  When set, this builder only handles this panel.
+     * @param  list<class-string>  $policyClasses  Explicit policy class list (optional).
+     */
+    public function __construct(
+        private readonly ?string $panelId = null,
+        private readonly array $policyClasses = [],
+    ) {}
+
     #[Override]
     public function build(string $panelId): array
     {
-        $panel = AzGuard::getPanel($panelId);
+        $panel = AzGuard::panel($panelId);
 
         if ($panel === null) {
             return [];
         }
 
-        $basePath = $panel->getBasePath();
-        $baseNamespace = $panel->getNamespace();
-
-        if ($basePath === '' || $baseNamespace === '') {
-            return [];
-        }
-
-        $discovery = new PolicyDiscovery;
-        $policyClasses = $discovery->discoverPolicyClasses(
-            basePath: $basePath,
-            baseNamespace: $baseNamespace,
-        );
+        $classes = match (true) {
+            $this->policyClasses !== [] => $this->policyClasses,
+            $this->panelId !== null => [],
+            default => $this->discoverPolicyClasses($panel->getBasePath(), $panel->getNamespace()),
+        };
 
         $definitions = [];
 
-        foreach ($policyClasses as $policyClass) {
+        foreach ($classes as $policyClass) {
             $reflection = new ReflectionClass($policyClass);
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -75,6 +78,25 @@ final class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
     #[Override]
     public function supports(string $panelId): bool
     {
-        return AzGuard::getPanel($panelId) !== null;
+        if ($this->panelId !== null) {
+            return $this->panelId === $panelId;
+        }
+
+        return AzGuard::panel($panelId) !== null;
+    }
+
+    /**
+     * @return list<class-string>
+     */
+    private function discoverPolicyClasses(string $basePath, string $baseNamespace): array
+    {
+        if ($basePath === '' || $baseNamespace === '') {
+            return [];
+        }
+
+        return (new PolicyDiscovery)->discoverPolicyClasses(
+            basePath: $basePath,
+            baseNamespace: $baseNamespace,
+        );
     }
 }

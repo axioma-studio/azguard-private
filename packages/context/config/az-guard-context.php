@@ -1,5 +1,7 @@
 <?php
 
+use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -16,7 +18,7 @@ return [
     | Можно подставить свой класс, реализующий ContextMergeStrategy.
     |
     */
-    'merge_strategy' => \AzGuard\Context\Strategies\GlobalPlusContextStrategy::class,
+    'merge_strategy' => GlobalPlusContextStrategy::class,
 
     /*
     |--------------------------------------------------------------------------

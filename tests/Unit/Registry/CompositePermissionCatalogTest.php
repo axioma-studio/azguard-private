@@ -5,6 +5,8 @@ declare(strict_types=1);
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Contracts\PermissionDefinition;
+use AzGuard\Registry\Contracts\PermissionMeta;
+use AzGuard\Registry\Definitions\SimplePermissionMeta;
 use AzGuard\Registry\Exceptions\InvalidCatalogException;
 use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
 
@@ -24,9 +26,14 @@ function makeDefinition(string $key, string $group = 'General'): PermissionDefin
             return $this->k;
         }
 
-        public function label(): string
+        public function shortKey(): string
         {
             return $this->k;
+        }
+
+        public function panelId(): string
+        {
+            return explode('.', $this->k)[0] ?? '';
         }
 
         public function group(): ?string
@@ -34,9 +41,14 @@ function makeDefinition(string $key, string $group = 'General'): PermissionDefin
             return $this->g;
         }
 
-        public function meta(): array
+        public function meta(): PermissionMeta
         {
-            return [];
+            return new SimplePermissionMeta($this->k);
+        }
+
+        public function isDynamic(): bool
+        {
+            return false;
         }
     };
 }
@@ -178,9 +190,14 @@ describe('CompositePermissionCatalog', function () {
                 return 'app.x';
             }
 
-            public function label(): string
+            public function shortKey(): string
             {
                 return 'x';
+            }
+
+            public function panelId(): string
+            {
+                return 'app';
             }
 
             public function group(): ?string
@@ -188,9 +205,14 @@ describe('CompositePermissionCatalog', function () {
                 return null;
             }
 
-            public function meta(): array
+            public function meta(): PermissionMeta
             {
-                return [];
+                return new SimplePermissionMeta('x');
+            }
+
+            public function isDynamic(): bool
+            {
+                return false;
             }
         };
 
@@ -220,11 +242,11 @@ describe('CompositePermissionCatalog', function () {
         // Первая сборка
         expect($catalog->has('app', 'app.posts.view'))->toBeTrue();
 
-        // Flush — сброс
+        // Flush — сброс кэша; следующий вызов перестраивает каталог заново
         $catalog->flush();
 
-        // После flush — пустой каталог (definitions = [])
-        expect($catalog->get('app', 'app.posts.view'))->toBeNull();
+        // После flush каталог пересобирается при следующем обращении — ключ снова доступен
+        expect($catalog->get('app', 'app.posts.view'))->not->toBeNull();
     });
 
     it('skips builder that does not support panel', function () {

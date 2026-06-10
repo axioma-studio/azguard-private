@@ -42,7 +42,7 @@ final class CompositePermissionCatalogTest extends TestCase
     public function test_all_returns_definitions_for_panel(): void
     {
         $def = EnumPermissionDefinition::fromCase(
-            CatalogTestPermission::View, 'app', 'app.catalog.view'
+            CatalogTestPermission::View, 'app', 'app.catalog.view',
         );
 
         $catalog = new CompositePermissionCatalog(
@@ -57,7 +57,7 @@ final class CompositePermissionCatalogTest extends TestCase
     public function test_has_returns_true_for_registered_key(): void
     {
         $def = EnumPermissionDefinition::fromCase(
-            CatalogTestPermission::View, 'app', 'app.catalog.view'
+            CatalogTestPermission::View, 'app', 'app.catalog.view',
         );
 
         $catalog = new CompositePermissionCatalog(
@@ -99,7 +99,7 @@ final class CompositePermissionCatalogTest extends TestCase
     public function test_deduplication_of_same_key_from_two_builders(): void
     {
         $def = EnumPermissionDefinition::fromCase(
-            CatalogTestPermission::View, 'app', 'app.catalog.view'
+            CatalogTestPermission::View, 'app', 'app.catalog.view',
         );
 
         // Оба builder возвращают одинаковый key + одинаковую group
@@ -128,7 +128,7 @@ final class CompositePermissionCatalogTest extends TestCase
     public function test_flush_resets_built_state(): void
     {
         $def = EnumPermissionDefinition::fromCase(
-            CatalogTestPermission::View, 'app', 'app.catalog.view'
+            CatalogTestPermission::View, 'app', 'app.catalog.view',
         );
 
         $catalog = new CompositePermissionCatalog(

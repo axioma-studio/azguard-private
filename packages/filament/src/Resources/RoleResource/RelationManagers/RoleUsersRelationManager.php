@@ -6,8 +6,8 @@ namespace AzGuard\Filament\Resources\RoleResource\RelationManagers;
 
 use App\Models\User;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables\Actions\AttachAction;
 use Filament\Tables\Actions\DetachAction;
 use Filament\Tables\Actions\DetachBulkAction;
@@ -28,12 +28,12 @@ final class RoleUsersRelationManager extends RelationManager
     protected static ?string $title = 'Пользователи';
 
     #[Override]
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
         $userModel = config('auth.providers.users.model', User::class);
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
-        return $form->schema([
+        return $schema->components([
             Select::make('id')
                 ->label('Пользователь')
                 ->options(fn () => $userModel::query()->pluck($labelColumn, 'id'))

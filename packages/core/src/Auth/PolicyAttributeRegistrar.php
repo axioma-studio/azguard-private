@@ -13,12 +13,14 @@ use RuntimeException;
 
 final class PolicyAttributeRegistrar
 {
+    /** @var array<string, string> ability => "Class::method" */
+    private array $registeredAbilities = [];
+
     /**
      * @param  list<class-string>  $policyClasses
      */
     public function register(array $policyClasses, Panel $panel): void
     {
-        $registeredAbilities = [];
 
         foreach ($policyClasses as $policyClass) {
             $reflection = new ReflectionClass($policyClass);
@@ -29,13 +31,13 @@ final class PolicyAttributeRegistrar
                     $gateAbility = $attribute->newInstance();
                     $ability = $panel->resolvePermission(permission: $gateAbility->permission);
 
-                    if (isset($registeredAbilities[$ability])) {
+                    if (isset($this->registeredAbilities[$ability])) {
                         throw new RuntimeException(
-                            message: "Gate ability '{$ability}' already registered by {$registeredAbilities[$ability]}",
+                            message: "Gate ability '{$ability}' already registered by {$this->registeredAbilities[$ability]}",
                         );
                     }
 
-                    $registeredAbilities[$ability] = "{$policyClass}::{$method->getName()}";
+                    $this->registeredAbilities[$ability] = "{$policyClass}::{$method->getName()}";
 
                     Gate::define(
                         ability: $ability,

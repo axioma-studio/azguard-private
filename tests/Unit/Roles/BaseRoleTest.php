@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AzGuard\Contracts\RoleInterface;
 use AzGuard\Roles\BaseRole;
 
 // Конкретная реализация для тестирования абстрактного класса
@@ -67,6 +68,6 @@ describe('BaseRole', function () {
 
     it('implements RoleInterface', function () {
         $role = new TestAdminRole;
-        expect($role)->toBeInstanceOf(\AzGuard\Contracts\RoleInterface::class);
+        expect($role)->toBeInstanceOf(RoleInterface::class);
     });
 });

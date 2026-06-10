@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use AzGuard\Models\ModelHasScope;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+use AzGuard\Concerns\InteractsWithAzScopes;
 use AzGuard\Models\Role;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
@@ -13,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
 // Stub entity model for scoping
 class Project extends Model
 {
-    use \AzGuard\Concerns\InteractsWithAzScopes;
+    use InteractsWithAzScopes;
 
     protected $table = 'projects';
 
@@ -58,7 +62,7 @@ describe('HasAzGuard — entity-scoped roles (InteractsWithAzScopes)', function 
                 ->where('scope_entity_id', $project->getKey())
                 ->where('scope_entity_type', $project->getMorphClass())
                 ->where('role_id', $role->getKey())
-                ->exists()
+                ->exists(),
         )->toBeTrue();
     });
 
@@ -177,7 +181,7 @@ describe('HasAzGuard — entity-scoped roles (InteractsWithAzScopes)', function 
         expect(
             ModelHasScope::query()
                 ->where('model_id', $user->getKey())
-                ->exists()
+                ->exists(),
         )->toBeFalse();
     });
 

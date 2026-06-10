@@ -54,10 +54,12 @@ final class AzGuardContextServiceProvider extends ServiceProvider
         ));
 
         // ContextualRoleGrantSource
-        $this->app->bind(ContextualRoleGrantSource::class, fn (Application $app): ContextualRoleGrantSource => new ContextualRoleGrantSource(
+        $this->app->singleton(ContextualRoleGrantSource::class, fn (Application $app): ContextualRoleGrantSource => new ContextualRoleGrantSource(
             manager: $app->make(AuthorizationContextManager::class),
             strategy: $app->make(ContextMergeStrategy::class),
         ));
+
+        $this->app->tag([ContextualRoleGrantSource::class], 'azguard.grant_sources');
     }
 
     public function boot(): void

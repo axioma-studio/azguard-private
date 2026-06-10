@@ -6,6 +6,7 @@ use AzGuard\Filament\AzGuardPlugin;
 use AzGuard\Filament\Resources\DirectGrantResource;
 use AzGuard\Filament\Resources\RoleResource;
 use Filament\Contracts\Plugin;
+use Filament\Panel;
 
 it('implements Filament Plugin contract', function () {
     expect(AzGuardPlugin::make())->toBeInstanceOf(Plugin::class);
@@ -41,14 +42,16 @@ it('forPanel() accepts arbitrary panel ids', function (string $panelId) {
 it('register() injects RoleResource and DirectGrantResource into panel', function () {
     $registered = [];
 
-    $panel = Mockery::mock(\Filament\Panel::class);
+    $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('resources')
         ->once()
         ->withArgs(function (array $resources) use (&$registered) {
             $registered = $resources;
 
             return true;
-        });
+        })
+        ->andReturnSelf();
+    $panel->shouldReceive('pages')->once()->andReturnSelf();
 
     AzGuardPlugin::make()->register($panel);
 
@@ -57,7 +60,7 @@ it('register() injects RoleResource and DirectGrantResource into panel', functio
 });
 
 it('boot() runs without exception', function () {
-    $panel = Mockery::mock(\Filament\Panel::class);
+    $panel = Mockery::mock(Panel::class);
 
-    expect(fn () => AzGuardPlugin::make()->boot($panel))->not->toThrow(\Throwable::class);
+    expect(fn () => AzGuardPlugin::make()->boot($panel))->not->toThrow(Throwable::class);
 });

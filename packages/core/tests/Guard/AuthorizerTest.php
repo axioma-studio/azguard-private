@@ -12,6 +12,7 @@ use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionDefinition;
+use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Registry\Values\PermissionSet;
@@ -21,7 +22,9 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
+use LogicException;
 use PHPUnit\Framework\TestCase;
+use UnitEnum;
 
 final class AuthorizerTest extends TestCase
 {
@@ -131,7 +134,7 @@ final class AuthorizerTest extends TestCase
 
             public function assert(string $panelId, string $resolvedKey): PermissionDefinition
             {
-                throw new \AzGuard\Registry\Exceptions\InvalidPermissionKeyException($resolvedKey);
+                throw new InvalidPermissionKeyException($resolvedKey);
             }
 
             public function groups(string $panelId): array
@@ -160,7 +163,7 @@ final class AuthorizerTest extends TestCase
                 private Panel $panel,
             ) {}
 
-            public function registerPanel(\AzGuard\Support\Panel|callable $panel): void {}
+            public function registerPanel(Panel|callable $panel): void {}
 
             public function getPanels(): array
             {
@@ -179,19 +182,19 @@ final class AuthorizerTest extends TestCase
 
             public function setCurrentPanel(?Panel $panel): void {}
 
-            public function permission(string $panelId, string|\UnitEnum $permission): string
+            public function permission(string $panelId, string|UnitEnum $permission): string
             {
                 return $panelId.'.'.(string) $permission;
             }
 
             public function forUser(Authenticatable $user): GrantBuilder
             {
-                throw new \LogicException('not implemented in stub');
+                throw new LogicException('not implemented in stub');
             }
 
             public function grantDirect(Authenticatable $user, string $permissionKey, string $panelId, ?int $ttl): DirectGrant
             {
-                throw new \LogicException('not implemented in stub');
+                throw new LogicException('not implemented in stub');
             }
 
             public function revokeDirect(Authenticatable $user, string $permissionKey, string $panelId): int
@@ -211,7 +214,7 @@ final class AuthorizerTest extends TestCase
     public function test_returns_true_for_granted_permission(): void
     {
         $authorizer = $this->makeAuthorizer(
-            PermissionSet::fromKeys(['app.documents.view'])
+            PermissionSet::fromKeys(['app.documents.view']),
         );
 
         $result = $authorizer->check($this->makeUser(), 'app.documents.view');
@@ -222,7 +225,7 @@ final class AuthorizerTest extends TestCase
     public function test_returns_null_for_missing_permission(): void
     {
         $authorizer = $this->makeAuthorizer(
-            PermissionSet::fromKeys(['app.documents.view'])
+            PermissionSet::fromKeys(['app.documents.view']),
         );
 
         $result = $authorizer->check($this->makeUser(), 'app.documents.delete');

@@ -10,11 +10,12 @@ use AzGuard\Filament\Resources\DirectGrantResource\Pages\CreateDirectGrant;
 use AzGuard\Filament\Resources\DirectGrantResource\Pages\ListDirectGrants;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\PermissionCatalog;
+use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
@@ -22,6 +23,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Override;
+use UnitEnum;
 
 /**
  * Filament Resource для просмотра, создания и отзыва Direct Grants.
@@ -36,9 +38,9 @@ final class DirectGrantResource extends Resource
 {
     protected static ?string $model = DirectGrant::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-key';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-key';
 
-    protected static ?string $navigationGroup = 'AzGuard';
+    protected static string|UnitEnum|null $navigationGroup = 'AzGuard';
 
     protected static ?string $label = 'Direct Grant';
 
@@ -47,12 +49,12 @@ final class DirectGrantResource extends Resource
     // ─── Form ─────────────────────────────────────────────────────────────────
 
     #[Override]
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
         $userModel = config('auth.providers.users.model', User::class);
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
-        return $form->schema([
+        return $schema->components([
 
             // ── 1. Пользователь ──────────────────────────────────────────────
             Select::make('grantable_id')
@@ -63,10 +65,10 @@ final class DirectGrantResource extends Resource
                     fn (string $search) => $userModel::where($labelColumn, 'like', "%{$search}%")
                         ->limit(50)
                         ->pluck($labelColumn, 'id')
-                        ->toArray()
+                        ->toArray(),
                 )
                 ->getOptionLabelUsing(
-                    fn ($value) => $userModel::find($value)?->{$labelColumn} ?? "#{$value}"
+                    fn ($value) => $userModel::find($value)?->{$labelColumn} ?? "#{$value}",
                 )
                 ->columnSpan('full'),
 
@@ -76,7 +78,7 @@ final class DirectGrantResource extends Resource
                 ->required()
                 ->options(fn () => collect(app(AzGuardManager::class)->getPanels())
                     ->mapWithKeys(fn ($panel, $id) => [$id => $id])
-                    ->toArray()
+                    ->toArray(),
                 )
                 ->live()
                 ->afterStateUpdated(fn ($set) => $set('permission_key', null)),
@@ -109,7 +111,7 @@ final class DirectGrantResource extends Resource
                 ->disabled(fn (Get $get): bool => ! $get('panel_id'))
                 ->helperText(fn (Get $get): string => $get('panel_id')
                     ? ''
-                    : 'Сначала выберите панель.'
+                    : 'Сначала выберите панель.',
                 ),
 
             // ── 4. Дата истечения ─────────────────────────────────────────────
@@ -174,7 +176,7 @@ final class DirectGrantResource extends Resource
                 Filter::make('active')
                     ->label('Только активные')
                     ->query(fn ($query) => $query->where(
-                        fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now())
+                        fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()),
                     )),
             ])
             ->actions([

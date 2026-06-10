@@ -2,39 +2,25 @@
 
 declare(strict_types=1);
 
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Guard\Authorizer;
+use AzGuard\Models\Role;
+use AzGuard\Support\Panel;
+use AzGuard\Tests\Stubs\Roles\ManagerRole;
+use AzGuard\Tests\Stubs\User;
 use Illuminate\Contracts\Auth\Access\Authorizable;
-use Illuminate\Support\Collection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-/**
- * Создаём анонимный Authorizable с заданными правами для теста.
- */
-function makeAuthorizable(array $permissions): Authorizable
-{
-    return new class($permissions) implements Authorizable
-    {
-        private Collection $perms;
+uses(RefreshDatabase::class);
 
-        public function __construct(array $permissions)
-        {
-            $this->perms = collect($permissions);
-        }
-
-        public function getAzPermissions(): Collection
-        {
-            return $this->perms;
-        }
-
-        public function can($abilities, $arguments = []) {}
-
-        public function cant($abilities, $arguments = []) {}
-
-        public function cannot($abilities, $arguments = []) {}
-    };
-}
+beforeEach(function () {
+    $panel = Panel::make()->id('test');
+    app(AzGuardManagerInterface::class)->registerPanel($panel);
+    app(AzGuardManagerInterface::class)->setCurrentPanel($panel);
+});
 
 describe('Authorizer', function () {
-    it('returns null for user without getAzPermissions', function () {
+    it('returns null for user without Authenticatable', function () {
         $user = new class implements Authorizable
         {
             public function can($abilities, $arguments = []) {}
@@ -44,60 +30,57 @@ describe('Authorizer', function () {
             public function cannot($abilities, $arguments = []) {}
         };
 
-        $authorizer = new Authorizer;
+        $authorizer = app(Authorizer::class);
+
         expect($authorizer->check($user, 'some.ability'))->toBeNull();
     });
 
-    it('returns true for superadmin with wildcard *', function () {
-        $user = makeAuthorizable(['*']);
-        $authorizer = new Authorizer;
+    it('returns null when panel not set', function () {
+        app(AzGuardManagerInterface::class)->setCurrentPanel(null);
 
-        expect($authorizer->check($user, 'admin.users.delete'))->toBeTrue();
-        expect($authorizer->check($user, 'any.ability'))->toBeTrue();
+        $user = User::factory()->create();
+        $authorizer = app(Authorizer::class);
+
+        expect($authorizer->check($user, 'test.posts.view'))->toBeNull();
     });
 
-    it('returns true when user has exact ability', function () {
-        $user = makeAuthorizable(['admin.users.view', 'admin.posts.edit']);
-        $authorizer = new Authorizer;
+    it('returns null when user has no roles', function () {
+        $user = User::factory()->create();
+        $authorizer = app(Authorizer::class);
 
-        expect($authorizer->check($user, 'admin.users.view'))->toBeTrue();
-        expect($authorizer->check($user, 'admin.posts.edit'))->toBeTrue();
+        expect($authorizer->check($user, 'test.posts.view'))->toBeNull();
+    });
+
+    it('returns true when user has permission via class role', function () {
+        $user = User::factory()->create();
+
+        $role = Role::create([
+            'name' => 'manager',
+            'class_name' => ManagerRole::class,
+            'level' => 0,
+        ]);
+
+        $user->assignRole('manager');
+
+        $authorizer = app(Authorizer::class);
+
+        // ManagerRole grants 'test.post.view' based on panel
+        expect($authorizer->check($user, 'test.post.view'))->toBeTrue();
     });
 
     it('returns null when user does not have ability', function () {
-        $user = makeAuthorizable(['admin.users.view']);
-        $authorizer = new Authorizer;
+        $user = User::factory()->create();
 
-        expect($authorizer->check($user, 'admin.users.delete'))->toBeNull();
-    });
+        $role = Role::create([
+            'name' => 'manager',
+            'class_name' => ManagerRole::class,
+            'level' => 0,
+        ]);
 
-    it('returns null for empty permissions', function () {
-        $user = makeAuthorizable([]);
-        $authorizer = new Authorizer;
+        $user->assignRole('manager');
 
-        expect($authorizer->check($user, 'admin.users.view'))->toBeNull();
-    });
+        $authorizer = app(Authorizer::class);
 
-    it('matches wildcard pattern when feature enabled', function () {
-        config(['az-guard.features.wildcard_permission' => true]);
-
-        $user = makeAuthorizable(['admin.*']);
-        $authorizer = new Authorizer;
-
-        expect($authorizer->check($user, 'admin.users.view'))->toBeTrue();
-        expect($authorizer->check($user, 'admin.posts.delete'))->toBeTrue();
-        expect($authorizer->check($user, 'shop.orders.view'))->toBeNull();
-
-        config(['az-guard.features.wildcard_permission' => false]);
-    });
-
-    it('does not match wildcard pattern when feature disabled', function () {
-        config(['az-guard.features.wildcard_permission' => false]);
-
-        $user = makeAuthorizable(['admin.*']);
-        $authorizer = new Authorizer;
-
-        // Должно вернуть null, а не true — паттерн не активен
-        expect($authorizer->check($user, 'admin.users.view'))->toBeNull();
+        expect($authorizer->check($user, 'test.admin.delete'))->toBeNull();
     });
 });

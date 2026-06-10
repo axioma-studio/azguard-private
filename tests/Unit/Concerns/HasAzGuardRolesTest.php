@@ -7,7 +7,10 @@ use AzGuard\Events\RoleDetached;
 use AzGuard\Models\Role;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+
+uses(RefreshDatabase::class);
 
 describe('HasAzGuard — role management API', function (): void {
 
@@ -26,7 +29,7 @@ describe('HasAzGuard — role management API', function (): void {
 
         expect($user->hasAzRole('manager'))->toBeTrue();
 
-        Event::assertDispatched(RoleAttached::class, fn (RoleAttached $e): bool => $e->role->getKey() === $role->getKey()
+        Event::assertDispatched(RoleAttached::class, fn (RoleAttached $e): bool => $e->role->getKey() === $role->getKey(),
         );
     });
 
@@ -75,7 +78,7 @@ describe('HasAzGuard — role management API', function (): void {
 
         expect($user->hasAzRole('manager'))->toBeFalse();
 
-        Event::assertDispatched(RoleDetached::class, fn (RoleDetached $e): bool => $e->role->getKey() === $role->getKey()
+        Event::assertDispatched(RoleDetached::class, fn (RoleDetached $e): bool => $e->role->getKey() === $role->getKey(),
         );
     });
 
@@ -134,12 +137,12 @@ describe('HasAzGuard — role management API', function (): void {
 
         // Populate cache
         $user->load('roles');
-        $before = $user->getAzPermissions();
+        $before = $user->getAzPermissions('test');
 
         $user->assignRole($role);
         $user->load('roles');
 
-        $after = $user->getAzPermissions();
+        $after = $user->getAzPermissions('test');
 
         // Cache was cleared and rebuilt — permissions should differ
         expect($after->contains('test.post.view'))->toBeTrue();

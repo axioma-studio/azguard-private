@@ -6,10 +6,10 @@ use AzGuard\Context\AuthorizationContext;
 use AzGuard\Context\AuthorizationContextManager;
 use AzGuard\Support\AzGuardContextBridge;
 use AzGuard\Tests\Stubs\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
-uses(AzGuard\Tests\ContextTestCase::class);
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->manager = app(AuthorizationContextManager::class);

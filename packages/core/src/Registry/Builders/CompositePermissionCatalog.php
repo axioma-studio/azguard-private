@@ -60,6 +60,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
                         // Одинаковый ключ из двух builder'ов — допустимо (enum + policy на тот же case).
                         // Конфликт только если группы различаются (признак разных definition).
                         $existing = $this->definitions[$panelId][$key];
+
                         if ($existing->group() !== $definition->group()) {
                             throw InvalidCatalogException::duplicateKey(
                                 key: $key,

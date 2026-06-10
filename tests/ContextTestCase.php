@@ -21,12 +21,12 @@ class ContextTestCase extends TestCase
         ];
     }
 
-    protected function setUp(): void
+    protected function defineDatabaseMigrations(): void
     {
-        parent::setUp();
+        parent::defineDatabaseMigrations();
 
         $this->loadMigrationsFrom(
-            __DIR__.'/../packages/context/database/migrations'
+            __DIR__.'/../packages/context/database/migrations',
         );
     }
 }

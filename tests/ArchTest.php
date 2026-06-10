@@ -1,11 +1,16 @@
 <?php
 
 declare(strict_types=1);
+use AzGuard\Contracts\RoleInterface;
+use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\ServiceProvider;
 
-/**
- * Architecture tests для AzGuard.
- * Проверяют соответствие структуры кода архитектурным соглашениям.
- */
+arch()->preset()->php()->ignoring('AzGuard\\Filament');
+
+arch()->preset()->security()->ignoring('AzGuard\\Filament');
+
 arch('no debugging calls in source')
     ->expect(['dd', 'dump', 'ray', 'var_dump', 'print_r'])
     ->not->toBeUsed()
@@ -17,30 +22,29 @@ arch('contracts are interfaces')
 
 arch('models extend Eloquent Model')
     ->expect('AzGuard\\Models')
-    ->toExtend(\Illuminate\Database\Eloquent\Model::class);
+    ->toExtend(Model::class);
 
 arch('service provider extends ServiceProvider')
     ->expect('AzGuard\\AzGuardServiceProvider')
-    ->toExtend(\Illuminate\Support\ServiceProvider::class);
+    ->toExtend(ServiceProvider::class);
 
 arch('roles implement RoleInterface')
     ->expect('AzGuard\\Roles')
-    ->toImplement(\AzGuard\Contracts\RoleInterface::class)
+    ->toImplement(RoleInterface::class)
     ->ignoring('AzGuard\\Roles\\BaseRole');
 
 arch('facades extend Illuminate Facade')
     ->expect('AzGuard\\Facades')
-    ->toExtend(\Illuminate\Support\Facades\Facade::class);
+    ->toExtend(Facade::class);
 
 arch('strict types declared in all source files')
     ->expect('AzGuard')
     ->toUseStrictTypes()
     ->ignoring([
         'AzGuard\\Tests',
-        'AzGuard\\Concerns\\HasAzGuard',  // trait — legacy, будет обновлён
     ]);
 
 arch('commands extend Illuminate Console Command')
     ->expect('AzGuard\\Commands')
-    ->toExtend(\Illuminate\Console\Command::class)
+    ->toExtend(Command::class)
     ->ignoring('AzGuard\\Commands\\Concerns');

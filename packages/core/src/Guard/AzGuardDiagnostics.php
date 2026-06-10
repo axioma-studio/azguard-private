@@ -25,7 +25,7 @@ use UnitEnum;
  *
  * Previously named GuardDoctor. The old class is kept as a @deprecated alias.
  */
-final class AzGuardDiagnostics
+class AzGuardDiagnostics
 {
     /** @var list<string> */
     private array $errors = [];
@@ -128,7 +128,13 @@ final class AzGuardDiagnostics
                     /** @var GateAbility $gateAbility */
                     $gateAbility = $attribute->newInstance();
                     $ability = $panel->resolvePermission(permission: $gateAbility->permission);
-                    $abilities[$ability] = "{$policyClass}::{$method->getName()}";
+                    $handler = "{$policyClass}::{$method->getName()}";
+
+                    if (isset($abilities[$ability])) {
+                        $this->errors[] = "Panel [{$panel->getId()}]: duplicate ability [{$ability}] — {$abilities[$ability]} and {$handler}.";
+                    }
+
+                    $abilities[$ability] = $handler;
                 }
             }
         }
@@ -139,17 +145,7 @@ final class AzGuardDiagnostics
     /** @param array<string, string> $abilities */
     private function checkDuplicateAbilities(array $abilities, string $panelId): void
     {
-        $seen = [];
-
-        foreach ($abilities as $ability => $handler) {
-            if (isset($seen[$ability])) {
-                $this->errors[] = "Panel [{$panelId}]: duplicate ability [{$ability}] — {$seen[$ability]} and {$handler}.";
-
-                continue;
-            }
-
-            $seen[$ability] = $handler;
-        }
+        // Duplicates are already detected in collectRegisteredAbilities.
     }
 
     /**
@@ -234,9 +230,11 @@ final class AzGuardDiagnostics
             }
 
             $class = $baseNamespace.'\\Roles\\'.str_replace('.php', '', $file->getFilename());
+
             if (! class_exists($class)) {
                 continue;
             }
+
             if (! is_subclass_of($class, RoleInterface::class)) {
                 continue;
             }
@@ -249,12 +247,14 @@ final class AzGuardDiagnostics
                     continue;
                 }
 
-                if (! isset($abilitiesIndex[$permission])) {
-                    $this->errors[] = "Role {$class}: references unknown permission [{$permission}].";
-                }
-
                 if (! str_starts_with(haystack: (string) $permission, needle: $panel->getId().'.')) {
                     $this->warnings[] = "Role {$class}: permission [{$permission}] is missing the panel prefix [{$panel->getId()}.].";
+
+                    continue;
+                }
+
+                if (! isset($abilitiesIndex[$permission])) {
+                    $this->errors[] = "Role {$class}: references unknown permission [{$permission}].";
                 }
             }
         }

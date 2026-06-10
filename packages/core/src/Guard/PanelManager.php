@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard\Guard;
 
 use Illuminate\Contracts\Auth\Access\Authorizable;

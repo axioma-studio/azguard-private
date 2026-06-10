@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AzGuard\Models\DirectGrant;
 use AzGuard\Tests\Stubs\UserWithDirectGrants;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(AzGuard\Tests\TestCase::class);
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('hasDirectGrant() returns false when no grants exist', function () {
     $user = UserWithDirectGrants::factory()->create();

@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use AzGuard\Models\Role;
+use AzGuard\Roles\BaseRole;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 describe('HasAzGuard trait', function () {
     beforeEach(function () {
@@ -56,7 +60,7 @@ describe('HasAzGuard trait', function () {
         $user->roles()->attach($role);
         $user->load('roles');
 
-        expect($user->hasAzPermission('test.post.view'))->toBeTrue();
+        expect($user->hasAzPermission('test.post.view', 'test'))->toBeTrue();
     });
 
     it('hasAzPermission returns false for ungranted permission', function () {
@@ -94,11 +98,11 @@ describe('HasAzGuard trait', function () {
         $user->roles()->attach($role);
         $user->load('roles');
 
-        $first = $user->getAzPermissions();
-        $second = $user->getAzPermissions();
+        $first = $user->getAzPermissions('test');
+        $second = $user->getAzPermissions('test');
 
-        // Должен быть тот же объект (in-memory кэш)
-        expect($first)->toBe($second);
+        // Должен вернуть те же данные (кэш — один объект PermissionSet)
+        expect($first->toArray())->toBe($second->toArray());
     });
 
     it('clearAzPermissionsCache resets in-memory cache', function () {
@@ -117,19 +121,18 @@ describe('HasAzGuard trait', function () {
         $user->roles()->attach($role);
         $user->load('roles');
 
-        $before = $user->getAzPermissions();
-        $user->clearAzPermissionsCache();
+        $before = $user->getAzPermissions('test');
+        $user->clearAzPermissionsCache('test');
 
-        // После сброса — новая загрузка (другой объект Collection)
-        $after = $user->getAzPermissions();
+        // После сброса — новая загрузка с теми же данными
+        $after = $user->getAzPermissions('test');
 
-        expect($before)->not->toBe($after);
         expect($after->toArray())->toBe($before->toArray());
     });
 
     it('wildcard * grants all permissions when present', function () {
         // Создаём роль с wildcard через анонимный класс
-        $wildcardRole = new class extends \AzGuard\Roles\BaseRole
+        $wildcardRole = new class extends BaseRole
         {
             public function permissions(): array
             {

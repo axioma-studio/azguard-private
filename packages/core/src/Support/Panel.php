@@ -11,6 +11,8 @@ final class Panel
 {
     protected string $id = '';
 
+    protected string $label = '';
+
     protected string $path = '';
 
     protected string $namespace = '';
@@ -30,11 +32,27 @@ final class Panel
         return new self;
     }
 
-    public function id(string $id): static
+    public function id(?string $id = null): static|string
     {
+        if ($id === null) {
+            return $this->id;
+        }
+
         $this->id = $id;
 
         return $this;
+    }
+
+    public function label(string $label): static
+    {
+        $this->label = $label;
+
+        return $this;
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label ?: $this->id;
     }
 
     public function path(string $path): static

@@ -6,9 +6,11 @@ namespace AzGuard\Filament\Pages;
 
 use AzGuard\Filament\AzGuardPlugin;
 use AzGuard\Guard\GuardDoctor;
+use BackedEnum;
 use Filament\Pages\Page;
 use Override;
 use Throwable;
+use UnitEnum;
 
 /**
  * Страница диагностики AzGuard в Filament UI.
@@ -22,15 +24,15 @@ use Throwable;
  */
 final class DoctorPage extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-stethoscope';
+    protected static BackedEnum|string|null $navigationIcon = 'heroicon-o-stethoscope';
 
-    protected static ?string $navigationGroup = 'AzGuard';
+    protected static string|UnitEnum|null $navigationGroup = 'AzGuard';
 
     protected static ?string $navigationLabel = 'Doctor';
 
     protected static ?string $title = 'AzGuard Doctor';
 
-    protected static string $view = 'az-guard-filament::pages.doctor';
+    protected string $view = 'az-guard-filament::pages.doctor';
 
     // ─── Badge: кол-во ошибок в навигации ─────────────────────────────────
 

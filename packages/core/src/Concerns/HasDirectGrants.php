@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\DirectGrant;
-use AzGuard\Support\Config;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Adds direct-grant support to a User model.
@@ -15,61 +16,79 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * They are checked by DirectGrantSource inside EffectivePermissionResolver.
  *
  * Usage:
- *   $user->grantDirect('app.posts.edit');
- *   $user->hasDirectGrant('app.posts.edit'); // true
- *   $user->revokeGrant('app.posts.edit');
+ *   $user->directGrants()->create(['panel_id' => 'app', 'permission_key' => 'app.posts.edit']);
+ *   $user->hasDirectGrant('app.posts.edit', 'app'); // true
+ *   $user->activeDirectGrants('app'); // Collection of active grants
  */
 trait HasDirectGrants
 {
     /**
-     * All direct grants belonging to this model.
+     * All direct grants belonging to this model (morph relation).
      */
-    public function activeGrants(): HasMany
+    public function directGrants(): MorphMany
     {
-        return $this->hasMany(Config::directGrantModel(), 'model_id')
-            ->where('model_type', $this->getMorphClass());
+        return $this->morphMany(DirectGrant::class, 'grantable');
     }
 
     /**
-     * Check whether this model has a specific direct grant.
+     * Active (non-expired) grants for a specific panel.
+     *
+     * @return Collection<int, DirectGrant>
      */
-    public function hasDirectGrant(string $permission): bool
+    public function activeDirectGrants(string $panelId): Collection
     {
-        return $this->activeGrants()
-            ->where('permission', $permission)
-            ->exists();
+        return $this->directGrants()
+            ->where('panel_id', $panelId)
+            ->active()
+            ->get();
     }
 
     /**
-     * Assign a direct grant for the given permission.
+     * Check whether this model has a specific active direct grant for a panel.
+     */
+    public function hasDirectGrant(string $permission, ?string $panelId = null): bool
+    {
+        $query = $this->directGrants()
+            ->where('permission_key', $permission)
+            ->active();
+
+        if ($panelId !== null) {
+            $query = $query->where('panel_id', $panelId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Assign a direct grant for the given permission in a panel.
      * Silently ignores duplicates via firstOrCreate.
      */
-    public function grantDirect(string $permission): static
+    public function grantDirect(string $permission, string $panelId, ?DateTimeInterface $expiresAt = null): static
     {
-        DirectGrant::firstOrCreate([
-            'model_type' => $this->getMorphClass(),
-            'model_id' => $this->getKey(),
-            'permission' => $permission,
-        ]);
+        $this->directGrants()->firstOrCreate(
+            ['panel_id' => $panelId, 'permission_key' => $permission],
+            ['expires_at' => $expiresAt],
+        );
 
-        if (method_exists($this, 'flushPermissions')) {
-            $this->flushPermissions();
+        if (method_exists($this, 'clearAzPermissionsCache')) {
+            $this->clearAzPermissionsCache($panelId);
         }
 
         return $this;
     }
 
     /**
-     * Revoke a direct grant for the given permission.
+     * Revoke a direct grant for the given permission in a panel.
      */
-    public function revokeGrant(string $permission): static
+    public function revokeGrant(string $permission, string $panelId): static
     {
-        $this->activeGrants()
-            ->where('permission', $permission)
+        $this->directGrants()
+            ->where('panel_id', $panelId)
+            ->where('permission_key', $permission)
             ->delete();
 
-        if (method_exists($this, 'flushPermissions')) {
-            $this->flushPermissions();
+        if (method_exists($this, 'clearAzPermissionsCache')) {
+            $this->clearAzPermissionsCache($panelId);
         }
 
         return $this;

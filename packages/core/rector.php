@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
+use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
 use Rector\Set\ValueObject\SetList;
+use Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -26,8 +28,8 @@ return RectorConfig::configure()
 
     // Preserve Eloquent magic and Laravel container calls — skip model internals.
     ->withSkip([
-        \Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector::class,
-        \Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector::class => [
+        RemoveUnusedPrivateMethodRector::class,
+        AddVoidReturnTypeWhereNoReturnRector::class => [
             // Eloquent boot* hooks must not have a void return type annotation
             // because Laravel checks method_exists and then calls them dynamically.
             __DIR__.'/src/Concerns',

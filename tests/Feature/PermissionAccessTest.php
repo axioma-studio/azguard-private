@@ -1,6 +1,7 @@
 <?php
 
 use AzGuard\Models\Role;
+use AzGuard\Tests\Stubs\User;
 use Illuminate\Support\Facades\Gate;
 
 // Создаем "фейковый" класс роли для теста, чтобы не зависеть от генератора
@@ -19,7 +20,7 @@ class FakePostPolicy
 {
     public function view($user)
     {
-        return $user->hasAzPermission('admin.post.view');
+        return $user->hasAzPermission('admin.post.view', 'admin');
     }
 }
 
@@ -33,7 +34,7 @@ it('grants access when user has a role with the required permission', function (
     ]);
 
     // 3. Создаем пользователя и привязываем роль (используя твой трейт HasAzGuard)
-    $user = \AzGuard\Tests\Stubs\User::create([
+    $user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
         'password' => 'password',
@@ -41,8 +42,8 @@ it('grants access when user has a role with the required permission', function (
     $user->roles()->attach($role);
 
     // 4. Проверка: HasAzGuard должен залезть в FakeAdminRole и найти там разрешение
-    expect($user->hasAzPermission('admin.post.view'))->toBeTrue();
-    expect($user->hasAzPermission('admin.post.delete'))->toBeFalse();
+    expect($user->hasAzPermission('admin.post.view', 'admin'))->toBeTrue();
+    expect($user->hasAzPermission('admin.post.delete', 'admin'))->toBeFalse();
 
     $this->actingAs($user);
 

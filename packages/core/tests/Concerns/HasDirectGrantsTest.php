@@ -56,7 +56,7 @@ final class HasDirectGrantsTest extends TestCase
         parent::setUp();
 
         $this->app['db']->statement(
-            'CREATE TABLE IF NOT EXISTS stub_users (id INTEGER PRIMARY KEY AUTOINCREMENT)'
+            'CREATE TABLE IF NOT EXISTS stub_users (id INTEGER PRIMARY KEY AUTOINCREMENT)',
         );
     }
 

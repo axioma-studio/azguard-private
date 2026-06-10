@@ -15,7 +15,7 @@ final class InvalidPermissionKeyException extends RuntimeException
     public static function forKey(string $key, string $panelId): self
     {
         return new self(
-            "Permission key [{$key}] is not registered in the catalog for panel [{$panelId}]."
+            "Permission key [{$key}] is not registered in the catalog for panel [{$panelId}].",
         );
     }
 }

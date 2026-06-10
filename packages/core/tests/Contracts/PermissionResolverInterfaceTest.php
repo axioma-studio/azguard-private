@@ -17,7 +17,7 @@ final class PermissionResolverInterfaceTest extends TestCase
 
         $this->assertTrue(
             $reflection->implementsInterface(PermissionResolverInterface::class),
-            'EffectivePermissionResolver must implement PermissionResolverInterface'
+            'EffectivePermissionResolver must implement PermissionResolverInterface',
         );
     }
 

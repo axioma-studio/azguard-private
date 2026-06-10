@@ -78,6 +78,10 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
             }
         }
 
+        if (! in_array($panelId, $this->catalog->panels(), true)) {
+            return $set;
+        }
+
         return $set->filter(fn (string $key): bool => $this->catalog->has($panelId, $key));
     }
 

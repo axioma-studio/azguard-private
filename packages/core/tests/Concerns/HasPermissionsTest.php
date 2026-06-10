@@ -7,6 +7,7 @@ namespace AzGuard\Tests\Concerns;
 use AzGuard\Concerns\HasPermissions;
 use AzGuard\Registry\Values\PermissionSet;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * Stub that uses HasPermissions with a controlled PermissionSet.
@@ -77,7 +78,7 @@ final class HasPermissionsTest extends TestCase
         {
             public function hasPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
             {
-                throw new \RuntimeException('resolver exploded');
+                throw new RuntimeException('resolver exploded');
             }
         };
 

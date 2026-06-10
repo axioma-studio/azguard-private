@@ -1,6 +1,9 @@
 <?php
 
 declare(strict_types=1);
+use AzGuard\Models\DirectGrant;
+use AzGuard\Models\ModelHasScope;
+use AzGuard\Models\Role;
 
 return [
 
@@ -11,9 +14,9 @@ return [
     | Eloquent models used by AzGuard. Replace with your own subclasses if needed.
     */
     'models' => [
-        'role' => \AzGuard\Models\Role::class,
-        'scope' => \AzGuard\Models\ModelHasScope::class,
-        'direct_grant' => \AzGuard\Models\DirectGrant::class,
+        'role' => Role::class,
+        'scope' => ModelHasScope::class,
+        'direct_grant' => DirectGrant::class,
     ],
 
     /*
@@ -34,6 +37,7 @@ return [
         'roles' => 'roles',
         'model_has_roles' => 'model_has_roles',
         'model_has_scopes' => 'model_has_scopes',
+        'role_permissions' => 'az_guard_role_permissions',
         'direct_grants' => 'az_direct_grants',
     ],
 

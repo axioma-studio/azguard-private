@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AzGuard\Roles;
 
 use AzGuard\Contracts\RoleInterface;

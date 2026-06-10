@@ -10,8 +10,8 @@ use AzGuard\Registry\Contracts\PermissionCatalog;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
@@ -40,9 +40,9 @@ final class RolePermissionsRelationManager extends RelationManager
     }
 
     #[Override]
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->components([
             TextInput::make('permission_key')->label('Право'),
             TextInput::make('panel_id')->label('Панель'),
         ]);

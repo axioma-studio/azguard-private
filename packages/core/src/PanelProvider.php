@@ -90,27 +90,21 @@ abstract class PanelProvider extends ServiceProvider
         $permissionEnums = $panel->getPermissionEnums();
 
         if ($permissionEnums !== []) {
-            $this->app->tag([
-                $this->app->instance(
-                    'azguard.catalog_builder.'.$panelId.'.enum',
-                    new EnumPermissionCatalogBuilder(
-                        panelId: $panelId,
-                        enumClasses: $permissionEnums,
-                    ),
-                ),
-            ], 'azguard.catalog_builders');
+            $abstract = 'azguard.catalog_builder.'.$panelId.'.enum';
+            $this->app->instance($abstract, new EnumPermissionCatalogBuilder(
+                panelId: $panelId,
+                enumClasses: $permissionEnums,
+            ));
+            $this->app->tag([$abstract], 'azguard.catalog_builders');
         }
 
         if ($policyClasses !== []) {
-            $this->app->tag([
-                $this->app->instance(
-                    'azguard.catalog_builder.'.$panelId.'.policy',
-                    new PolicyAbilityCatalogBuilder(
-                        panelId: $panelId,
-                        policyClasses: $policyClasses,
-                    ),
-                ),
-            ], 'azguard.catalog_builders');
+            $abstract = 'azguard.catalog_builder.'.$panelId.'.policy';
+            $this->app->instance($abstract, new PolicyAbilityCatalogBuilder(
+                panelId: $panelId,
+                policyClasses: $policyClasses,
+            ));
+            $this->app->tag([$abstract], 'azguard.catalog_builders');
         }
     }
 

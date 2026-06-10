@@ -98,12 +98,12 @@ final class AzGuardServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(PermissionResolverInterface::class, EffectivePermissionResolver::class);
-
-        $this->registerPanelProviders();
     }
 
     public function boot(): void
     {
+        $this->registerPanelProviders();
+
         $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
 
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {

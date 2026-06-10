@@ -2,27 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Grants;
+namespace AzGuard\Tests\Unit\Grants;
 
 use AzGuard\Events\GrantGiven;
 use AzGuard\Events\GrantRevoked;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
+use AzGuard\Tests\Stubs\User;
+use AzGuard\Tests\TestCase;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
-use Tests\TestCase;
+use RuntimeException;
 
 class GrantBuilderTest extends TestCase
 {
+    use RefreshDatabase;
+
     private Authenticatable $user;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->user = $this->createUser();
+        $this->user = User::factory()->create();
     }
 
     // ─── give ─────────────────────────────────────────────────────────────────
@@ -143,7 +148,7 @@ class GrantBuilderTest extends TestCase
 
     public function test_on_is_required_throws_without_panel(): void
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
 
         (new GrantBuilder($this->user))->give('app.x');
     }

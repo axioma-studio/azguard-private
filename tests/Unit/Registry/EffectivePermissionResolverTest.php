@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionDefinition;
@@ -52,29 +53,29 @@ function makeUser(int $id = 1): Authenticatable
     };
 }
 
-function makeGrantSource(PermissionSet $set, int $priority = 100): GrantSource
+function makeGrantSource(PermissionSet $set, GrantPriority $priority = GrantPriority::ClassRole): GrantSource
 {
     return new class($set, $priority) implements GrantSource
     {
-        public function __construct(private PermissionSet $s, private int $p) {}
+        public function __construct(private PermissionSet $s, private GrantPriority $p) {}
 
         public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
         {
             return $this->s;
         }
 
-        public function priority(): int
+        public function priority(): GrantPriority
         {
             return $this->p;
         }
     };
 }
 
-function makeCatalog(array $knownKeys): PermissionCatalog
+function makeCatalog(array $knownKeys, array $panels = ['app']): PermissionCatalog
 {
-    return new class($knownKeys) implements PermissionCatalog
+    return new class($knownKeys, $panels) implements PermissionCatalog
     {
-        public function __construct(private array $keys) {}
+        public function __construct(private array $keys, private array $panelList) {}
 
         public function all(string $panelId): array
         {
@@ -93,7 +94,7 @@ function makeCatalog(array $knownKeys): PermissionCatalog
 
         public function assert(string $panelId, string $key): PermissionDefinition
         {
-            throw new \RuntimeException;
+            throw new RuntimeException;
         }
 
         public function groups(string $panelId): array
@@ -103,7 +104,7 @@ function makeCatalog(array $knownKeys): PermissionCatalog
 
         public function panels(): array
         {
-            return [];
+            return $this->panelList;
         }
     };
 }
@@ -125,8 +126,8 @@ describe('EffectivePermissionResolver', function () {
     });
 
     it('merges permissions from multiple sources', function () {
-        $sourceA = makeGrantSource(PermissionSet::fromKeys(['app.posts.view']), priority: 100);
-        $sourceB = makeGrantSource(PermissionSet::fromKeys(['app.posts.edit']), priority: 50);
+        $sourceA = makeGrantSource(PermissionSet::fromKeys(['app.posts.view']), GrantPriority::ClassRole);
+        $sourceB = makeGrantSource(PermissionSet::fromKeys(['app.posts.edit']), GrantPriority::DatabaseRole);
 
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.posts.view', 'app.posts.edit']),
@@ -136,14 +137,14 @@ describe('EffectivePermissionResolver', function () {
 
         $set = $resolver->forUser(makeUser(1), 'app');
 
-        expect($set->contains('app.posts.view'))->toBeTrue()
-            ->and($set->contains('app.posts.edit'))->toBeTrue();
+        expect($set->has('app.posts.view'))->toBeTrue()
+            ->and($set->has('app.posts.edit'))->toBeTrue();
     });
 
     it('stops early and returns wildcard when any source grants *', function () {
         $calls = 0;
-        $sourceWild = makeGrantSource(PermissionSet::wildcard(), priority: 200);
-        $sourceLow = makeGrantSource(PermissionSet::fromKeys(['app.posts.view']), priority: 10);
+        $sourceWild = makeGrantSource(PermissionSet::wildcard(), GrantPriority::ClassRole);
+        $sourceLow = makeGrantSource(PermissionSet::fromKeys(['app.posts.view']), GrantPriority::DirectGrant);
 
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.posts.view']),
@@ -173,7 +174,7 @@ describe('EffectivePermissionResolver', function () {
         $set = $resolver->forUser(makeUser(1), 'app');
 
         expect($set->toArray())->toBe(['app.posts.view', 'app.posts.edit'])
-            ->and($set->contains('app.orphan.unknown'))->toBeFalse();
+            ->and($set->has('app.orphan.unknown'))->toBeFalse();
     });
 
     it('wildcard set is NOT filtered through catalog', function () {
@@ -204,9 +205,9 @@ describe('EffectivePermissionResolver', function () {
                 return PermissionSet::fromKeys(['app.posts.view']);
             }
 
-            public function priority(): int
+            public function priority(): GrantPriority
             {
-                return 100;
+                return GrantPriority::ClassRole;
             }
         };
 
@@ -226,23 +227,23 @@ describe('EffectivePermissionResolver', function () {
     it('sources are sorted by priority descending', function () {
         $order = [];
 
-        $makeOrderedSource = function (int $priority, string $key) use (&$order): GrantSource {
+        $makeOrderedSource = function (GrantPriority $priority, string $key) use (&$order): GrantSource {
             return new class($priority, $key, $order) implements GrantSource
             {
                 public function __construct(
-                    private int $p,
+                    private GrantPriority $p,
                     private string $k,
                     private array &$o,
                 ) {}
 
                 public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
                 {
-                    $this->o[] = $this->p;
+                    $this->o[] = $this->p->value;
 
                     return PermissionSet::fromKeys([$this->k]);
                 }
 
-                public function priority(): int
+                public function priority(): GrantPriority
                 {
                     return $this->p;
                 }
@@ -252,15 +253,15 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.a', 'app.b', 'app.c']),
             sources: [
-                $makeOrderedSource(50, 'app.b'),
-                $makeOrderedSource(200, 'app.a'),
-                $makeOrderedSource(10, 'app.c'),
+                $makeOrderedSource(GrantPriority::DatabaseRole, 'app.b'),
+                $makeOrderedSource(GrantPriority::ClassRole, 'app.a'),
+                $makeOrderedSource(GrantPriority::DirectGrant, 'app.c'),
             ],
             cache: new PermissionResolverCache,
         );
 
         $resolver->forUser(makeUser(1), 'app');
 
-        expect($order)->toBe([200, 50, 10]);
+        expect($order)->toBe([100, 90, 80]);
     });
 });

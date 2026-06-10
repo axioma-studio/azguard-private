@@ -5,10 +5,10 @@ declare(strict_types=1);
 use AzGuard\Models\Role;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Tests\Stubs\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
-uses(AzGuard\Tests\TestCase::class);
-uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 it('returns empty set when user has no DB roles', function () {
     $user = User::factory()->create();
@@ -106,5 +106,5 @@ it('does not return permissions for other panels', function () {
 });
 
 it('has priority 90', function () {
-    expect(app(DatabaseRoleGrantSource::class)->priority())->toBe(90);
+    expect(app(DatabaseRoleGrantSource::class)->priority()->value)->toBe(90);
 });
