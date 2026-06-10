@@ -174,4 +174,18 @@ final class Config
     {
         return (array) config('az-guard.panels', []);
     }
+
+    // ─── Grant Sources ────────────────────────────────────────────────────
+
+    /**
+     * Explicit allowlist of GrantSource FQCNs, or null to use all tagged sources.
+     *
+     * @return list<class-string>|null
+     */
+    public static function grantSources(): ?array
+    {
+        $value = config('az-guard.grant_sources');
+
+        return is_array($value) ? array_values($value) : null;
+    }
 }

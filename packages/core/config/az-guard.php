@@ -84,6 +84,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Grant Sources
+    |--------------------------------------------------------------------------
+    | Control which GrantSources are active and their priority order.
+    | null (default) = all built-in sources active, sorted by GrantPriority enum.
+    | Provide an explicit list to restrict or reorder:
+    |
+    |   'grant_sources' => [
+    |       \AzGuard\Registry\Sources\ClassRoleGrantSource::class,
+    |       \AzGuard\Registry\Sources\DatabaseRoleGrantSource::class,
+    |       // Omit DirectGrantSource to disable direct grants at source level
+    |   ],
+    */
+    'grant_sources' => null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Features (Feature Flags)
     |--------------------------------------------------------------------------
     | Enable only what you need. All flags default to false for maximum

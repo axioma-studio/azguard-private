@@ -81,11 +81,20 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->app->singleton(PermissionCache::class);
 
-        $this->app->singleton(EffectivePermissionResolver::class, fn (): EffectivePermissionResolver => new EffectivePermissionResolver(
-            catalog: $this->app->make(PermissionCatalog::class),
-            sources: $this->app->tagged('azguard.grant_sources'),
-            cache: $this->app->make(PermissionCache::class),
-        ));
+        $this->app->singleton(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
+            $allSources = iterator_to_array($this->app->tagged('azguard.grant_sources'), preserve_keys: false);
+            $allowlist = Config::grantSources();
+
+            $sources = $allowlist !== null
+                ? array_filter($allSources, static fn (object $s): bool => in_array($s::class, $allowlist, strict: true))
+                : $allSources;
+
+            return new EffectivePermissionResolver(
+                catalog: $this->app->make(PermissionCatalog::class),
+                sources: $sources,
+                cache: $this->app->make(PermissionCache::class),
+            );
+        });
 
         $this->app->bind(PermissionResolverInterface::class, EffectivePermissionResolver::class);
 
