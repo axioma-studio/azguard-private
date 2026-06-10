@@ -8,6 +8,7 @@ use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Guard\Authorizer;
 use AzGuard\Models\DirectGrant;
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionDefinition;
@@ -105,9 +106,9 @@ final class AuthorizerTest extends TestCase
                 return $this->set;
             }
 
-            public function priority(): int
+            public function priority(): GrantPriority
             {
-                return 100;
+                return GrantPriority::ClassRole;
             }
         };
 

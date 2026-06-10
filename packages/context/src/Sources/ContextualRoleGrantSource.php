@@ -6,6 +6,7 @@ namespace AzGuard\Context\Sources;
 
 use AzGuard\Context\AuthorizationContextManager;
 use AzGuard\Context\Contracts\MergeStrategy;
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -44,8 +45,8 @@ final readonly class ContextualRoleGrantSource implements GrantSource
     }
 
     #[Override]
-    public function priority(): int
+    public function priority(): GrantPriority
     {
-        return 95;
+        return GrantPriority::ContextualRole;
     }
 }

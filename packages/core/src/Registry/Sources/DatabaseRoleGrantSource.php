@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Sources;
 
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\Config;
@@ -51,8 +52,8 @@ final class DatabaseRoleGrantSource implements GrantSource
     }
 
     #[Override]
-    public function priority(): int
+    public function priority(): GrantPriority
     {
-        return 90;
+        return GrantPriority::DatabaseRole;
     }
 }

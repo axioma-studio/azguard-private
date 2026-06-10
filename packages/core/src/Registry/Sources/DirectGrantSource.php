@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Sources;
 
 use AzGuard\Models\DirectGrant;
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -35,8 +36,8 @@ final class DirectGrantSource implements GrantSource
     }
 
     #[Override]
-    public function priority(): int
+    public function priority(): GrantPriority
     {
-        return 80;
+        return GrantPriority::DirectGrant;
     }
 }

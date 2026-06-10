@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Tests\Registry;
 
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
@@ -169,8 +170,8 @@ final class DirectGrantSourceTest extends TestCase
         $this->assertTrue($set->isWildcard());
     }
 
-    public function test_priority_is_80(): void
+    public function test_priority_is_direct_grant(): void
     {
-        $this->assertSame(80, (new DirectGrantSource)->priority());
+        $this->assertSame(GrantPriority::DirectGrant, (new DirectGrantSource)->priority());
     }
 }

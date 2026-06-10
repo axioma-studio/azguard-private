@@ -35,7 +35,7 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
         private PermissionCache $cache,
     ) {
         $this->sources = collect($sources)
-            ->sortByDesc(fn (GrantSource $s): int => $s->priority())
+            ->sortByDesc(fn (GrantSource $s): int => $s->priority()->value)
             ->values()
             ->all();
     }

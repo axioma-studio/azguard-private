@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Tests\Registry;
 
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
@@ -63,13 +64,13 @@ final class EffectivePermissionResolverTest extends TestCase
         };
     }
 
-    private function makeGrantSource(PermissionSet $set, int $priority = 100): GrantSource
+    private function makeGrantSource(PermissionSet $set, GrantPriority $priority = GrantPriority::ClassRole): GrantSource
     {
         return new class($set, $priority) implements GrantSource
         {
             public function __construct(
                 private readonly PermissionSet $set,
-                private readonly int $prio,
+                private readonly GrantPriority $prio,
             ) {}
 
             public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
@@ -77,7 +78,7 @@ final class EffectivePermissionResolverTest extends TestCase
                 return $this->set;
             }
 
-            public function priority(): int
+            public function priority(): GrantPriority
             {
                 return $this->prio;
             }
@@ -201,9 +202,9 @@ final class EffectivePermissionResolverTest extends TestCase
                 return PermissionSet::fromKeys(['app.docs.view']);
             }
 
-            public function priority(): int
+            public function priority(): GrantPriority
             {
-                return 100;
+                return GrantPriority::ClassRole;
             }
         };
 
@@ -238,9 +239,9 @@ final class EffectivePermissionResolverTest extends TestCase
                 return PermissionSet::fromKeys(['app.docs.view']);
             }
 
-            public function priority(): int
+            public function priority(): GrantPriority
             {
-                return 100;
+                return GrantPriority::ClassRole;
             }
         };
 

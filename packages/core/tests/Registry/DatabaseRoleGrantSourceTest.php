@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Tests\Registry;
 
+use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
@@ -152,8 +153,8 @@ final class DatabaseRoleGrantSourceTest extends TestCase
         $this->assertTrue($set->isWildcard());
     }
 
-    public function test_priority_is_90(): void
+    public function test_priority_is_database_role(): void
     {
-        $this->assertSame(90, (new DatabaseRoleGrantSource)->priority());
+        $this->assertSame(GrantPriority::DatabaseRole, (new DatabaseRoleGrantSource)->priority());
     }
 }

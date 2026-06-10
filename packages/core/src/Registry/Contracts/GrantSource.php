@@ -21,9 +21,5 @@ interface GrantSource
      */
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet;
 
-    /**
-     * Приоритет при merge (больше = важнее).
-     * ClassRole: 100, DatabaseRole: 90, DirectGrant: 80.
-     */
-    public function priority(): int;
+    public function priority(): GrantPriority;
 }

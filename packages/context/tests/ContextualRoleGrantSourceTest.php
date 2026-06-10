@@ -10,6 +10,7 @@ use AzGuard\Context\AuthorizationContextManager;
 use AzGuard\Context\AzGuardContextServiceProvider;
 use AzGuard\Context\ContextualRoleGrantSource;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
+use AzGuard\Registry\Contracts\GrantPriority;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase;
@@ -74,10 +75,10 @@ final class ContextualRoleGrantSourceTest extends TestCase
 
     // -----------------------------------------------------------------------
 
-    public function test_priority_is_95(): void
+    public function test_priority_is_contextual_role(): void
     {
         $source = $this->makeSource();
-        $this->assertSame(95, $source->priority());
+        $this->assertSame(GrantPriority::ContextualRole, $source->priority());
     }
 
     public function test_no_context_returns_empty_set(): void
