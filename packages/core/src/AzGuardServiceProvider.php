@@ -186,21 +186,21 @@ final class AzGuardServiceProvider extends ServiceProvider
      */
     protected function registerBladeDirectives(): void
     {
-        Blade::directive('azcan', fn (string $expression): string => "<?php if (auth()->check() && auth()->user()->hasPermission({$expression})): ?>");
+        Blade::directive('azcan', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && auth()->user()->hasPermission({$expression})): ?>");
 
         Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('elseazcan', fn (string $expression): string => "<?php elseif (auth()->check() && auth()->user()->hasPermission({$expression})): ?>");
+        Blade::directive('elseazcan', fn (string $expression): string => "<?php elseif (\\AzGuard\\Support\\BladeHelper::authed() && auth()->user()->hasPermission({$expression})): ?>");
 
-        Blade::directive('unlessazcan', fn (string $expression): string => "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>");
+        Blade::directive('unlessazcan', fn (string $expression): string => "<?php if (! \\AzGuard\\Support\\BladeHelper::authed() || ! auth()->user()->hasPermission({$expression})): ?>");
 
         Blade::directive('endunlessazcan', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('azrole', fn (string $expression): string => "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>");
+        Blade::directive('azrole', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && auth()->user()->hasRole({$expression})): ?>");
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('azdirect', fn (string $expression): string => "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>");
+        Blade::directive('azdirect', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>");
 
         Blade::directive('endazdirect', fn (): string => '<?php endif; ?>');
     }
