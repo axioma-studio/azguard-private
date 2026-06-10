@@ -112,7 +112,6 @@ final class AzGuardServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
 
-        // Use instanceof instead of method_exists for a precise type check.
         Gate::before(function ($user, string $ability): ?bool {
             if (! $user instanceof Authenticatable) {
                 return null;
@@ -177,32 +176,29 @@ final class AzGuardServiceProvider extends ServiceProvider
      * Blade directives.
      *
      * @azcan    / @endazcan    — permission check
-     *
      * @elseazcan / @unlessazcan / @endunlessazcan — added in DX2
-     *
      * @azrole   / @endazrole   — role check
-     *
      * @azdirect / @endazdirect — direct grant check
      */
     protected function registerBladeDirectives(): void
     {
-        Blade::directive('azcan', fn (string $expression): string => "<?php if (auth()->check() && auth()->user()->hasPermission({$expression})): ?>");
+        // All directives share the same auth guard pattern.
+        // authCheck() centralises it to avoid copy-paste across every directive.
+        $authCheck = static fn (string $call): string
+            => "<?php if (auth()->check() && auth()->user()->{$call}): ?>";
 
-        Blade::directive('endazcan', fn (): string => '<?php endif; ?>');
+        $authCheckNeg = static fn (string $call): string
+            => "<?php if (! auth()->check() || ! auth()->user()->{$call}): ?>";
 
-        Blade::directive('elseazcan', fn (string $expression): string => "<?php elseif (auth()->check() && auth()->user()->hasPermission({$expression})): ?>");
-
-        Blade::directive('unlessazcan', fn (string $expression): string => "<?php if (! auth()->check() || ! auth()->user()->hasPermission({$expression})): ?>");
-
-        Blade::directive('endunlessazcan', fn (): string => '<?php endif; ?>');
-
-        Blade::directive('azrole', fn (string $expression): string => "<?php if (auth()->check() && auth()->user()->hasRole({$expression})): ?>");
-
-        Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
-
-        Blade::directive('azdirect', fn (string $expression): string => "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>");
-
-        Blade::directive('endazdirect', fn (): string => '<?php endif; ?>');
+        Blade::directive('azcan',         fn (string $e): string => $authCheck("hasPermission({$e})"));
+        Blade::directive('endazcan',      fn (): string           => '<?php endif; ?>');
+        Blade::directive('elseazcan',     fn (string $e): string => "<?php elseif (auth()->check() && auth()->user()->hasPermission({$e})): ?>");
+        Blade::directive('unlessazcan',   fn (string $e): string => $authCheckNeg("hasPermission({$e})"));
+        Blade::directive('endunlessazcan',fn (): string           => '<?php endif; ?>');
+        Blade::directive('azrole',        fn (string $e): string => $authCheck("hasRole({$e})"));
+        Blade::directive('endazrole',     fn (): string           => '<?php endif; ?>');
+        Blade::directive('azdirect',      fn (string $e): string => "<?php if (auth()->check() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$e})): ?>");
+        Blade::directive('endazdirect',   fn (): string           => '<?php endif; ?>');
     }
 
     protected function registerPanelProviders(): void

@@ -6,6 +6,7 @@ namespace AzGuard\Concerns;
 
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
+use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -145,14 +146,17 @@ trait HasScopedRoles
      *
      * Resolution order:
      *   1. SuperAdmin global wildcard (*) — always granted via hasPermission()
-     *   2. Scoped roles for the given entity
+     *   2. Scoped roles for the given entity — merged into a PermissionSet
+     *      and checked via PermissionSet::grants() (supports wildcard patterns).
      */
     public function hasScopedPermission(string $permission, Model $entity): bool
     {
+        // 1. SuperAdmin shortcut via global hasPermission().
         if (method_exists($this, 'hasPermission') && $this->hasPermission($permission)) {
             return true;
         }
 
+        // 2. Collect scoped role IDs for this entity in one query.
         $scopedRoleIds = ModelHasScope::query()
             ->where('model_type', $this->getMorphClass())
             ->where('model_id', $this->getKey())
@@ -168,22 +172,26 @@ trait HasScopedRoles
         /** @var class-string<Role> $roleClass */
         $roleClass = Config::roleModel();
 
-        $roles = $roleClass::query()->whereIn('id', $scopedRoleIds)->get();
+        // 3. Build a merged PermissionSet from all scoped roles.
+        //    This delegates wildcard and pattern matching to PermissionSet::grants()
+        //    instead of duplicating the logic inline.
+        $merged = PermissionSet::empty();
 
-        foreach ($roles as $roleModel) {
+        foreach ($roleClass::query()->whereIn('id', $scopedRoleIds)->get() as $roleModel) {
             $logic = $roleModel->getRoleLogic();
 
             if ($logic === null) {
                 continue;
             }
 
-            $permissions = $logic->permissions();
+            $merged = $merged->merge(PermissionSet::fromRawKeys($logic->permissions()));
 
-            if (in_array('*', $permissions, true) || in_array($permission, $permissions, true)) {
-                return true;
+            // Short-circuit: if we already have a wildcard, no need to continue.
+            if ($merged->isWildcard()) {
+                break;
             }
         }
 
-        return false;
+        return $merged->grants($permission);
     }
 }

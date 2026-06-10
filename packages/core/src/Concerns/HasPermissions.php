@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\AzGuardManager;
+use AzGuard\Contracts\ContextContract;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\AzGuardContextBridge;
+use AzGuard\Support\PermissionContext;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -16,13 +18,20 @@ trait HasPermissions
     /**
      * Check if the user has a permission on a panel.
      *
-     * Optional $context allows a one-off contextual check without changing
-     * global state. Use hasPermissionIn() as a more readable alternative.
+     * The optional $context parameter allows a one-off contextual check without
+     * changing global state. Use {@see hasPermissionIn()} as a more readable
+     * alternative when you have a contextType + contextId at hand.
      *
-     * @param  object{contextType: string, contextId: int|string}|null  $context
+     * Pass a {@see PermissionContext} DTO (preferred) or any object that
+     * implements {@see ContextContract}.
+     *
+     * @param  ContextContract|null  $context
      */
-    public function hasPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
-    {
+    public function hasPermission(
+        string $permission,
+        string $panelId = 'app',
+        ?ContextContract $context = null,
+    ): bool {
         if ($context !== null) {
             return AzGuardContextBridge::checkWithContext($this, $permission, $panelId, $context);
         }
@@ -54,10 +63,13 @@ trait HasPermissions
     /**
      * Silent version: never throws. Use in Blade / UI.
      *
-     * @param  object{contextType: string, contextId: int|string}|null  $context
+     * @param  ContextContract|null  $context
      */
-    public function checkPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
-    {
+    public function checkPermission(
+        string $permission,
+        string $panelId = 'app',
+        ?ContextContract $context = null,
+    ): bool {
         try {
             return $this->hasPermission($permission, $panelId, $context);
         } catch (Throwable) {
@@ -81,7 +93,7 @@ trait HasPermissions
      */
     public function permissions(string $panelId = 'app'): Collection
     {
-        return collect($this->permissionSet($panelId)->toArray());
+        return collect($this->permissionSet($panelId)->keys());
     }
 
     /**
@@ -105,6 +117,7 @@ trait HasPermissions
             $resolver->forgetForUser($this, $id);
         }
 
+        // Safety: always flush 'app' even if not registered as a named panel.
         if (! isset($panels['app'])) {
             $resolver->forgetForUser($this, 'app');
         }
