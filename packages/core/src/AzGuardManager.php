@@ -70,6 +70,14 @@ final class AzGuardManager implements AzGuardManagerInterface
         return $panel->resolvePermission(permission: $permission);
     }
 
+    #[Override]
+    public function tryPermission(string $panelId, string|UnitEnum $permission): ?string
+    {
+        $panel = $this->panel(id: $panelId);
+
+        return $panel?->resolvePermission(permission: $permission);
+    }
+
     // ─── Grants API ─────────────────────────────────────────────────────────
 
     /**

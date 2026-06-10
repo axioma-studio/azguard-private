@@ -55,6 +55,12 @@ interface AzGuardManagerInterface
      */
     public function permission(string $panelId, string|UnitEnum $permission): string;
 
+    /**
+     * Soft-resolve: возвращает null если панель не зарегистрирована.
+     * Безопасен в Blade / UI без try-catch.
+     */
+    public function tryPermission(string $panelId, string|UnitEnum $permission): ?string;
+
     // ─── Grants API ───────────────────────────────────────────────────────────
 
     /**
