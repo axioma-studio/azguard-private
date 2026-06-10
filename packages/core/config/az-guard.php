@@ -100,6 +100,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fail-fast on GrantSource Exception
+    |--------------------------------------------------------------------------
+    | When true, any Throwable from a GrantSource::permissionsFor() call
+    | propagates immediately, failing the entire authorization pipeline.
+    | When false (default), the failing source is skipped and a warning is logged.
+    | Recommended: true in tests, false in production.
+    */
+    'fail_on_source_exception' => false,
+
+    /*
+    |--------------------------------------------------------------------------
     | Features (Feature Flags)
     |--------------------------------------------------------------------------
     | Enable only what you need. All flags default to false for maximum

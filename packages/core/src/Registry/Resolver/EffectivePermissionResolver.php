@@ -8,8 +8,11 @@ use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\Config;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Log;
 use Override;
+use Throwable;
 
 /**
  * Main entry point for obtaining a PermissionSet for a user.
@@ -55,7 +58,20 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
         $set = PermissionSet::empty();
 
         foreach ($this->sources as $source) {
-            $set = $set->merge($source->permissionsFor($user, $panelId));
+            try {
+                $set = $set->merge($source->permissionsFor($user, $panelId));
+            } catch (Throwable $e) {
+                if (Config::failOnSourceException()) {
+                    throw $e;
+                }
+
+                Log::warning('AzGuard: grant source failed, skipping', [
+                    'source' => $source::class,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
 
             if ($set->isWildcard()) {
                 return $set;

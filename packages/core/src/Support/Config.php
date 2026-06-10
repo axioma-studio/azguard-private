@@ -188,4 +188,9 @@ final class Config
 
         return is_array($value) ? array_values($value) : null;
     }
+
+    public static function failOnSourceException(): bool
+    {
+        return (bool) config('az-guard.fail_on_source_exception', false);
+    }
 }
