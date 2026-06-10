@@ -77,17 +77,18 @@ final class AzGuardDiagnostics
                 ];
             }
 
+            // Discover permission enums once per panel — shared by three checks below.
+            $enumClasses = $this->discoverPermissionEnums(basePath: $basePath, baseNamespace: $baseNamespace);
+
             $this->checkDuplicateAbilities(abilities: $registeredAbilities, panelId: $panelId);
             $this->checkEnumsAgainstPolicies(
-                basePath: $basePath,
-                baseNamespace: $baseNamespace,
+                enumClasses: $enumClasses,
                 panel: $panel,
                 registeredAbilities: $registeredAbilities,
             );
             $this->checkGateAbilityEnumReferences(
                 policyClasses: $policyClasses,
-                basePath: $basePath,
-                baseNamespace: $baseNamespace,
+                enumClasses: $enumClasses,
             );
             $this->checkRoles(
                 basePath: $basePath,
@@ -96,8 +97,7 @@ final class AzGuardDiagnostics
                 knownAbilities: array_merge(
                     array_keys($registeredAbilities),
                     $this->collectRoleOnlyAbilities(
-                        basePath: $basePath,
-                        baseNamespace: $baseNamespace,
+                        enumClasses: $enumClasses,
                         panel: $panel,
                     ),
                 ),
@@ -152,14 +152,16 @@ final class AzGuardDiagnostics
         }
     }
 
-    /** @param array<string, string> $registeredAbilities */
+    /**
+     * @param  list<class-string>  $enumClasses  Pre-computed by diagnose().
+     * @param  array<string, string>  $registeredAbilities
+     */
     private function checkEnumsAgainstPolicies(
-        string $basePath,
-        string $baseNamespace,
+        array $enumClasses,
         Panel $panel,
         array $registeredAbilities,
     ): void {
-        foreach ($this->discoverPermissionEnums(basePath: $basePath, baseNamespace: $baseNamespace) as $enumClass) {
+        foreach ($enumClasses as $enumClass) {
             foreach ((new ReflectionEnum($enumClass))->getCases() as $case) {
                 if ($case->getAttributes(RoleOnly::class) !== []) {
                     continue;
@@ -176,13 +178,16 @@ final class AzGuardDiagnostics
         }
     }
 
-    /** @param list<class-string> $policyClasses */
+    /**
+     * @param  list<class-string>  $policyClasses
+     * @param  list<class-string>  $enumClasses  Pre-computed by diagnose().
+     */
     private function checkGateAbilityEnumReferences(
         array $policyClasses,
-        string $basePath,
-        string $baseNamespace,
+        array $enumClasses,
     ): void {
-        $enumClasses = $this->discoverPermissionEnums(basePath: $basePath, baseNamespace: $baseNamespace);
+        // Build a fast lookup set from the pre-computed enum list.
+        $enumIndex = array_fill_keys($enumClasses, true);
 
         foreach ($policyClasses as $policyClass) {
             $reflection = new ReflectionClass($policyClass);
@@ -199,7 +204,7 @@ final class AzGuardDiagnostics
 
                     $enumClass = $permission::class;
 
-                    if (! in_array($enumClass, $enumClasses, strict: true)) {
+                    if (! isset($enumIndex[$enumClass])) {
                         $this->errors[] = "{$policyClass}::{$method->getName()}: permission enum {$enumClass} was not found in the panel's Permissions/ directory.";
                     }
                 }
@@ -219,6 +224,9 @@ final class AzGuardDiagnostics
         if (! is_dir($rolesPath)) {
             return;
         }
+
+        // Use a fast lookup set for known abilities.
+        $abilitiesIndex = array_fill_keys($knownAbilities, true);
 
         foreach (File::files($rolesPath) as $file) {
             if (! str_ends_with(haystack: $file->getFilename(), needle: 'Role.php')) {
@@ -241,7 +249,7 @@ final class AzGuardDiagnostics
                     continue;
                 }
 
-                if (! in_array($permission, $knownAbilities, strict: true)) {
+                if (! isset($abilitiesIndex[$permission])) {
                     $this->errors[] = "Role {$class}: references unknown permission [{$permission}].";
                 }
 
@@ -273,12 +281,15 @@ final class AzGuardDiagnostics
         }
     }
 
-    /** @return list<string> */
-    private function collectRoleOnlyAbilities(string $basePath, string $baseNamespace, Panel $panel): array
+    /**
+     * @param  list<class-string>  $enumClasses  Pre-computed by diagnose().
+     * @return list<string>
+     */
+    private function collectRoleOnlyAbilities(array $enumClasses, Panel $panel): array
     {
         $abilities = [];
 
-        foreach ($this->discoverPermissionEnums(basePath: $basePath, baseNamespace: $baseNamespace) as $enumClass) {
+        foreach ($enumClasses as $enumClass) {
             foreach ((new ReflectionEnum($enumClass))->getCases() as $case) {
                 if ($case->getAttributes(RoleOnly::class) === []) {
                     continue;

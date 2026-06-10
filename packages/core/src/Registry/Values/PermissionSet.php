@@ -9,15 +9,30 @@ use Closure;
 /**
  * Immutable set of resolved permission keys for one user+panel.
  * Supports wildcard '*' (SuperAdmin) and patterns like 'app.documents.*'.
+ *
+ * Internals:
+ *   - $index: array<string, true>  — O(1) key lookup via isset()
+ *   - $wildcard: bool              — pre-computed SuperAdmin flag
+ *   - $patterns: list<string>      — wildcard keys only (e.g. 'app.*')
  */
 final readonly class PermissionSet
 {
-    /** @var list<string> */
-    private array $keys;
+    /** @var array<string, true> */
+    private array $index;
+
+    private bool $wildcard;
+
+    /** @var list<string> Wildcard patterns only (keys containing '*'). */
+    private array $patterns;
 
     private function __construct(array $keys)
     {
-        $this->keys = array_values(array_unique($keys));
+        $unique = array_unique($keys);
+        $this->wildcard = in_array('*', $unique, strict: true);
+        $this->index = array_fill_keys($unique, true);
+        $this->patterns = $this->wildcard
+            ? []
+            : array_values(array_filter($unique, static fn (string $k): bool => str_contains($k, '*')));
     }
 
     public static function empty(): self
@@ -50,11 +65,7 @@ final readonly class PermissionSet
             return self::empty();
         }
 
-        if (in_array('*', $keys, strict: true)) {
-            return self::wildcard();
-        }
-
-        return self::fromKeys($keys);
+        return new self($keys);
     }
 
     /**
@@ -62,39 +73,32 @@ final readonly class PermissionSet
      */
     public function merge(self $other): self
     {
-        if ($this->isWildcard() || $other->isWildcard()) {
+        if ($this->wildcard || $other->wildcard) {
             return self::wildcard();
         }
 
-        return new self([...$this->keys, ...$other->keys]);
+        return new self([...array_keys($this->index), ...array_keys($other->index)]);
     }
 
     /**
-     * Exact key match.
+     * Exact key match — O(1) via hashmap.
      */
     public function has(string $key): bool
     {
-        if ($this->isWildcard()) {
-            return true;
-        }
-
-        return in_array($key, $this->keys, strict: true);
+        return $this->wildcard || isset($this->index[$key]);
     }
 
     /**
-     * Wildcard match: 'app.documents.*' covers 'app.documents.view'.
+     * Wildcard pattern match: 'app.documents.*' covers 'app.documents.view'.
+     * Global '*' is handled by $this->wildcard before this is called.
      */
     public function matchesWildcard(string $key): bool
     {
-        if ($this->isWildcard()) {
+        if ($this->wildcard) {
             return true;
         }
 
-        foreach ($this->keys as $pattern) {
-            if (! str_contains($pattern, '*')) {
-                continue;
-            }
-
+        foreach ($this->patterns as $pattern) {
             $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')).'$/';
 
             if (preg_match($regex, $key)) {
@@ -110,21 +114,18 @@ final readonly class PermissionSet
      */
     public function grants(string $key): bool
     {
-        if ($this->has($key)) {
-            return true;
-        }
-
-        return $this->matchesWildcard($key);
+        // has() already handles wildcard, so no double-check needed.
+        return $this->has($key) || $this->matchesWildcard($key);
     }
 
     public function isWildcard(): bool
     {
-        return in_array('*', $this->keys, strict: true);
+        return $this->wildcard;
     }
 
     public function isEmpty(): bool
     {
-        return $this->keys === [];
+        return $this->index === [];
     }
 
     /**
@@ -132,23 +133,26 @@ final readonly class PermissionSet
      */
     public function filter(Closure $callback): self
     {
-        return new self(array_filter($this->keys, $callback));
+        return new self(array_keys(array_filter($this->index, $callback, ARRAY_FILTER_USE_KEY)));
     }
 
     /** @return list<string> */
     public function keys(): array
     {
-        return $this->keys;
+        return array_keys($this->index);
     }
 
-    /** @return list<string> */
+    /**
+     * @deprecated Use {@see keys()} instead. This alias will be removed in v2.0.
+     * @return list<string>
+     */
     public function toArray(): array
     {
-        return $this->keys;
+        return $this->keys();
     }
 
     public function count(): int
     {
-        return count($this->keys);
+        return count($this->index);
     }
 }
