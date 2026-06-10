@@ -15,7 +15,7 @@ use Closure;
  * not the resolver itself. PermissionResolverCache is kept as a BC alias.
  *
  * Supports two layers:
- * 1. In-memory (always): $requestCache array — lives for one HTTP request.
+ * 1. In-memory (always): $requestCache 2D array — lives for one HTTP request.
  * 2. Cross-request (optional): Laravel cache store (Redis / file / etc.).
  *
  * Octane-safe: no blocking or retry loops.
@@ -24,38 +24,36 @@ use Closure;
  */
 final class PermissionCache
 {
-    /** @var array<string, PermissionSet> */
+    /** @var array<string, array<string, PermissionSet>> userId => panelId => PermissionSet */
     private array $requestCache = [];
 
-    public function rememberForRequest(string $cacheKey, Closure $callback): PermissionSet
+    public function rememberForRequest(int|string $userId, string $panelId, Closure $callback): PermissionSet
     {
-        if (isset($this->requestCache[$cacheKey])) {
-            return $this->requestCache[$cacheKey];
+        $uid = (string) $userId;
+
+        if (isset($this->requestCache[$uid][$panelId])) {
+            return $this->requestCache[$uid][$panelId];
         }
 
         $store = Config::cacheStore();
 
         $set = $store !== 'array'
-            ? $this->loadFromStore($cacheKey, $store, $callback)
+            ? $this->loadFromStore(self::keyFor($userId, $panelId), $store, $callback)
             : $callback();
 
-        return $this->requestCache[$cacheKey] = $set;
+        return $this->requestCache[$uid][$panelId] = $set;
     }
 
     public function forgetForUser(int|string $userId, string $panelId): void
     {
-        $prefix = self::keyFor($userId, $panelId);
+        $uid = (string) $userId;
 
-        $this->requestCache = array_filter(
-            $this->requestCache,
-            static fn (string $k): bool => ! str_starts_with($k, $prefix),
-            ARRAY_FILTER_USE_KEY,
-        );
+        unset($this->requestCache[$uid][$panelId]);
 
         $store = Config::cacheStore();
 
         if ($store !== 'array') {
-            cache()->store($store)->forget($prefix);
+            cache()->store($store)->forget(self::keyFor($userId, $panelId));
         }
     }
 

@@ -43,10 +43,9 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
     #[Override]
     public function forUser(Authenticatable $user, string $panelId): PermissionSet
     {
-        $cacheKey = PermissionCache::keyFor($user->getAuthIdentifier(), $panelId);
-
         return $this->cache->rememberForRequest(
-            $cacheKey,
+            $user->getAuthIdentifier(),
+            $panelId,
             fn (): PermissionSet => $this->resolve($user, $panelId),
         );
     }
