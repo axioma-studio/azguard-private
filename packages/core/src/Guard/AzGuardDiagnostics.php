@@ -16,14 +16,14 @@ use ReflectionMethod;
 use UnitEnum;
 
 /**
- * Diagnostic tool that inspects all registered panels and reports:
- * - duplicate Gate abilities
- * - enum permission cases with no matching #[GateAbility] policy method
- * - #[GateAbility] attributes pointing to enums outside the panel Permissions/ dir
- * - roles referencing unknown or unprefixed permissions
- * - policy classes with no #[GateAbility] methods (orphans)
+ * Inspects AzGuard panel configuration for mismatches, duplicates and orphans.
  *
- * Previously named GuardDoctor. The old class is kept as a @deprecated alias.
+ * Canonical diagnostics class. Two BC aliases exist for historical names:
+ *
+ * @see GuardDoctor     — alias, kept for code that used the pre-rename class name
+ * @see DiagnosticsService — alias, kept for code that used the interim duplicate
+ *
+ * Both aliases will be removed in the next major version.
  */
 final class AzGuardDiagnostics
 {
@@ -34,15 +34,16 @@ final class AzGuardDiagnostics
     private array $warnings = [];
 
     /**
-     * Run all checks across all (or a single) registered panel(s).
+     * Run all diagnostic checks for the configured panels.
      *
+     * @param  string|null  $panelFilter  When provided, only the matching panel is checked.
      * @return array{errors: list<string>, warnings: list<string>, abilities: list<array{panel: string, ability: string, handler: string}>}
      */
     public function diagnose(?string $panelFilter = null): array
     {
-        $this->errors   = [];
+        $this->errors = [];
         $this->warnings = [];
-        $abilityRows    = [];
+        $abilityRows = [];
 
         foreach (AzGuard::getPanels() as $panelId => $panel) {
             if ($panelFilter !== null && $panelFilter !== $panelId) {
@@ -53,7 +54,7 @@ final class AzGuardDiagnostics
             $baseNamespace = $panel->getNamespace();
 
             if ($basePath === '' || $baseNamespace === '') {
-                $this->warnings[] = "Panel [{$panelId}]: basePath or namespace is not configured on the provider.";
+                $this->warnings[] = "Panel [{$panelId}]: basePath/namespace not set in provider.";
 
                 continue;
             }
@@ -64,13 +65,8 @@ final class AzGuardDiagnostics
                 baseNamespace: $baseNamespace,
             );
 
-            // Discover permission enums once per panel — reused in three checks below.
-            // Previously discoverPermissionEnums() was called twice (in checkEnumsAgainstPolicies
-            // and checkGateAbilityEnumReferences), causing a double filesystem scan per panel.
-            $enumClasses = $this->discoverPermissionEnums(
-                basePath: $basePath,
-                baseNamespace: $baseNamespace,
-            );
+            // Discover permission enums once per panel — reused by three checks below.
+            $enumClasses = $this->discoverPermissionEnums($basePath, $baseNamespace);
 
             $registeredAbilities = $this->collectRegisteredAbilities(
                 policyClasses: $policyClasses,
@@ -78,23 +74,22 @@ final class AzGuardDiagnostics
             );
 
             foreach ($registeredAbilities as $ability => $handler) {
-                $abilityRows[] = [
-                    'panel'   => $panelId,
-                    'ability' => $ability,
-                    'handler' => $handler,
-                ];
+                $abilityRows[] = ['panel' => $panelId, 'ability' => $ability, 'handler' => $handler];
             }
 
             $this->checkDuplicateAbilities(abilities: $registeredAbilities, panelId: $panelId);
+
             $this->checkEnumsAgainstPolicies(
-                enumClasses: $enumClasses,
                 panel: $panel,
                 registeredAbilities: $registeredAbilities,
+                enumClasses: $enumClasses,
             );
+
             $this->checkGateAbilityEnumReferences(
                 policyClasses: $policyClasses,
                 enumClasses: $enumClasses,
             );
+
             $this->checkRoles(
                 basePath: $basePath,
                 baseNamespace: $baseNamespace,
@@ -102,11 +97,12 @@ final class AzGuardDiagnostics
                 knownAbilities: array_merge(
                     array_keys($registeredAbilities),
                     $this->collectRoleOnlyAbilities(
-                        enumClasses: $enumClasses,
                         panel: $panel,
+                        enumClasses: $enumClasses,
                     ),
                 ),
             );
+
             $this->checkOrphanPolicies(policyClasses: $policyClasses, panelId: $panelId);
         }
 
@@ -117,10 +113,11 @@ final class AzGuardDiagnostics
         ];
     }
 
-    /**
-     * @param  list<class-string>  $policyClasses
-     * @return array<string, string>
-     */
+    // -------------------------------------------------------------------------
+    //  Private helpers
+    // -------------------------------------------------------------------------
+
+    /** @param list<class-string> $policyClasses @return array<string, string> */
     private function collectRegisteredAbilities(array $policyClasses, Panel $panel): array
     {
         $abilities = [];
@@ -130,9 +127,9 @@ final class AzGuardDiagnostics
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 foreach ($method->getAttributes(GateAbility::class) as $attribute) {
-                    /** @var GateAbility $gateAbility */
-                    $gateAbility = $attribute->newInstance();
-                    $ability     = $panel->resolvePermission(permission: $gateAbility->permission);
+                    /** @var GateAbility $ga */
+                    $ga      = $attribute->newInstance();
+                    $ability = $panel->resolvePermission(permission: $ga->permission);
                     $abilities[$ability] = "{$policyClass}::{$method->getName()}";
                 }
             }
@@ -158,13 +155,13 @@ final class AzGuardDiagnostics
     }
 
     /**
-     * @param  list<class-string>   $enumClasses  Pre-discovered enum classes for this panel.
-     * @param  array<string, string> $registeredAbilities
+     * @param array<string, string> $registeredAbilities
+     * @param list<class-string>    $enumClasses
      */
     private function checkEnumsAgainstPolicies(
-        array $enumClasses,
         Panel $panel,
         array $registeredAbilities,
+        array $enumClasses,
     ): void {
         foreach ($enumClasses as $enumClass) {
             foreach ((new ReflectionEnum($enumClass))->getCases() as $case) {
@@ -177,21 +174,21 @@ final class AzGuardDiagnostics
                 $resolved = $panel->resolvePermission(permission: $enumCase);
 
                 if (! isset($registeredAbilities[$resolved])) {
-                    $this->errors[] = "Enum {$enumClass}::{$case->getName()} → [{$resolved}] has no policy method annotated with #[GateAbility].";
+                    $this->errors[] = "Enum {$enumClass}::{$case->getName()} → [{$resolved}] has no #[GateAbility] policy method.";
                 }
             }
         }
     }
 
     /**
-     * @param  list<class-string>  $policyClasses
-     * @param  list<class-string>  $enumClasses   Pre-discovered enum classes for this panel.
+     * @param list<class-string> $policyClasses
+     * @param list<class-string> $enumClasses    Pre-discovered for this panel — avoids double FS scan.
      */
     private function checkGateAbilityEnumReferences(
         array $policyClasses,
         array $enumClasses,
     ): void {
-        // Build a hash-set for O(1) lookup — avoids in_array() on every attribute iteration.
+        // Build a hashset for O(1) membership checks instead of repeated in_array().
         $enumIndex = array_fill_keys($enumClasses, true);
 
         foreach ($policyClasses as $policyClass) {
@@ -199,18 +196,17 @@ final class AzGuardDiagnostics
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 foreach ($method->getAttributes(GateAbility::class) as $attribute) {
-                    /** @var GateAbility $gateAbility */
-                    $gateAbility = $attribute->newInstance();
-                    $permission  = $gateAbility->permission;
+                    /** @var GateAbility $ga */
+                    $ga = $attribute->newInstance();
 
-                    if (! $permission instanceof UnitEnum) {
+                    if (! $ga->permission instanceof UnitEnum) {
                         continue;
                     }
 
-                    $enumClass = $permission::class;
+                    $enumClass = $ga->permission::class;
 
                     if (! isset($enumIndex[$enumClass])) {
-                        $this->errors[] = "{$policyClass}::{$method->getName()}: permission enum {$enumClass} was not found in the panel's Permissions/ directory.";
+                        $this->errors[] = "{$policyClass}::{$method->getName()}: permission enum {$enumClass} not found in panel Permissions/.";
                     }
                 }
             }
@@ -230,15 +226,20 @@ final class AzGuardDiagnostics
             return;
         }
 
+        // Build a hashset for O(1) membership check in the inner loop.
+        $knownIndex = array_fill_keys($knownAbilities, true);
+
         foreach (File::files($rolesPath) as $file) {
-            if (! str_ends_with(haystack: $file->getFilename(), needle: 'Role.php')) {
+            if (! str_ends_with($file->getFilename(), 'Role.php')) {
                 continue;
             }
 
             $class = $baseNamespace.'\\Roles\\'.str_replace('.php', '', $file->getFilename());
+
             if (! class_exists($class)) {
                 continue;
             }
+
             if (! is_subclass_of($class, RoleInterface::class)) {
                 continue;
             }
@@ -251,12 +252,12 @@ final class AzGuardDiagnostics
                     continue;
                 }
 
-                if (! in_array($permission, $knownAbilities, strict: true)) {
-                    $this->errors[] = "Role {$class}: references unknown permission [{$permission}].";
+                if (! isset($knownIndex[$permission])) {
+                    $this->errors[] = "Role {$class}: unknown permission [{$permission}].";
                 }
 
-                if (! str_starts_with(haystack: (string) $permission, needle: $panel->getId().'.')) {
-                    $this->warnings[] = "Role {$class}: permission [{$permission}] is missing the panel prefix [{$panel->getId()}.].";
+                if (! str_starts_with((string) $permission, $panel->getId().'.')) {
+                    $this->warnings[] = "Role {$class}: [{$permission}] missing panel prefix [{$panel->getId()}.].";
                 }
             }
         }
@@ -272,27 +273,24 @@ final class AzGuardDiagnostics
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 if ($method->getAttributes(GateAbility::class) !== []) {
                     $hasAbility = true;
-
                     break;
                 }
             }
 
             if (! $hasAbility) {
-                $this->warnings[] = "Panel [{$panelId}]: policy {$policyClass} has no public methods annotated with #[GateAbility].";
+                $this->warnings[] = "Panel [{$panelId}]: policy {$policyClass} has no #[GateAbility] methods.";
             }
         }
     }
 
     /**
-     * Collect abilities declared as #[RoleOnly] enums.
-     *
-     * Accepts pre-discovered $enumClasses to avoid redundant filesystem scans.
-     *
-     * @param  list<class-string>  $enumClasses
+     * @param list<class-string> $enumClasses
      * @return list<string>
      */
-    private function collectRoleOnlyAbilities(array $enumClasses, Panel $panel): array
-    {
+    private function collectRoleOnlyAbilities(
+        Panel $panel,
+        array $enumClasses,
+    ): array {
         $abilities = [];
 
         foreach ($enumClasses as $enumClass) {
@@ -302,7 +300,7 @@ final class AzGuardDiagnostics
                 }
 
                 /** @var UnitEnum $enumCase */
-                $enumCase   = $case->getValue();
+                $enumCase  = $case->getValue();
                 $abilities[] = $panel->resolvePermission(permission: $enumCase);
             }
         }
@@ -311,10 +309,7 @@ final class AzGuardDiagnostics
     }
 
     /**
-     * Discover all *Permission.php enum classes under $basePath.
-     *
-     * Called once per panel in {@see diagnose()} and the result is passed
-     * to all checks that need it — avoids repeated filesystem traversal.
+     * Walk the panel's base path and collect all *Permission.php enum classes.
      *
      * @return list<class-string>
      */
@@ -326,13 +321,12 @@ final class AzGuardDiagnostics
 
         $classes = [];
 
-        foreach (File::allFiles(directory: $basePath) as $file) {
-            if (! str_ends_with(haystack: $file->getFilename(), needle: 'Permission.php')) {
+        foreach (File::allFiles($basePath) as $file) {
+            if (! str_ends_with($file->getFilename(), 'Permission.php')) {
                 continue;
             }
 
-            $relativePath = $file->getRelativePathname();
-            $class        = $baseNamespace.'\\'.str_replace(['/', '.php'], ['\\', ''], $relativePath);
+            $class = $baseNamespace.'\\'.str_replace(['/', '.php'], ['\\', ''], $file->getRelativePathname());
 
             if (class_exists($class) && (new ReflectionClass($class))->isEnum()) {
                 $classes[] = $class;
