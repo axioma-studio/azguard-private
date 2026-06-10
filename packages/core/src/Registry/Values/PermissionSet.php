@@ -10,29 +10,40 @@ use Closure;
  * Immutable set of resolved permission keys for one user+panel.
  * Supports wildcard '*' (SuperAdmin) and patterns like 'app.documents.*'.
  *
- * Internals:
- *   - $index: array<string, true>  — O(1) key lookup via isset()
- *   - $wildcard: bool              — pre-computed SuperAdmin flag
- *   - $patterns: list<string>      — wildcard keys only (e.g. 'app.*')
+ * ## Internal representation
+ *
+ * Keys are stored as an `array<string, true>` hash-map (`$index`) rather than
+ * a `list<string>`, so that `has()` and `grants()` resolve in O(1) for exact
+ * matches via `isset()` instead of O(n) via `in_array()`.
+ *
+ * `isWildcard()` is precomputed as a boolean flag on construction — no array
+ * scan on every call.
+ *
+ * `keys()` / `toArray()` reconstruct the plain list on demand via
+ * `array_keys($this->index)` — only pay the cost when serialising.
  */
-final readonly class PermissionSet
+final class PermissionSet
 {
-    /** @var array<string, true> */
+    /**
+     * Hash-map for O(1) `isset()` lookups.
+     *
+     * @var array<string, true>
+     */
     private array $index;
 
+    /**
+     * Precomputed flag — avoids scanning $index on every isWildcard() call.
+     */
     private bool $wildcard;
-
-    /** @var list<string> Wildcard patterns only (keys containing '*'). */
-    private array $patterns;
 
     private function __construct(array $keys)
     {
-        $unique = array_unique($keys);
-        $this->wildcard = in_array('*', $unique, strict: true);
-        $this->index = array_fill_keys($unique, true);
-        $this->patterns = $this->wildcard
-            ? []
-            : array_values(array_filter($unique, static fn (string $k): bool => str_contains($k, '*')));
+        $unique          = array_unique($keys);
+        $this->wildcard  = in_array('*', $unique, strict: true);
+        // When the set is a wildcard we don't need to store anything else.
+        $this->index     = $this->wildcard
+            ? ['*' => true]
+            : array_fill_keys($unique, true);
     }
 
     public static function empty(): self
@@ -65,6 +76,7 @@ final readonly class PermissionSet
             return self::empty();
         }
 
+        // Delegate: constructor will set $this->wildcard = true when '*' present.
         return new self($keys);
     }
 
@@ -77,11 +89,18 @@ final readonly class PermissionSet
             return self::wildcard();
         }
 
-        return new self([...array_keys($this->index), ...array_keys($other->index)]);
+        // Merge the two hash-maps directly — avoids array_unique on the union.
+        $merged = $this->index + $other->index;
+
+        $new          = new self([]);
+        $new->index   = $merged;
+        $new->wildcard = false;
+
+        return $new;
     }
 
     /**
-     * Exact key match — O(1) via hashmap.
+     * Exact key match — O(1).
      */
     public function has(string $key): bool
     {
@@ -90,7 +109,8 @@ final readonly class PermissionSet
 
     /**
      * Wildcard pattern match: 'app.documents.*' covers 'app.documents.view'.
-     * Global '*' is handled by $this->wildcard before this is called.
+     *
+     * Iterates only over keys that contain '*' — exact keys are skipped immediately.
      */
     public function matchesWildcard(string $key): bool
     {
@@ -98,7 +118,11 @@ final readonly class PermissionSet
             return true;
         }
 
-        foreach ($this->patterns as $pattern) {
+        foreach (array_keys($this->index) as $pattern) {
+            if (! str_contains($pattern, '*')) {
+                continue;
+            }
+
             $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')).'$/';
 
             if (preg_match($regex, $key)) {
@@ -110,11 +134,10 @@ final readonly class PermissionSet
     }
 
     /**
-     * Full check: exact match OR wildcard pattern.
+     * Full check: exact match (O(1)) OR wildcard pattern.
      */
     public function grants(string $key): bool
     {
-        // has() already handles wildcard, so no double-check needed.
         return $this->has($key) || $this->matchesWildcard($key);
     }
 
@@ -133,17 +156,27 @@ final readonly class PermissionSet
      */
     public function filter(Closure $callback): self
     {
-        return new self(array_keys(array_filter($this->index, $callback, ARRAY_FILTER_USE_KEY)));
+        $new          = new self([]);
+        $new->index   = array_filter($this->index, fn (bool $_, string $k): bool => $callback($k), ARRAY_FILTER_USE_BOTH);
+        $new->wildcard = isset($new->index['*']);
+
+        return $new;
     }
 
-    /** @return list<string> */
+    /**
+     * Return keys as a plain list.
+     *
+     * @return list<string>
+     */
     public function keys(): array
     {
         return array_keys($this->index);
     }
 
     /**
-     * @deprecated Use {@see keys()} instead. This alias will be removed in v2.0.
+     * Alias for {@see keys()} — kept for backwards compatibility.
+     *
+     * @deprecated Use keys() instead.
      * @return list<string>
      */
     public function toArray(): array

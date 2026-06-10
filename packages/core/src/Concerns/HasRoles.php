@@ -73,7 +73,14 @@ trait HasRoles
         return $this;
     }
 
-    /** @param array<string|Role> $roles */
+    /**
+     * Sync roles and fire attach/detach events.
+     *
+     * Loads all affected Role models in two batch queries (one for detached IDs,
+     * one for attached IDs) instead of one query per ID, eliminating N+1.
+     *
+     * @param array<string|Role> $roles
+     */
     public function syncRoles(array $roles): static
     {
         $roleIds = [];
@@ -88,20 +95,31 @@ trait HasRoles
 
         $changes = $this->roles()->sync($roleIds);
 
-        // Batch-load all affected roles in 1 query instead of N separate Role::find() calls.
-        $allAffectedIds = array_merge($changes['detached'], $changes['attached']);
+        // Batch-load all affected models — 2 queries total instead of N.
+        /** @var class-string<Role> $roleClass */
+        $roleClass = Config::roleModel();
 
-        if ($allAffectedIds !== []) {
-            $roleModels = Role::whereIn('id', $allAffectedIds)->get()->keyBy('id');
+        if ($changes['detached'] !== []) {
+            $detachedRoles = $roleClass::query()
+                ->whereIn($roleClass::make()->getKeyName(), $changes['detached'])
+                ->get()
+                ->keyBy(fn (Role $r): mixed => $r->getKey());
 
             foreach ($changes['detached'] as $id) {
-                if ($role = $roleModels->get($id)) {
+                if ($role = $detachedRoles->get($id)) {
                     event(new RoleDetached($this, $role));
                 }
             }
+        }
+
+        if ($changes['attached'] !== []) {
+            $attachedRoles = $roleClass::query()
+                ->whereIn($roleClass::make()->getKeyName(), $changes['attached'])
+                ->get()
+                ->keyBy(fn (Role $r): mixed => $r->getKey());
 
             foreach ($changes['attached'] as $id) {
-                if ($role = $roleModels->get($id)) {
+                if ($role = $attachedRoles->get($id)) {
                     event(new RoleAttached($this, $role));
                 }
             }

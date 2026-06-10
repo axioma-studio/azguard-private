@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Contracts\ContextContract;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Throwable;
@@ -28,20 +29,21 @@ final class AzGuardContextProxy
     private const string CONTEXT_CLASS = 'AzGuard\\Context\\AuthorizationContext';
 
     /**
-     * One-off check with an arbitrary $context object.
+     * One-off check with a {@see ContextContract} instance.
      *
-     * $context must have public fields contextType and contextId.
-     * panelId is taken from $context->panelId if present, otherwise from $panelId.
+     * $context must implement {@see ContextContract} — getContextType() and
+     * getContextId() provide the scope coordinates; panelId falls back to $panelId.
+     *
+     * If $context also exposes a `getPanelId()` method (optional extension
+     * of the interface), that value takes precedence over $panelId.
      *
      * Does NOT mutate the global AuthorizationContextManager.
-     *
-     * @param  object  $context  duck-typed: {contextType: string, contextId: int|string, panelId?: string}
      */
     public static function checkWithContext(
         Authenticatable $user,
         string $permission,
         string $panelId,
-        object $context,
+        ContextContract $context,
     ): bool {
         if (! class_exists(self::CONTEXT_MANAGER)) {
             // context package not installed — fall back to global permission check
@@ -51,14 +53,15 @@ final class AzGuardContextProxy
         }
 
         try {
-            $effectivePanelId = property_exists($context, 'panelId')
-                ? $context->panelId
+            // Optional: implementations may also carry a panelId override.
+            $effectivePanelId = method_exists($context, 'getPanelId')
+                ? ($context->getPanelId() ?? $panelId)
                 : $panelId;
 
             $contextObj = app(self::CONTEXT_CLASS, [
-                'panelId' => $effectivePanelId,
-                'contextType' => $context->contextType,
-                'contextId' => $context->contextId,
+                'panelId'     => $effectivePanelId,
+                'contextType' => $context->getContextType(),
+                'contextId'   => $context->getContextId(),
             ]);
 
             return self::resolveWithIsolatedContext($user, $permission, $effectivePanelId, $contextObj);
@@ -84,9 +87,9 @@ final class AzGuardContextProxy
 
         try {
             $contextObj = app(self::CONTEXT_CLASS, [
-                'panelId' => $panelId,
+                'panelId'     => $panelId,
                 'contextType' => $contextType,
-                'contextId' => $contextId,
+                'contextId'   => $contextId,
             ]);
 
             return self::resolveWithIsolatedContext($user, $permission, $panelId, $contextObj);
@@ -110,7 +113,7 @@ final class AzGuardContextProxy
         object $contextObj,
     ): bool {
         /** @var object $manager */
-        $manager = app(self::CONTEXT_MANAGER);
+        $manager  = app(self::CONTEXT_MANAGER);
         $resolver = app(EffectivePermissionResolver::class);
 
         // Save the current context so we can restore it in the finally block.
