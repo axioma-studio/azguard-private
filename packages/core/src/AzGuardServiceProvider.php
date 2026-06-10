@@ -81,6 +81,21 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->app->singleton(PermissionCache::class);
 
+        $this->app->singleton(EffectivePermissionResolver::class, fn (): EffectivePermissionResolver => new EffectivePermissionResolver(
+            catalog: $this->app->make(PermissionCatalog::class),
+            sources: $this->app->tagged('azguard.grant_sources'),
+            cache: $this->app->make(PermissionCache::class),
+        ));
+
+        $this->app->bind(PermissionResolverInterface::class, EffectivePermissionResolver::class);
+
+        $this->registerPanelProviders();
+    }
+
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
+
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
             /** @var AzGuardManager $manager */
             $manager = $this->app->make(AzGuardManager::class);
@@ -96,21 +111,6 @@ final class AzGuardServiceProvider extends ServiceProvider
                 panelIds: $panelIds,
             );
         });
-
-        $this->app->singleton(EffectivePermissionResolver::class, fn (): EffectivePermissionResolver => new EffectivePermissionResolver(
-            catalog: $this->app->make(PermissionCatalog::class),
-            sources: $this->app->tagged('azguard.grant_sources'),
-            cache: $this->app->make(PermissionCache::class),
-        ));
-
-        $this->app->bind(PermissionResolverInterface::class, EffectivePermissionResolver::class);
-
-        $this->registerPanelProviders();
-    }
-
-    public function boot(): void
-    {
-        $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
 
         // Use instanceof instead of method_exists for a precise type check.
         Gate::before(function ($user, string $ability): ?bool {
