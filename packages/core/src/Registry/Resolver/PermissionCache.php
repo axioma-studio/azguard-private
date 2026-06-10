@@ -77,6 +77,14 @@ final class PermissionCache
             fn () => $callback()->toArray(),
         );
 
-        return is_array($raw) ? PermissionSet::fromKeys($raw) : $raw;
+        if (is_array($raw)) {
+            return PermissionSet::fromKeys($raw);
+        }
+
+        // Stale or incompatible cache entry — recompute and overwrite.
+        $set = $callback();
+        cache()->store($store)->put($cacheKey, $set->toArray(), Config::cacheTtl());
+
+        return $set;
     }
 }
