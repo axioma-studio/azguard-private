@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AzGuard\Context;
 
+use AzGuard\Contracts\PermissionContext;
+
 /**
  * Value object: описывает контекст авторизации.
  *
@@ -17,13 +19,23 @@ namespace AzGuard\Context;
  *
  * Иммутабельный — изменения создают новый экземпляр (withPanel / withContext).
  */
-final readonly class AuthorizationContext
+final readonly class AuthorizationContext implements PermissionContext
 {
     public function __construct(
         public readonly string $panelId,
         public readonly string $contextType,
         public readonly int|string $contextId,
     ) {}
+
+    public function contextType(): string
+    {
+        return $this->contextType;
+    }
+
+    public function contextId(): int|string
+    {
+        return $this->contextId;
+    }
 
     /**
      * Вернуть новый контекст с другим panelId.

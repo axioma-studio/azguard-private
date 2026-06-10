@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\AzGuardManager;
+use AzGuard\Contracts\PermissionContext;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\AzGuardContextBridge;
@@ -18,10 +19,10 @@ trait HasPermissions
      *
      * Optional $context allows a one-off contextual check without changing
      * global state. Use hasPermissionIn() as a more readable alternative.
-     *
-     * @param  object{contextType: string, contextId: int|string}|null  $context
+     * Pass a PermissionContext instance for full type safety, or a plain
+     * object with public contextType/contextId fields for duck-typed usage.
      */
-    public function hasPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
+    public function hasPermission(string $permission, string $panelId = 'app', ?PermissionContext $context = null): bool
     {
         if ($context !== null) {
             return AzGuardContextBridge::checkWithContext($this, $permission, $panelId, $context);
@@ -53,10 +54,8 @@ trait HasPermissions
 
     /**
      * Silent version: never throws. Use in Blade / UI.
-     *
-     * @param  object{contextType: string, contextId: int|string}|null  $context
      */
-    public function checkPermission(string $permission, string $panelId = 'app', ?object $context = null): bool
+    public function checkPermission(string $permission, string $panelId = 'app', ?PermissionContext $context = null): bool
     {
         try {
             return $this->hasPermission($permission, $panelId, $context);

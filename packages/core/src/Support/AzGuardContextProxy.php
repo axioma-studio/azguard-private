@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Contracts\PermissionContext;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Throwable;
@@ -28,20 +29,15 @@ final class AzGuardContextProxy
     private const string CONTEXT_CLASS = 'AzGuard\\Context\\AuthorizationContext';
 
     /**
-     * One-off check with an arbitrary $context object.
-     *
-     * $context must have public fields contextType and contextId.
-     * panelId is taken from $context->panelId if present, otherwise from $panelId.
+     * One-off check with a PermissionContext.
      *
      * Does NOT mutate the global AuthorizationContextManager.
-     *
-     * @param  object  $context  duck-typed: {contextType: string, contextId: int|string, panelId?: string}
      */
     public static function checkWithContext(
         Authenticatable $user,
         string $permission,
         string $panelId,
-        object $context,
+        PermissionContext $context,
     ): bool {
         if (! class_exists(self::CONTEXT_MANAGER)) {
             // context package not installed — fall back to global permission check
@@ -51,14 +47,12 @@ final class AzGuardContextProxy
         }
 
         try {
-            $effectivePanelId = property_exists($context, 'panelId')
-                ? $context->panelId
-                : $panelId;
+            $effectivePanelId = $panelId;
 
             $contextObj = app(self::CONTEXT_CLASS, [
                 'panelId' => $effectivePanelId,
-                'contextType' => $context->contextType,
-                'contextId' => $context->contextId,
+                'contextType' => $context->contextType(),
+                'contextId' => $context->contextId(),
             ]);
 
             return self::resolveWithIsolatedContext($user, $permission, $effectivePanelId, $contextObj);
