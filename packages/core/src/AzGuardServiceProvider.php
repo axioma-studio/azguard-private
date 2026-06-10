@@ -31,6 +31,7 @@ use AzGuard\Guard\GuardDoctor;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\CheckDirectGrant;
 use AzGuard\Http\Middleware\LoadAzGuardRoles;
+use AzGuard\Http\Middleware\PanelCheckAccess;
 use AzGuard\Http\Middleware\SetCurrentPanel;
 use AzGuard\Registry\Builders\CompositePermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionCatalog;
@@ -174,6 +175,7 @@ final class AzGuardServiceProvider extends ServiceProvider
         $router->aliasMiddleware('azguard.panel', SetCurrentPanel::class);
         $router->aliasMiddleware('azguard.check', CheckAccess::class);
         $router->aliasMiddleware('azguard.grant', CheckDirectGrant::class);
+        $router->aliasMiddleware('azguard.panel_check', PanelCheckAccess::class);
 
         $alias = Config::checkAccessAlias();
 
