@@ -88,15 +88,22 @@ trait HasRoles
 
         $changes = $this->roles()->sync($roleIds);
 
-        foreach ($changes['detached'] as $id) {
-            if ($detached = Role::find($id)) {
-                event(new RoleDetached($this, $detached));
-            }
-        }
+        // Batch-load all affected roles in 1 query instead of N separate Role::find() calls.
+        $allAffectedIds = array_merge($changes['detached'], $changes['attached']);
 
-        foreach ($changes['attached'] as $id) {
-            if ($attached = Role::find($id)) {
-                event(new RoleAttached($this, $attached));
+        if ($allAffectedIds !== []) {
+            $roleModels = Role::whereIn('id', $allAffectedIds)->get()->keyBy('id');
+
+            foreach ($changes['detached'] as $id) {
+                if ($role = $roleModels->get($id)) {
+                    event(new RoleDetached($this, $role));
+                }
+            }
+
+            foreach ($changes['attached'] as $id) {
+                if ($role = $roleModels->get($id)) {
+                    event(new RoleAttached($this, $role));
+                }
             }
         }
 
