@@ -25,9 +25,9 @@ final class AzGuardManager implements AzGuardManagerInterface
     // ─── Panels ──────────────────────────────────────────────────────────────
 
     #[Override]
-    public function registerPanel(Closure $panel): void
+    public function registerPanel(Panel|callable $panel): void
     {
-        $panelInstance = $panel();
+        $panelInstance = $panel instanceof Panel ? $panel : $panel();
         $this->panels[$panelInstance->getId()] = $panelInstance;
     }
 

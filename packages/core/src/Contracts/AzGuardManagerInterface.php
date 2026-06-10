@@ -7,7 +7,6 @@ namespace AzGuard\Contracts;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Support\Panel;
-use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
@@ -22,9 +21,9 @@ interface AzGuardManagerInterface
     // ─── Panels ───────────────────────────────────────────────────────────────
 
     /**
-     * Регистрирует панель через замыкание.
+     * Регистрирует панель. Принимает Panel напрямую или callable, возвращающий Panel.
      */
-    public function registerPanel(Closure $panel): void;
+    public function registerPanel(Panel|callable $panel): void;
 
     /**
      * Возвращает все зарегистрированные панели.

@@ -160,7 +160,7 @@ final class AuthorizerTest extends TestCase
                 private Panel $panel,
             ) {}
 
-            public function registerPanel(\Closure $panel): void {}
+            public function registerPanel(\AzGuard\Support\Panel|callable $panel): void {}
 
             public function getPanels(): array
             {
