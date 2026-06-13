@@ -40,6 +40,7 @@ use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use AzGuard\Support\Config;
+use AzGuard\Support\ScopedRoleCache;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -77,6 +78,9 @@ final class AzGuardServiceProvider extends ServiceProvider
         ], 'azguard.grant_sources');
 
         $this->app->singleton(PermissionCache::class);
+
+        // Reset per request (Octane-safe) — caches scoped-role rows for HasScopedRoles.
+        $this->app->scoped(ScopedRoleCache::class);
 
         $this->app->singleton(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
             $allSources = iterator_to_array($this->app->tagged('azguard.grant_sources'), preserve_keys: false);

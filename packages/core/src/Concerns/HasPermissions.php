@@ -7,7 +7,7 @@ namespace AzGuard\Concerns;
 use AzGuard\AzGuardManager;
 use AzGuard\Contracts\ContextGuard;
 use AzGuard\Contracts\PermissionContext;
-use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -86,7 +86,7 @@ trait HasPermissions
      */
     public function permissionSet(string $panelId = 'app'): PermissionSet
     {
-        return app(EffectivePermissionResolver::class)->forUser($this, $panelId);
+        return $this->permissionResolver()->forUser($this, $panelId);
     }
 
     /**
@@ -106,7 +106,7 @@ trait HasPermissions
      */
     public function flushPermissions(?string $panelId = null): void
     {
-        $resolver = app(EffectivePermissionResolver::class);
+        $resolver = $this->permissionResolver();
 
         if ($panelId !== null) {
             $resolver->forgetForUser($this, $panelId);
@@ -123,5 +123,10 @@ trait HasPermissions
         if (! isset($panels['app'])) {
             $resolver->forgetForUser($this, 'app');
         }
+    }
+
+    private function permissionResolver(): PermissionResolverInterface
+    {
+        return app(PermissionResolverInterface::class);
     }
 }
