@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AzGuard\Tests\Registry;
+namespace AzGuard\Tests\Unit\Registry;
 
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
 use PHPUnit\Framework\TestCase;
