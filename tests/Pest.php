@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AzGuard\Tests\ContextTestCase;
+use AzGuard\Tests\FilamentTestCase;
 use AzGuard\Tests\Stubs\User;
 use AzGuard\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,20 +36,11 @@ uses(TestCase::class, RefreshDatabase::class)
 uses(ContextTestCase::class, RefreshDatabase::class)
     ->in('Feature/Context');
 
+uses(FilamentTestCase::class, RefreshDatabase::class)
+    ->in('Feature/Filament');
+
 uses(RefreshDatabase::class)
     ->in('Unit');
-
-function createUserWithPermissions(array $permissions): User
-{
-    /** @var User $user */
-    $user = User::factory()->create();
-
-    foreach ($permissions as $permission) {
-        $user->giveAzPermission($permission);
-    }
-
-    return $user;
-}
 
 function createUserWithRole(string $roleName): User
 {
