@@ -8,7 +8,16 @@ use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property int $level
+ * @property string|null $class_name
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class Role extends Model
 {
     protected $fillable = ['name', 'level', 'class_name'];

@@ -61,24 +61,6 @@ parameters:
 			path: packages/core/src/Commands/GrantsListCommand.php
 
 		-
-			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Commands/ListScopedRolesCommand.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\ModelHasScope\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: packages/core/src/Commands/ListScopedRolesCommand.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\ModelHasScope\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: packages/core/src/Commands/ListScopedRolesCommand.php
-
-		-
 			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1
@@ -109,28 +91,10 @@ parameters:
 			path: packages/core/src/Commands/MakeGuardRoleCommand.php
 
 		-
-			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 6
-			path: packages/core/src/Commands/RolePermissionsCommand.php
-
-		-
 			message: '#^Access to an undefined property AzGuard\\Models\\RolePermission\:\:\$created_at\.$#'
 			identifier: property.notFound
 			count: 1
 			path: packages/core/src/Commands/RolePermissionsCommand.php
-
-		-
-			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$level\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Commands/SyncRolesCommand.php
-
-		-
-			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Commands/SyncRolesCommand.php
 
 		-
 			message: '#^Trait AzGuard\\Concerns\\HasAzGuard is used zero times and is not analysed\.$#'
@@ -217,12 +181,6 @@ parameters:
 			path: packages/core/src/Http/Middleware/CheckAccess.php
 
 		-
-			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$class_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Models/Role.php
-
-		-
 			message: '#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\Database\\Eloquent\\Model\:\:morphedByMany\(\)$#'
 			identifier: argument.templateType
 			count: 1
@@ -269,12 +227,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
-			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$class_name\.$#'
-			identifier: property.notFound
-			count: 2
-			path: packages/filament/src/Resources/RoleResource.php
 
 		-
 			message: '#^Call to an undefined method AzGuard\\Registry\\Contracts\\PermissionDefinition\:\:label\(\)\.$#'
