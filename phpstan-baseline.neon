@@ -61,6 +61,12 @@ parameters:
 			path: packages/core/src/Commands/GrantsListCommand.php
 
 		-
+			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: packages/core/src/Commands/ListScopedRolesCommand.php
+
+		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\ModelHasScope\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
@@ -109,14 +115,8 @@ parameters:
 			path: packages/core/src/Commands/RolePermissionsCommand.php
 
 		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: packages/core/src/Commands/RolePermissionsCommand.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
+			message: '#^Access to an undefined property AzGuard\\Models\\RolePermission\:\:\$created_at\.$#'
+			identifier: property.notFound
 			count: 1
 			path: packages/core/src/Commands/RolePermissionsCommand.php
 
@@ -217,44 +217,8 @@ parameters:
 			path: packages/core/src/Http/Middleware/CheckAccess.php
 
 		-
-			message: '#^Method AzGuard\\Models\\DirectGrant\:\:grantable\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\MorphTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: packages/core/src/Models/DirectGrant.php
-
-		-
-			message: '#^Method AzGuard\\Models\\ModelHasScope\:\:role\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: packages/core/src/Models/ModelHasScope.php
-
-		-
-			message: '#^Method AzGuard\\Models\\ModelHasScope\:\:scopeEntity\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\MorphTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: packages/core/src/Models/ModelHasScope.php
-
-		-
-			message: '#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\Database\\Eloquent\\Model\:\:belongsTo\(\)$#'
-			identifier: argument.templateType
-			count: 1
-			path: packages/core/src/Models/ModelHasScope.php
-
-		-
 			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$class_name\.$#'
 			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Models/Role.php
-
-		-
-			message: '#^Method AzGuard\\Models\\Role\:\:dbPermissions\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: packages/core/src/Models/Role.php
-
-		-
-			message: '#^Method AzGuard\\Models\\Role\:\:users\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\MorphToMany does not specify its types\: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor \(2\-4 required\)$#'
-			identifier: missingType.generics
 			count: 1
 			path: packages/core/src/Models/Role.php
 
@@ -263,18 +227,6 @@ parameters:
 			identifier: argument.templateType
 			count: 1
 			path: packages/core/src/Models/Role.php
-
-		-
-			message: '#^Method AzGuard\\Models\\RolePermission\:\:role\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: packages/core/src/Models/RolePermission.php
-
-		-
-			message: '#^Unable to resolve the template type TRelatedModel in call to method Illuminate\\Database\\Eloquent\\Model\:\:belongsTo\(\)$#'
-			identifier: argument.templateType
-			count: 1
-			path: packages/core/src/Models/RolePermission.php
 
 		-
 			message: '#^Trait AzGuard\\Permissions\\InteractsWithPanel is used zero times and is not analysed\.$#'

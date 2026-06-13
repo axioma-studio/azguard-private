@@ -46,6 +46,7 @@ class DirectGrant extends Model
 
     // ─── Relations ───────────────────────────────────────────────────────────
 
+    /** @return MorphTo<Model, $this> */
     public function grantable(): MorphTo
     {
         return $this->morphTo();

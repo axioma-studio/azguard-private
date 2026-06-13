@@ -31,6 +31,7 @@ class RolePermission extends Model
         'panel_id',
     ];
 
+    /** @return BelongsTo<Role, $this> */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Config::roleModel(), 'role_id');

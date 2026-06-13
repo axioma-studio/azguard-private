@@ -25,9 +25,13 @@ final class Config
 {
     // ─── Models ────────────────────────────────────────────────────────────
 
+    /** @return class-string<Role> */
     public static function roleModel(): string
     {
-        return (string) config('az-guard.models.role', Role::class);
+        /** @var class-string<Role> $model */
+        $model = config('az-guard.models.role', Role::class);
+
+        return $model;
     }
 
     public static function scopeModel(): string

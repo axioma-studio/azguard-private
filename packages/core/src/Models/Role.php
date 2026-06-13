@@ -13,6 +13,7 @@ class Role extends Model
 {
     protected $fillable = ['name', 'level', 'class_name'];
 
+    /** @return MorphToMany<Model, $this> */
     public function users(): MorphToMany
     {
         return $this->morphedByMany(
@@ -25,6 +26,8 @@ class Role extends Model
     /**
      * Permissions assigned to the role via the DB (not via PHP class).
      * Used by DatabaseRoleGrantSource.
+     *
+     * @return HasMany<RolePermission, $this>
      */
     public function dbPermissions(): HasMany
     {
