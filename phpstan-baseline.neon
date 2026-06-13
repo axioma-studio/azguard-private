@@ -337,22 +337,10 @@ parameters:
 			path: packages/filament/src/Resources/DirectGrantResource.php
 
 		-
-			message: '#^Class App\\Models\\User not found\.$#'
-			identifier: class.notFound
-			count: 2
-			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>\(Expression\)" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
 			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
-			message: '#^Class App\\Models\\User not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/DirectGrantResource/Pages/CreateDirectGrant.php
 
 		-
 			message: '#^Access to an undefined property AzGuard\\Models\\Role\:\:\$class_name\.$#'
@@ -389,9 +377,3 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
-
-		-
-			message: '#^Class App\\Models\\User not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RoleUsersRelationManager.php

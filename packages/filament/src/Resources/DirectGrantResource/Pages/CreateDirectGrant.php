@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament\Resources\DirectGrantResource\Pages;
 
-use App\Models\User;
 use AzGuard\AzGuardManager;
 use AzGuard\Filament\Resources\DirectGrantResource;
 use Filament\Resources\Pages\CreateRecord;
@@ -36,7 +35,7 @@ final class CreateDirectGrant extends CreateRecord
     #[Override]
     protected function handleRecordCreation(array $data): Model
     {
-        $userModel = config('auth.providers.users.model', User::class);
+        $userModel = config('auth.providers.users.model', 'App\\Models\\User');
 
         $user = $userModel::findOrFail($data['grantable_id']);
 
