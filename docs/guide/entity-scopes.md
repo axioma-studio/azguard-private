@@ -6,14 +6,14 @@ This stacks on top of global roles — it does not replace them.
 
 ## Setup
 
-Add `InteractsWithAzScopes` to any Eloquent model that should support scoped role assignment:
+Add `HasScopedRoles` to any Eloquent model that should support scoped role assignment:
 
 ```php
-use AzGuard\Concerns\InteractsWithAzScopes;
+use AzGuard\Concerns\HasScopedRoles;
 
 class Project extends Model
 {
-    use InteractsWithAzScopes;
+    use HasScopedRoles;
 }
 ```
 

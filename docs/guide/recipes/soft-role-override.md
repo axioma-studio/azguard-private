@@ -25,7 +25,7 @@ AzGuard merges direct grants with role permissions at resolution time. When the 
 ## Checking the override
 
 ```php
-$user->hasAzPermission(DocumentsPermission::Publish); // true while grant is active
+$user->hasPermission(DocumentsPermission::Publish); // true while grant is active
                                                        // false after expires_at
 ```
 

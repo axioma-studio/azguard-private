@@ -28,21 +28,21 @@ class DocumentsPolicy
     #[GateAbility(permission: DocumentsPermission::View)]
     public function canView(User $user, Document $document): bool
     {
-        return $user->hasAzPermission(AppGuard::permission(DocumentsPermission::View))
+        return $user->hasPermission(AppGuard::permission(DocumentsPermission::View))
             && $user->id === $document->owner_id;
     }
 
     #[GateAbility(permission: DocumentsPermission::Edit)]
     public function canEdit(User $user, Document $document): bool
     {
-        return $user->hasAzPermission(AppGuard::permission(DocumentsPermission::Edit))
+        return $user->hasPermission(AppGuard::permission(DocumentsPermission::Edit))
             && ! $document->isLocked();
     }
 
     #[GateAbility(permission: DocumentsPermission::Delete)]
     public function canDelete(User $user, Document $document): bool
     {
-        return $user->hasAzPermission(AppGuard::permission(DocumentsPermission::Delete));
+        return $user->hasPermission(AppGuard::permission(DocumentsPermission::Delete));
     }
 }
 ```
@@ -51,7 +51,7 @@ class DocumentsPolicy
 
 `Gate::before` is registered by AzGuard to short-circuit for super-admin roles. A role whose `permissions()` returns `['*']` causes `Gate::before` to return `true` **without calling the policy**.
 
-No other logic runs in `Gate::before`. All real permission checks happen in policy methods via `hasAzPermission()`.
+No other logic runs in `Gate::before`. All real permission checks happen in policy methods via `hasPermission()`.
 
 ## Calling the Gate
 

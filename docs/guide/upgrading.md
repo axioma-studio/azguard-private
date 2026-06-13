@@ -1,44 +1,88 @@
 # Upgrading
 
-## From v0.x to v1.0
+## Pre-1.0 API cleanup (breaking)
 
-Version 1.0 introduces several breaking changes to method names and the trait API.
+The pre-1.0 cleanup unifies the public API around bare, single-verb names. There
+are no compatibility aliases — update call sites directly. A project-wide
+search-and-replace covers almost everything.
 
-### Method renames on `HasAzGuard`
+### User trait (`HasAzGuard`)
 
-| v0.x | v1.0 |
+The `Az` prefix is gone; the trait now simply exposes the bare methods from
+`HasPermissions` and `HasRoles`.
+
+| Old | New |
 |---|---|
 | `hasAzPermission()` | `hasPermission()` |
-| `giveAzPermission()` | Use `HasDirectGrants::directGrant()` |
-| `revokeAzPermission()` | Use `HasDirectGrants::revokeDirectGrant()` |
+| `hasAzPermissionIn()` | `hasPermissionIn()` |
+| `hasAzRole()` | `hasRole()` |
+| `getAzPermissions()` | `permissions()` |
 | `clearAzPermissionsCache()` | `flushPermissions()` |
+
+### Direct grants — one verb set everywhere
+
+| Old | New |
+|---|---|
+| `GrantBuilder::give()` | `grant()` |
+| `GrantBuilder::list()` | `grants()` |
+| `AzGuardManager::grantDirect()` | `grant()` |
+| `AzGuardManager::revokeDirect()` | `revoke()` |
+| `AzGuardManager::activeGrants()` | `grants()` |
+| `HasDirectGrants::grantDirect()` | `grant()` |
+| `HasDirectGrants::revokeGrant()` | `revoke()` |
+| `HasDirectGrants::hasDirectGrant()` | `hasGrant()` |
+| `HasDirectGrants::activeDirectGrants()` | `grants()` |
+
+### Panel builder
+
+| Old | New |
+|---|---|
+| `Panel::id()` (getter) | `getId()` (`id()` is now a setter only) |
+| `Panel::setNamespace()` | `namespace()` |
+| `Panel::setBasePath()` | `basePath()` |
+| `Panel::getPermissionName()` | use `resolvePermission()` |
+
+### Renamed / removed classes
+
+| Old | New |
+|---|---|
+| `HasScopes`, `InteractsWithAzScopes` | `HasScopedRoles` |
+| `GuardDoctor`, `DiagnosticsService` | `AzGuardDiagnostics` |
+| `PermissionResolverCache` | `PermissionCache` |
+| `Support\BaseRole` | `Roles\BaseRole` |
+| `PermissionSet::toArray()` | `keys()` |
+| `Context\Contracts\ContextMergeStrategy` | `Context\Contracts\MergeStrategy` (now `merge($global, $context)`) |
+| `ResolvesContext::panel()` | `panelId()` |
+| Filament `AzGuardResource` / `GuardResource` | removed — see the Filament guide |
 
 ### Search and replace
 
-Run these in your project root:
-
 ```bash
-# hasAzPermission → hasPermission
-grep -r 'hasAzPermission' . --include='*.php'
-
-# giveAzPermission → use GrantBuilder instead
-grep -r 'giveAzPermission' . --include='*.php'
-
-# clearAzPermissionsCache → flushPermissions
-grep -r 'clearAzPermissionsCache' . --include='*.php'
+grep -rE 'hasAz(Permission|Role)|getAzPermissions|clearAzPermissionsCache' . --include='*.php'
+grep -rE '->give\(|grantDirect|revokeDirect|revokeGrant|hasDirectGrant|activeDirectGrants' . --include='*.php'
+grep -rE 'GuardDoctor|InteractsWithAzScopes|PermissionResolverCache' . --include='*.php'
 ```
 
-### Config changes
+### Composer package name
 
-No config keys were renamed in v1.0. Your existing `config/az-guard.php` is compatible.
+The core package is published as `axioma-studio/azguard-core` (the old
+`azguard/azguard` name is retired):
 
-### Migration changes
+```bash
+composer remove azguard/azguard
+composer require axioma-studio/azguard-core
+```
 
-No new migrations in v1.0. If you published migrations in v0.x, they remain valid.
+### Filament
 
-### Panel provider interface
+The Filament package now requires Filament 5 and replaces the old
+`AzGuardResource` / `GuardResource` base classes with a config-driven,
+zero-boilerplate model. See the [Filament guide](/guide/filament).
 
-No changes. Existing panel providers work without modification.
+### Config & migrations
+
+No config keys or migrations changed. Existing `config/az-guard.php` and
+published migrations remain valid.
 
 ## From Spatie Permission
 

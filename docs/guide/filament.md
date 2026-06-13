@@ -1,135 +1,97 @@
 # Filament Integration
 
-The `azguard/filament` package provides a first-party UI for managing roles, permissions, and direct grants from the Filament admin panel.
+The `axioma-studio/azguard-filament` package provides a first-party UI for
+managing roles and direct grants, plus **config-driven, zero-boilerplate
+authorization** for your own resources (Filament 5).
 
 ## Installation
 
 ```bash
-composer require azguard/filament
+composer require axioma-studio/azguard-filament
+php artisan vendor:publish --tag=az-guard-filament-config
 ```
 
-Register the plugin in your Filament Panel Provider:
+Register the plugin in your Filament panel provider, pointing it at the AzGuard
+panel it should manage:
 
 ```php
 use AzGuard\Filament\AzGuardPlugin;
 
 public function panel(Panel $panel): Panel
 {
-    return $panel
-        ->plugins([
-            AzGuardPlugin::make()->forPanel('admin'),
-        ]);
+    return $panel->plugins([
+        AzGuardPlugin::make()->forPanel('admin'),
+    ]);
 }
 ```
 
-`forPanel('admin')` tells the plugin which AzGuard panel this Filament instance manages. Defaults to `'app'`.
+## How resource permissions work
 
-## Built-in resources
+You do **not** add authorization code to your resources. The plugin discovers
+the panel's resources and pages and generates one permission per ability, keyed
+`{panel}.{resource}.{ability}` — e.g. `admin.post.view_any`, `admin.post.create`.
+
+Everything is controlled from `config/az-guard-filament.php`: the ability set,
+the key scheme, the source, exclusions, and a `super_admin` bypass.
+
+### Sources
+
+- **`database`** (default) — keys are registered in the catalog at runtime and
+  appear in the Role UI; grant them to roles in the database. No generated code.
+- **`enum`** — generate a typed permission enum per resource:
+
+  ```bash
+  php artisan azguard:filament:generate --source=enum
+  ```
+
+Preview without writing anything:
+
+```bash
+php artisan azguard:filament:generate --dry-run
+```
+
+### Enforcement
+
+With `enforce = true` (the default), the plugin makes Filament consult the Gate
+for every resource and answers each check from the user's AzGuard permissions.
+A user sees and can act on a resource only when they hold the matching
+permission — with no base class, trait, or policy in the resource. A role
+carrying the `*` wildcard (e.g. a SuperAdmin role) passes every check.
+
+To opt out and manage authorization yourself, set `enforce` to `false`.
+
+## Built-in management resources
 
 ### RoleResource
 
-Lists all roles (static + custom DB-backed) for the configured panel. From this resource you can:
-
-- **View** static roles (read-only — they are PHP classes)
-- **Create / edit / delete** custom `AzRole` records
-- **Assign permissions** to custom roles via the Permissions relation manager
-- **Pick from a permission dropdown** — populated from all registered permission enums for the panel
+Lists all roles (PHP class roles + custom DB roles) for the configured panel.
+You can view class roles read-only, create/edit/delete DB roles, and assign
+permissions to DB roles from a picker grouped by permission group.
 
 ### DirectGrantResource
 
-Shows all direct grants for any user on the configured panel. Supports:
+Lists direct grants for any user on the panel — create (user + permission +
+optional expiry) and revoke.
 
-- Create a grant (user + permission + optional expiry)
-- Edit expiry or notes
-- Revoke (soft-delete) a grant
-- Filter by user, permission, or status (active / expired / revoked)
+### Doctor page
 
-### Doctor Page
+The **AzGuard Doctor** page is the GUI equivalent of `php artisan azguard:doctor`:
+it surfaces catalog conflicts, roles referencing unknown permissions, and the
+panel → ability → handler map. The navigation badge turns red on errors and
+yellow on warnings.
 
-The **AzGuard Doctor** page provides a visual diagnostic dashboard — the GUI equivalent of `php artisan azguard:doctor`.
+## Configuration
 
-```php
-// The page is registered automatically by AzGuardPlugin.
-// Navigate to: /admin/az-guard/doctor
-```
-
-The page shows:
-
-| Section | What it displays |
-|---|---|
-| Status badge | ✓ OK / ⚠ Warnings / ✗ Errors at a glance |
-| Errors | Misconfigured roles, missing migrations, catalog conflicts |
-| Warnings | Unused permissions, roles with no users |
-| Abilities | Full table of panel → ability → Policy::method mappings |
-
-The navigation badge turns **red** when there are errors, **yellow** for warnings, and disappears when everything is OK. To protect the page itself:
-
-```php
-// config/az-guard.php
-'filament' => [
-    'doctor_permission' => AzGuardPermission::DoctorView,
-],
-```
-
-## Protecting your own resources
-
-Inherit from `AzGuardResource` to gate any Filament resource behind an AzGuard permission:
-
-```php
-use AzGuard\Filament\Resources\AzGuardResource;
-
-final class UserResource extends AzGuardResource
-{
-    protected static function guardPanel(): string
-    {
-        return 'admin';
-    }
-
-    protected static function viewPermission(): UnitEnum
-    {
-        return AdminPermission::UsersManage;
-    }
-}
-```
-
-`canViewAny()`, `canCreate()`, `canEdit()`, and `canDelete()` are all proxied through `Gate::allows()` + `AzGuard::permission()` automatically.
-
-## Navigating between permissions and the UI
-
-The RoleResource permission picker is grouped by **permission group** (the first segment of the key, e.g. `documents`, `invoices`). To control grouping, use a `#[Group]` attribute on your enum:
-
-```php
-#[Group('Invoices')]
-enum InvoicesPermission: string implements PermissionInterface
-{
-    #[GateAbility]
-    case View   = 'invoices.view';
-    #[GateAbility]
-    case Export = 'invoices.export';
-}
-```
-
-## Custom roles picker
-
-When editing a custom `AzRole`, the permissions tab shows a multi-select populated from all `#[GateAbility]`-annotated enum cases for the panel. Static role permissions are shown read-only for reference.
-
-## User label column
-
-The DirectGrant user picker searches by `name` by default. To change the label column:
-
-```php
-// config/az-guard.php
-'filament' => [
-    'user_label_column' => 'email',
-],
-```
+See [`config/az-guard-filament.php`](https://github.com/axioma-studio/azguard)
+for the full, commented options: `panel`, `source`, `abilities`, `pages`,
+`widgets`, `key`, `case`, `exclude`, `super_admin`, `enforce`, and generation
+paths.
 
 ## Compatibility
 
-| azguard/filament | Filament 4 | Filament 5 |
-|---|:---:|:---:|
-| `0.x` (dev) | ✅ | ✅ |
+Requires Filament `^5.0`.
 
 ## Invariant
 
-The Filament plugin checks only permissions scoped to the panel passed to `forPanel()`. App-panel roles have no effect inside the Filament admin.
+The plugin only authorizes against permissions scoped to the panel passed to
+`forPanel()`. App-panel roles have no effect inside the Filament admin.

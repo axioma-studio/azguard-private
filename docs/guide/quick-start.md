@@ -11,7 +11,7 @@ Get from zero to a working permission check in under 5 minutes.
 ## 1. Install
 
 ```bash
-composer require azguard/azguard
+composer require axioma-studio/azguard-core
 php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```

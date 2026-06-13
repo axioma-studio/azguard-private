@@ -75,7 +75,7 @@ Route::middleware(['auth', 'azguard.context'])
     });
 ```
 
-С этого момента `$user->hasAzPermission('app.posts.edit')` автоматически
+С этого момента `$user->hasPermission('app.posts.edit')` автоматически
 учитывает права пользователя в текущем workspace.
 
 ## Проверка прав
@@ -83,7 +83,7 @@ Route::middleware(['auth', 'azguard.context'])
 ### Глобальная (без контекста)
 
 ```php
-$user->hasAzPermission('app.posts.edit');
+$user->hasPermission('app.posts.edit');
 ```
 
 ### Одноразовая контекстная проверка
@@ -92,10 +92,10 @@ $user->hasAzPermission('app.posts.edit');
 
 ```php
 // Через удобный alias
-$user->hasAzPermissionIn('workspace', $workspaceId, 'app.posts.edit');
+$user->hasPermissionIn('workspace', $workspaceId, 'app.posts.edit');
 
 // Через основной метод с duck-typed объектом
-$user->hasAzPermission('app.posts.edit', 'app', (object) [
+$user->hasPermission('app.posts.edit', 'app', (object) [
     'contextType' => 'workspace',
     'contextId'   => $workspaceId,
 ]);
@@ -197,5 +197,5 @@ final class MyStrategy implements ContextMergeStrategy
 ## Обратная совместимость
 
 - Пакет **opt-in**: если не установлен, `HasAzGuard` работает идентично предыдущей версии.
-- `hasAzPermissionIn()` возвращает `false` если пакет не установлен.
-- `hasAzPermission(..., $context)` делает fallback к глобальной проверке если пакет не установлен.
+- `hasPermissionIn()` возвращает `false` если пакет не установлен.
+- `hasPermission(..., $context)` делает fallback к глобальной проверке если пакет не установлен.
