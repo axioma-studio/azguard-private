@@ -77,7 +77,7 @@ final class DirectGrantResource extends Resource
                 ->label('Панель')
                 ->required()
                 ->options(fn () => collect(app(AzGuardManager::class)->getPanels())
-                    ->mapWithKeys(fn ($panel, $id) => [$id => $id])
+                    ->mapWithKeys(fn ($panel, $id): array => [$id => $id])
                     ->toArray(),
                 )
                 ->live()

@@ -20,15 +20,15 @@ use UnitEnum;
  * those classes are used directly. Otherwise, falls back to filesystem
  * discovery of *Permission.php files under the panel's basePath.
  */
-final class EnumPermissionCatalogBuilder implements PermissionCatalogBuilder
+final readonly class EnumPermissionCatalogBuilder implements PermissionCatalogBuilder
 {
     /**
      * @param  string|null  $panelId  When set, this builder only handles this panel.
      * @param  list<class-string>  $enumClasses  Explicit enum class list (optional).
      */
     public function __construct(
-        private readonly ?string $panelId = null,
-        private readonly array $enumClasses = [],
+        private ?string $panelId = null,
+        private array $enumClasses = [],
     ) {}
 
     #[Override]

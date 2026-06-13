@@ -20,7 +20,7 @@ final class ResourceGate
      * Filament policy ability (camelCase) → AzGuard ability slug (snake_case).
      * The *Any bulk variants share the singular permission.
      */
-    private const ACTIONS = [
+    private const array ACTIONS = [
         'viewAny' => 'view_any',
         'view' => 'view',
         'create' => 'create',

@@ -19,12 +19,10 @@ trait HasPermissions
      *
      * Optional $context allows a one-off contextual check without changing
      * global state. Use hasPermissionIn() as a more readable alternative.
-     * Pass a PermissionContext instance for full type safety, or a plain
-     * object with public contextType/contextId fields for duck-typed usage.
      */
     public function hasPermission(string $permission, string $panelId = 'app', ?PermissionContext $context = null): bool
     {
-        if ($context !== null) {
+        if ($context instanceof PermissionContext) {
             $guard = $this->contextGuard();
 
             // No context package installed — fall back to a global check.

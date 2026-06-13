@@ -46,7 +46,7 @@ final class DoctorPage extends Page
     }
 
     #[Override]
-    public static function getNavigationBadgeColor(): ?string
+    public static function getNavigationBadgeColor(): string
     {
         $result = self::runDiagnose();
 

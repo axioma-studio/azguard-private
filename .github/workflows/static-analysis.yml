@@ -40,4 +40,4 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run Larastan
-        run: vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=256M --no-progress
+        run: vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G --no-progress

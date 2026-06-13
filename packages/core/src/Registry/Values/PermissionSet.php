@@ -99,7 +99,7 @@ final readonly class PermissionSet
         }
 
         foreach ($this->patterns as $pattern) {
-            $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')).'$/';
+            $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote((string) $pattern, '/')).'$/';
 
             if (preg_match($regex, $key)) {
                 return true;
@@ -115,7 +115,11 @@ final readonly class PermissionSet
     public function grants(string $key): bool
     {
         // has() already handles wildcard, so no double-check needed.
-        return $this->has($key) || $this->matchesWildcard($key);
+        if ($this->has($key)) {
+            return true;
+        }
+
+        return $this->matchesWildcard($key);
     }
 
     public function isWildcard(): bool
