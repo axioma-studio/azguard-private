@@ -25,6 +25,7 @@ final readonly class PermissionSet
     /** @var list<string> Wildcard patterns only (keys containing '*'). */
     private array $patterns;
 
+    /** @param list<string> $keys */
     private function __construct(array $keys)
     {
         $unique = array_unique($keys);

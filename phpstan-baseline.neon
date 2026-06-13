@@ -169,12 +169,6 @@ parameters:
 			path: packages/core/src/Concerns/ResolvesRole.php
 
 		-
-			message: '#^Method AzGuard\\Contracts\\RoleInterface\:\:permissions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: packages/core/src/Contracts/RoleInterface.php
-
-		-
 			message: '#^Method AzGuard\\Contracts\\ScopeInterface\:\:apply\(\) has parameter \$builder with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
@@ -305,24 +299,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: packages/core/src/Registry/Sources/ClassRoleGrantSource.php
-
-		-
-			message: '#^Method AzGuard\\Registry\\Values\\PermissionSet\:\:__construct\(\) has parameter \$keys with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: packages/core/src/Registry/Values/PermissionSet.php
-
-		-
-			message: '#^Method AzGuard\\Roles\\BaseRole\:\:permissions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: packages/core/src/Roles/BaseRole.php
-
-		-
-			message: '#^Method AzGuard\\Roles\\SuperAdminRole\:\:permissions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: packages/core/src/Roles/SuperAdminRole.php
 
 		-
 			message: '#^Method AzGuard\\Filament\\Pages\\DoctorPage\:\:getDiagnoseResult\(\) return type has no value type specified in iterable type array\.$#'

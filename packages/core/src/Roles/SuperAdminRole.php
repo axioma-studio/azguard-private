@@ -22,6 +22,7 @@ final class SuperAdminRole extends BaseRole
         return 1000;
     }
 
+    /** @return list<string> */
     #[Override]
     public function permissions(): array
     {
