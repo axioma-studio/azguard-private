@@ -36,12 +36,19 @@ the key scheme, the source, exclusions, and a `super_admin` bypass.
 
 ### Sources
 
-- **`database`** (default) — keys are registered in the catalog at runtime and
-  appear in the Role UI; grant them to roles in the database. No generated code.
-- **`enum`** — generate a typed permission enum per resource:
+Discovered keys are always registered in the catalog (so they appear in the
+Role UI and can be granted). The source decides how access is *enforced* and
+what is generated:
+
+- **`database`** (default) — the runtime gate enforces; nothing is generated.
+- **`enum`** — generate a typed permission enum per resource (still
+  gate-enforced).
+- **`policy`** — generate a Laravel policy per resource; Filament's native
+  authorization enforces them and the runtime gate steps aside.
 
   ```bash
   php artisan azguard:filament:generate --source=enum
+  php artisan azguard:filament:generate --source=policy
   ```
 
 Preview without writing anything:

@@ -68,7 +68,9 @@ final class AzGuardPlugin implements Plugin
     #[Override]
     public function boot(Panel $panel): void
     {
-        if (! config('az-guard-filament.enforce', true)) {
+        // For the "policy" source, generated policies enforce via Filament's
+        // native authorization, so leave the policy-existence check in place.
+        if (! config('az-guard-filament.enforce', true) || config('az-guard-filament.source', 'database') === 'policy') {
             return;
         }
 

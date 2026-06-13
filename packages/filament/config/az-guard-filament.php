@@ -36,14 +36,15 @@ return [
     | Permission source
     |--------------------------------------------------------------------------
     |
-    | Where the generated permission *definitions* live:
-    |   'database' — keys are registered in the catalog at runtime and roles map
-    |                to them via the DB (edit access in the Role UI). No files.
+    | Discovered keys are always registered in the catalog (so they show up in
+    | the Role UI and can be granted). The source decides how access is
+    | *enforced* and what code, if any, is generated:
+    |   'database' — the runtime gate enforces; nothing is generated.
     |   'enum'     — `azguard:filament:generate` writes a permission enum per
-    |                resource (typed, IDE-friendly). Physical files, picked up
-    |                by the panel's EnumPermissionCatalogBuilder.
-    |
-    | ('policy' generation — policies with #[GateAbility] — is planned.)
+    |                resource (typed, IDE-friendly), still enforced by the gate.
+    |   'policy'   — `azguard:filament:generate` writes a Laravel policy per
+    |                resource; Filament's native authorization enforces them and
+    |                the runtime gate steps aside.
     |
     */
     'source' => 'database',

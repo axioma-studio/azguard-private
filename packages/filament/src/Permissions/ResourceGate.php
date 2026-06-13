@@ -16,25 +16,6 @@ namespace AzGuard\Filament\Permissions;
  */
 final class ResourceGate
 {
-    /**
-     * Filament policy ability (camelCase) → AzGuard ability slug (snake_case).
-     * The *Any bulk variants share the singular permission.
-     */
-    private const array ACTIONS = [
-        'viewAny' => 'view_any',
-        'view' => 'view',
-        'create' => 'create',
-        'update' => 'update',
-        'delete' => 'delete',
-        'deleteAny' => 'delete',
-        'restore' => 'restore',
-        'restoreAny' => 'restore',
-        'forceDelete' => 'force_delete',
-        'forceDeleteAny' => 'force_delete',
-        'replicate' => 'replicate',
-        'reorder' => 'reorder',
-    ];
-
     /** @var array<class-string, string>|null */
     private ?array $resourcesByModel = null;
 
@@ -49,7 +30,7 @@ final class ResourceGate
      */
     public function check(object $user, string $ability, array $arguments): ?bool
     {
-        $slug = self::ACTIONS[$ability] ?? null;
+        $slug = FilamentActions::MAP[$ability] ?? null;
 
         if ($slug === null) {
             return null;

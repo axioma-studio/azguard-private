@@ -44,11 +44,9 @@ final class AzGuardFilamentServiceProvider extends ServiceProvider
             discovery: $app->make(PermissionDiscovery::class),
         ));
 
-        // The "database" source feeds the catalog at runtime; "enum"/"policy"
-        // sources register through their own generated files instead.
-        if (config('az-guard-filament.source', 'database') === 'database') {
-            $this->app->tag([FilamentPermissionCatalogBuilder::class], 'azguard.catalog_builders');
-        }
+        // Discovered keys are always registered in the catalog so they appear
+        // in the Role UI and can be granted — regardless of source.
+        $this->app->tag([FilamentPermissionCatalogBuilder::class], 'azguard.catalog_builders');
 
         $this->app->singleton(ResourceGate::class, fn (Application $app): ResourceGate => new ResourceGate(
             panelId: (string) config('az-guard-filament.panel', 'admin'),
@@ -65,7 +63,10 @@ final class AzGuardFilamentServiceProvider extends ServiceProvider
             $this->loadViewsFrom($viewsPath, 'az-guard');
         }
 
-        if (config('az-guard-filament.enforce', true)) {
+        // The runtime gate enforces every source EXCEPT "policy", where the
+        // generated Laravel policies (and Filament's native authorization)
+        // do the checking instead.
+        if (config('az-guard-filament.enforce', true) && config('az-guard-filament.source', 'database') !== 'policy') {
             $gate = $this->app->make(ResourceGate::class);
 
             Gate::before(fn ($user, string $ability, array $arguments = []): ?bool => is_object($user)

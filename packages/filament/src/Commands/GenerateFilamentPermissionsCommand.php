@@ -8,6 +8,7 @@ use AzGuard\Filament\Permissions\PermissionDiscovery;
 use AzGuard\Filament\Permissions\PermissionEnumGenerator;
 use AzGuard\Filament\Permissions\PermissionSchema;
 use AzGuard\Filament\Permissions\PermissionSubject;
+use AzGuard\Filament\Permissions\PolicyGenerator;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
@@ -23,7 +24,7 @@ use Illuminate\Filesystem\Filesystem;
 final class GenerateFilamentPermissionsCommand extends Command
 {
     protected $signature = 'azguard:filament:generate
-        {--source= : Override the configured source (database|enum)}
+        {--source= : Override the configured source (database|enum|policy)}
         {--panel= : Override the configured AzGuard panel id}
         {--dry-run : Show what would be written without touching the filesystem}';
 
@@ -33,6 +34,7 @@ final class GenerateFilamentPermissionsCommand extends Command
         PermissionDiscovery $discovery,
         PermissionSchema $schema,
         PermissionEnumGenerator $generator,
+        PolicyGenerator $policyGenerator,
         Filesystem $files,
     ): int {
         $panelId = (string) ($this->option('panel') ?: config('az-guard-filament.panel', 'admin'));
@@ -49,6 +51,7 @@ final class GenerateFilamentPermissionsCommand extends Command
         return match ($source) {
             'database' => $this->report($panelId, $schema, $subjects),
             'enum' => $this->writeEnums($subjects, $generator, $files),
+            'policy' => $this->writePolicies($panelId, $schema, $subjects, $policyGenerator, $files),
             default => $this->unsupported($source),
         };
     }
@@ -115,9 +118,52 @@ final class GenerateFilamentPermissionsCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @param  list<PermissionSubject>  $subjects
+     */
+    private function writePolicies(string $panelId, PermissionSchema $schema, array $subjects, PolicyGenerator $generator, Filesystem $files): int
+    {
+        $namespace = (string) config('az-guard-filament.generation.policy_namespace', 'App\\Policies');
+        $path = base_path((string) config('az-guard-filament.generation.policy_path', 'app/Policies'));
+        /** @var class-string $userModel */
+        $userModel = (string) config('auth.providers.users.model', 'App\\Models\\User');
+        $dryRun = (bool) $this->option('dry-run');
+
+        if (! $dryRun && ! $files->isDirectory($path)) {
+            $files->makeDirectory($path, recursive: true);
+        }
+
+        $written = 0;
+
+        foreach ($subjects as $subject) {
+            // Policies guard model-backed resources; pages stay on the gate.
+            if ($subject->model === null) {
+                continue;
+            }
+
+            $class = $generator->className($subject);
+            $file = $path.DIRECTORY_SEPARATOR.$class.'.php';
+
+            if ($dryRun) {
+                $this->line("would write: {$file}");
+
+                continue;
+            }
+
+            $files->put($file, $generator->source($subject, $panelId, $schema, $namespace, $userModel));
+            $this->line("wrote: {$class}");
+            $written++;
+        }
+
+        $this->info($dryRun ? 'Dry run complete.' : "Generated {$written} policy(ies) in {$namespace}.");
+        $this->line('Set az-guard-filament.source to "policy" so Filament uses these instead of the runtime gate.');
+
+        return self::SUCCESS;
+    }
+
     private function unsupported(string $source): int
     {
-        $this->error("Unsupported source [{$source}]. Use 'database' or 'enum'.");
+        $this->error("Unsupported source [{$source}]. Use 'database', 'enum' or 'policy'.");
 
         return self::FAILURE;
     }
