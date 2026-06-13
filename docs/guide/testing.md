@@ -83,7 +83,7 @@ public function test_user_with_direct_grant_can_access(): void
 
     (new GrantBuilder($user))
         ->on('app')
-        ->give(DocumentsPermission::View);
+        ->grant(DocumentsPermission::View);
 
     $this->assertTrue($user->hasPermission(DocumentsPermission::View));
 }
@@ -94,7 +94,7 @@ public function test_expired_grant_is_denied(): void
 
     (new GrantBuilder($user))
         ->on('app')
-        ->give(DocumentsPermission::View)
+        ->grant(DocumentsPermission::View)
         ->until(now()->subMinute());   // already expired
 
     $user->flushPermissions();         // clear in-memory cache
@@ -109,7 +109,7 @@ public function test_grant_with_ttl_is_active(): void
     (new GrantBuilder($user))
         ->on('app')
         ->ttl(3600)                    // 1 hour from now
-        ->give(DocumentsPermission::Export);
+        ->grant(DocumentsPermission::Export);
 
     $this->assertTrue($user->hasPermission(DocumentsPermission::Export));
 }

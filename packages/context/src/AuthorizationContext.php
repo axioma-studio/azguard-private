@@ -22,9 +22,9 @@ use AzGuard\Contracts\PermissionContext;
 final readonly class AuthorizationContext implements PermissionContext
 {
     public function __construct(
-        public readonly string $panelId,
-        public readonly string $contextType,
-        public readonly int|string $contextId,
+        public string $panelId,
+        public string $contextType,
+        public int|string $contextId,
     ) {}
 
     public function contextType(): string

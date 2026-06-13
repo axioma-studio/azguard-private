@@ -45,8 +45,8 @@ final class CheckDirectGrant
         $resolvedPanel = PanelResolver::resolve($panelId);
         $user = $request->user();
 
-        $hasGrant = method_exists($user, 'hasDirectGrant')
-            ? $user->hasDirectGrant($permissionKey, $resolvedPanel)
+        $hasGrant = method_exists($user, 'hasGrant')
+            ? $user->hasGrant($permissionKey, $resolvedPanel)
             : false;
 
         abort_if(

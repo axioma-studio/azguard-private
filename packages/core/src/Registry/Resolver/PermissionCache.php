@@ -11,9 +11,6 @@ use Closure;
 /**
  * Per-request (and optional cross-request) cache for PermissionSet.
  *
- * Renamed from PermissionResolverCache — the class caches permissions,
- * not the resolver itself. PermissionResolverCache is kept as a BC alias.
- *
  * Supports two layers:
  * 1. In-memory (always): $requestCache 2D array — lives for one HTTP request.
  * 2. Cross-request (optional): Laravel cache store (Redis / file / etc.).
@@ -72,7 +69,7 @@ class PermissionCache
         $raw = cache()->store($store)->remember(
             $cacheKey,
             Config::cacheTtl(),
-            fn () => $callback()->toArray(),
+            fn () => $callback()->keys(),
         );
 
         if (is_array($raw)) {
@@ -81,7 +78,7 @@ class PermissionCache
 
         // Stale or incompatible cache entry — recompute and overwrite.
         $set = $callback();
-        cache()->store($store)->put($cacheKey, $set->toArray(), Config::cacheTtl());
+        cache()->store($store)->put($cacheKey, $set->keys(), Config::cacheTtl());
 
         return $set;
     }

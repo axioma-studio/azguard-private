@@ -10,24 +10,24 @@ describe('Panel', function () {
         expect($panel->getId())->toBe('admin');
     });
 
-    it('returns namespace set via setNamespace()', function () {
-        $panel = Panel::make()->setNamespace('App\\Guards\\Admin');
+    it('returns namespace set via namespace()', function () {
+        $panel = Panel::make()->namespace('App\\Guards\\Admin');
         expect($panel->getNamespace())->toBe('App\\Guards\\Admin');
     });
 
-    it('returns basePath set via setBasePath()', function () {
-        $panel = Panel::make()->setBasePath('/var/www/app/Guards/Admin');
+    it('returns basePath set via basePath()', function () {
+        $panel = Panel::make()->basePath('/var/www/app/Guards/Admin');
         expect($panel->getBasePath())->toBe('/var/www/app/Guards/Admin');
     });
 
     it('prefixes permission with panel id when scopedByPanelId is true', function () {
         $panel = Panel::make()->id('admin')->scopedByPanelId(true);
-        expect($panel->getPermissionName('users.view'))->toBe('admin.users.view');
+        expect($panel->resolvePermission('users.view'))->toBe('admin.users.view');
     });
 
     it('does not prefix permission when scopedByPanelId is false', function () {
         $panel = Panel::make()->id('admin')->scopedByPanelId(false);
-        expect($panel->getPermissionName('users.view'))->toBe('users.view');
+        expect($panel->resolvePermission('users.view'))->toBe('users.view');
     });
 
     it('resolves BackedEnum permission with panel prefix', function () {

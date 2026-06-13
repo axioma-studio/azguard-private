@@ -67,7 +67,7 @@ use AzGuard\Grants\GrantBuilder;
 // Grant superadmin access for 24 hours
 (new GrantBuilder($user))
     ->on('app')
-    ->give('*')
+    ->grant('*')
     ->until(now()->addDay());
 ```
 

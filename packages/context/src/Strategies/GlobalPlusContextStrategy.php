@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace AzGuard\Context\Strategies;
 
-use AzGuard\Context\Contracts\ContextMergeStrategy;
+use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Override;
 
 /**
@@ -19,15 +18,11 @@ use Override;
  * администратор платформы имеет глобальные права,
  * участник workspace — права своего workspace.
  */
-final class GlobalPlusContextStrategy implements ContextMergeStrategy
+final class GlobalPlusContextStrategy implements MergeStrategy
 {
     #[Override]
-    public function merge(
-        Authenticatable $user,
-        string $panelId,
-        PermissionSet $global,
-        ?PermissionSet $context,
-    ): PermissionSet {
+    public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet
+    {
         if (! $context instanceof PermissionSet) {
             return $global;
         }

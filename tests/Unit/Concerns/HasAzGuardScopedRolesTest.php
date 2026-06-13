@@ -6,7 +6,7 @@ use AzGuard\Models\ModelHasScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
-use AzGuard\Concerns\InteractsWithAzScopes;
+use AzGuard\Concerns\HasScopedRoles;
 use AzGuard\Models\Role;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
 // Stub entity model for scoping
 class Project extends Model
 {
-    use InteractsWithAzScopes;
+    use HasScopedRoles;
 
     protected $table = 'projects';
 
@@ -41,7 +41,7 @@ beforeEach(function (): void {
     }
 });
 
-describe('HasAzGuard — entity-scoped roles (InteractsWithAzScopes)', function (): void {
+describe('HasAzGuard — entity-scoped roles (HasScopedRoles)', function (): void {
 
     it('assignScopedRole creates ModelHasScope record with role_id', function (): void {
         $user = User::factory()->create();
@@ -156,7 +156,7 @@ describe('HasAzGuard — entity-scoped roles (InteractsWithAzScopes)', function 
         ]);
 
         // Patch ManagerRole to return ['*'] by adding superadmin globally
-        // Instead we test via hasAzPermission fallback path:
+        // Instead we test via hasPermission fallback path:
         // assign scoped role that has the perm
         Role::create([
             'name' => 'editor',
@@ -167,7 +167,7 @@ describe('HasAzGuard — entity-scoped roles (InteractsWithAzScopes)', function 
         $user->assignRole('superadmin');
         $user->load('roles');
 
-        // hasScopedPermission should pass through to global hasAzPermission
+        // hasScopedPermission should pass through to global hasPermission
         // ManagerRole has test.post.view so global role grants it
         expect($user->hasScopedPermission('test.post.view', $project))->toBeTrue();
     });

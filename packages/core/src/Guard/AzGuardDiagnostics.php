@@ -22,8 +22,6 @@ use UnitEnum;
  * - #[GateAbility] attributes pointing to enums outside the panel Permissions/ dir
  * - roles referencing unknown or unprefixed permissions
  * - policy classes with no #[GateAbility] methods (orphans)
- *
- * Previously named GuardDoctor. The old class is kept as a @deprecated alias.
  */
 class AzGuardDiagnostics
 {
@@ -80,7 +78,7 @@ class AzGuardDiagnostics
             // Discover permission enums once per panel — shared by three checks below.
             $enumClasses = $this->discoverPermissionEnums(basePath: $basePath, baseNamespace: $baseNamespace);
 
-            $this->checkDuplicateAbilities(abilities: $registeredAbilities, panelId: $panelId);
+            $this->checkDuplicateAbilities();
             $this->checkEnumsAgainstPolicies(
                 enumClasses: $enumClasses,
                 panel: $panel,
@@ -142,8 +140,7 @@ class AzGuardDiagnostics
         return $abilities;
     }
 
-    /** @param array<string, string> $abilities */
-    private function checkDuplicateAbilities(array $abilities, string $panelId): void
+    private function checkDuplicateAbilities(): void
     {
         // Duplicates are already detected in collectRegisteredAbilities.
     }

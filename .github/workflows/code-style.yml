@@ -41,3 +41,6 @@ jobs:
 
       - name: Check code style
         run: vendor/bin/pint --test
+
+      - name: Check refactoring (Rector dry-run)
+        run: vendor/bin/rector process --dry-run --no-progress-bar

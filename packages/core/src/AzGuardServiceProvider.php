@@ -27,7 +27,6 @@ use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Guard\Authorizer;
 use AzGuard\Guard\AzGuardDiagnostics;
-use AzGuard\Guard\GuardDoctor;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\CheckDirectGrant;
 use AzGuard\Http\Middleware\LoadAzGuardRoles;
@@ -41,6 +40,7 @@ use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use AzGuard\Support\Config;
+use AzGuard\Support\ScopedRoleCache;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -63,10 +63,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->app->singleton(PolicyAttributeRegistrar::class);
 
-        // Canonical binding — use AzGuardDiagnostics going forward.
         $this->app->singleton(AzGuardDiagnostics::class);
-        // BC alias — resolving the old GuardDoctor name from the container still works.
-        $this->app->alias(AzGuardDiagnostics::class, GuardDoctor::class);
 
         // ─── Registry ─────────────────────────────────────────────────────────
 
@@ -81,6 +78,9 @@ final class AzGuardServiceProvider extends ServiceProvider
         ], 'azguard.grant_sources');
 
         $this->app->singleton(PermissionCache::class);
+
+        // Reset per request (Octane-safe) — caches scoped-role rows for HasScopedRoles.
+        $this->app->scoped(ScopedRoleCache::class);
 
         $this->app->singleton(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
             $allSources = iterator_to_array($this->app->tagged('azguard.grant_sources'), preserve_keys: false);
@@ -211,7 +211,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('azdirect', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>");
+        Blade::directive('azdirect', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && method_exists(auth()->user(), 'hasGrant') && auth()->user()->hasGrant({$expression})): ?>");
 
         Blade::directive('endazdirect', fn (): string => '<?php endif; ?>');
     }

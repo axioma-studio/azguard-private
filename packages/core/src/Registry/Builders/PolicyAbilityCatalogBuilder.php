@@ -20,15 +20,15 @@ use UnitEnum;
  * When $policyClasses are provided explicitly (via PanelProvider::registerCatalogBuilders()),
  * those classes are used directly. Otherwise falls back to filesystem discovery.
  */
-final class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
+final readonly class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
 {
     /**
      * @param  string|null  $panelId  When set, this builder only handles this panel.
      * @param  list<class-string>  $policyClasses  Explicit policy class list (optional).
      */
     public function __construct(
-        private readonly ?string $panelId = null,
-        private readonly array $policyClasses = [],
+        private ?string $panelId = null,
+        private array $policyClasses = [],
     ) {}
 
     #[Override]

@@ -11,12 +11,12 @@ test('panel provider регистрирует abilities из Permission::map', f
     (new TestAdminPanelProvider(app()))->boot();
 
     $panel = (new TestAdminPanelProvider(app()))->panel(Panel::make());
-    $expectedAbility = $panel->id(id: 'admin')->getPermissionName(permission: 'post.view');
+    $expectedAbility = $panel->id(id: 'admin')->resolvePermission(permission: 'post.view');
 
     expect(Gate::has($expectedAbility))->toBeTrue();
 });
 
-test('Gate ability из map проверяет hasAzPermission', function () {
+test('Gate ability из map проверяет hasPermission', function () {
     (new TestAdminPanelProvider(app()))->boot();
 
     $user = User::create([

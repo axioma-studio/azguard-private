@@ -18,9 +18,9 @@ use Illuminate\Support\Carbon;
  * Fluent builder for working with Direct Grants.
  *
  * Usage:
- *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.documents.export');
+ *   AzGuard::forUser($user)->on('app')->ttl(3600)->grant('app.documents.export');
  *   AzGuard::forUser($user)->on('app')->revoke('app.documents.export');
- *   AzGuard::forUser($user)->on('app')->list();
+ *   AzGuard::forUser($user)->on('app')->grants();
  */
 final class GrantBuilder
 {
@@ -59,7 +59,7 @@ final class GrantBuilder
      *
      * @throws PanelNotSetException
      */
-    public function give(string $permissionKey): DirectGrant
+    public function grant(string $permissionKey): DirectGrant
     {
         $panel = PanelResolver::resolveOrFail($this->panelId);
 
@@ -143,7 +143,7 @@ final class GrantBuilder
      *
      * @throws PanelNotSetException
      */
-    public function list(): Collection
+    public function grants(): Collection
     {
         return $this->baseQuery(PanelResolver::resolveOrFail($this->panelId))
             ->active()

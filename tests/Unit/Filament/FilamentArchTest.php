@@ -25,8 +25,6 @@ arch('filament resources extend Filament Resource')
         'AzGuard\\Filament\\Resources\\RoleResource\\Pages',
         'AzGuard\\Filament\\Resources\\RoleResource\\RelationManagers',
         'AzGuard\\Filament\\Resources\\DirectGrantResource\\Pages',
-        'AzGuard\\Filament\\Resources\\AzGuardResource',
-        'AzGuard\\Filament\\Resources\\GuardResource',
     ]);
 
 arch('filament relation managers extend RelationManager')

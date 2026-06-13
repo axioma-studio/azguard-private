@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Context;
 
-use AzGuard\Context\Contracts\ContextMergeStrategy;
+use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
@@ -31,7 +31,7 @@ final readonly class ContextualRoleGrantSource implements GrantSource
 {
     public function __construct(
         private AuthorizationContextManager $manager,
-        private ContextMergeStrategy $strategy,
+        private MergeStrategy $strategy,
     ) {}
 
     #[Override]
@@ -41,7 +41,7 @@ final readonly class ContextualRoleGrantSource implements GrantSource
 
         // Контекст не установлен — стратегия решает (пустой или что-то ещё)
         if (! $context instanceof AuthorizationContext) {
-            return $this->strategy->merge($user, $panelId, PermissionSet::empty(), null);
+            return $this->strategy->merge(PermissionSet::empty(), null);
         }
 
         $userId = $user->getAuthIdentifier();

@@ -33,6 +33,7 @@
         <include>
             <directory>packages/core/src</directory>
             <directory>packages/context/src</directory>
+            <directory>packages/filament/src</directory>
         </include>
     </source>
 

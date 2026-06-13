@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament\Resources;
 
-use App\Models\User;
 use AzGuard\AzGuardManager;
 use AzGuard\Filament\Resources\DirectGrantResource\Pages\CreateDirectGrant;
 use AzGuard\Filament\Resources\DirectGrantResource\Pages\ListDirectGrants;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use BackedEnum;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Get;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -51,7 +50,7 @@ final class DirectGrantResource extends Resource
     #[Override]
     public static function form(Schema $schema): Schema
     {
-        $userModel = config('auth.providers.users.model', User::class);
+        $userModel = config('auth.providers.users.model', 'App\\Models\\User');
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
         return $schema->components([
@@ -77,7 +76,7 @@ final class DirectGrantResource extends Resource
                 ->label('Панель')
                 ->required()
                 ->options(fn () => collect(app(AzGuardManager::class)->getPanels())
-                    ->mapWithKeys(fn ($panel, $id) => [$id => $id])
+                    ->mapWithKeys(fn ($panel, $id): array => [$id => $id])
                     ->toArray(),
                 )
                 ->live()
@@ -129,7 +128,7 @@ final class DirectGrantResource extends Resource
     #[Override]
     public static function table(Table $table): Table
     {
-        $userModel = config('auth.providers.users.model', User::class);
+        $userModel = config('auth.providers.users.model', 'App\\Models\\User');
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
         return $table

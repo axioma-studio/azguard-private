@@ -25,6 +25,7 @@ abstract class BaseRole implements RoleInterface
         return 0;
     }
 
+    /** @return list<string> */
     #[Override]
     abstract public function permissions(): array;
 }

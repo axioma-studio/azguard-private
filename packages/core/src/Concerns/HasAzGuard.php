@@ -4,65 +4,25 @@ declare(strict_types=1);
 
 namespace AzGuard\Concerns;
 
-use Illuminate\Support\Collection;
-
 /**
- * Convenience trait that composes HasRoles and HasPermissions.
- * Use this on your User model for the full AzGuard API.
- * You can instead use HasRoles or HasPermissions individually
- * if you only need a subset of the functionality.
+ * Convenience trait that composes the full AzGuard user API.
+ *
+ * Add this single trait to your User model to get role checks
+ * ({@see HasRoles}) and permission checks ({@see HasPermissions}):
+ *
+ *   $user->assignRole('editor');
+ *   $user->hasRole('editor');
+ *   $user->hasPermission('app.posts.edit');
+ *   $user->hasPermissionIn('workspace', 42, 'app.posts.edit');
+ *   $user->permissions('app');           // Collection<int, string>
+ *   $user->flushPermissions();
+ *
+ * Use {@see HasRoles} or {@see HasPermissions} directly if you only need
+ * a subset, and add {@see HasDirectGrants} / {@see HasScopedRoles} when you
+ * need one-off grants or entity-scoped roles.
  */
 trait HasAzGuard
 {
-    use HasPermissions, HasRoles;
-
-    /**
-     * Check whether the user has the given role by name.
-     */
-    public function hasAzRole(string $name): bool
-    {
-        return $this->hasRole($name);
-    }
-
-    /**
-     * Check whether the user has a specific permission on a panel.
-     */
-    public function hasAzPermission(string $permission, string $panelId = 'app'): bool
-    {
-        return $this->hasPermission($permission, $panelId);
-    }
-
-    /**
-     * Contextual permission check — does not mutate global state.
-     *
-     *   $user->hasAzPermissionIn('workspace', 42, 'app.posts.edit');
-     *   $user->hasAzPermissionIn('workspace', 42, 'app.posts.edit', 'admin');
-     */
-    public function hasAzPermissionIn(
-        string $contextType,
-        int|string $contextId,
-        string $permission,
-        string $panelId = 'app',
-    ): bool {
-        return $this->hasPermissionIn($contextType, $contextId, $permission, $panelId);
-    }
-
-    /**
-     * Get all active permission keys for a panel.
-     *
-     * @return Collection<int, string>
-     */
-    public function getAzPermissions(string $panelId = 'app'): Collection
-    {
-        return $this->permissions($panelId);
-    }
-
-    /**
-     * Clear the resolved permission cache for this user.
-     * Alias for flushPermissions() with optional panelId.
-     */
-    public function clearAzPermissionsCache(?string $panelId = null): void
-    {
-        $this->flushPermissions($panelId);
-    }
+    use HasPermissions;
+    use HasRoles;
 }

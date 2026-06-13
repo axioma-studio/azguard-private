@@ -13,6 +13,6 @@ final class PostPolicy
     #[GateAbility(permission: PostPermission::View)]
     public function canView(User $user): bool
     {
-        return $user->hasAzPermission(permission: 'test.post.view');
+        return $user->hasPermission(permission: 'test.post.view');
     }
 }

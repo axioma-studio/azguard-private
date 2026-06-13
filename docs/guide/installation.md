@@ -11,7 +11,7 @@
 ## Install via Composer
 
 ```bash
-composer require azguard/azguard
+composer require axioma-studio/azguard-core
 ```
 
 ## Publish the config

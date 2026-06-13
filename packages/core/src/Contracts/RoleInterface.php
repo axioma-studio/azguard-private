@@ -10,5 +10,6 @@ interface RoleInterface
 
     public function getLevel(): int;
 
+    /** @return list<string> */
     public function permissions(): array;
 }

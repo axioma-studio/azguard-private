@@ -13,7 +13,7 @@ describe('PermissionSet', function () {
 
         expect($set->isEmpty())->toBeTrue()
             ->and($set->count())->toBe(0)
-            ->and($set->toArray())->toBe([]);
+            ->and($set->keys())->toBe([]);
     });
 
     it('creates wildcard set', function () {
@@ -27,7 +27,7 @@ describe('PermissionSet', function () {
         $set = PermissionSet::fromKeys(['app.posts.view', 'app.posts.edit', 'app.posts.view']);
 
         expect($set->count())->toBe(2)
-            ->and($set->toArray())->toBe(['app.posts.view', 'app.posts.edit']);
+            ->and($set->keys())->toBe(['app.posts.view', 'app.posts.edit']);
     });
 
     // ─── has / grants ───────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ describe('PermissionSet', function () {
         $b = PermissionSet::fromKeys(['app.posts.edit', 'app.tags.view']);
         $merged = $a->merge($b);
 
-        expect($merged->toArray())->toContain('app.posts.view')
+        expect($merged->keys())->toContain('app.posts.view')
             ->toContain('app.posts.edit')
             ->toContain('app.tags.view')
             ->and($merged->count())->toBe(3);
@@ -122,7 +122,7 @@ describe('PermissionSet', function () {
 
         $filtered = $set->filter(fn (string $k) => in_array($k, $known, true));
 
-        expect($filtered->toArray())->toBe(['app.posts.view', 'app.tags.view']);
+        expect($filtered->keys())->toBe(['app.posts.view', 'app.tags.view']);
     });
 
     it('filter of wildcard set still returns filtered set', function () {

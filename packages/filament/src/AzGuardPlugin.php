@@ -9,10 +9,11 @@ use AzGuard\Filament\Resources\DirectGrantResource;
 use AzGuard\Filament\Resources\RoleResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Resources\Resource;
 use Override;
 
 /**
- * AzGuard Filament plugin (supports Filament 4 and 5).
+ * AzGuard Filament plugin (Filament 5).
  *
  * Register in your PanelProvider:
  *
@@ -67,6 +68,19 @@ final class AzGuardPlugin implements Plugin
     #[Override]
     public function boot(Panel $panel): void
     {
-        //
+        // For the "policy" source, generated policies enforce via Filament's
+        // native authorization, so leave the policy-existence check in place.
+        if (! config('az-guard-filament.enforce', true) || config('az-guard-filament.source', 'database') === 'policy') {
+            return;
+        }
+
+        // Force Filament to consult the Gate for every resource (instead of
+        // allowing when no policy exists) so AzGuard's ResourceGate enforces
+        // the generated permissions — no per-resource code required.
+        foreach ($panel->getResources() as $resource) {
+            if (is_subclass_of($resource, Resource::class)) {
+                $resource::checkPolicyExistence(false);
+            }
+        }
     }
 }

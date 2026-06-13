@@ -153,7 +153,7 @@ class RolePermissionsCommand extends Command
             return self::FAILURE;
         }
 
-        $newKeys = array_filter(array_map('trim', explode(',', $keysRaw)));
+        $newKeys = array_filter(array_map(trim(...), explode(',', $keysRaw)));
 
         $existing = $role->dbPermissions()
             ->where('panel_id', $panelId)

@@ -7,7 +7,7 @@ use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
-use AzGuard\Registry\Resolver\PermissionResolverCache;
+use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -117,7 +117,7 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog([]),
             sources: [],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser(makeUser(1), 'app');
@@ -132,7 +132,7 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.posts.view', 'app.posts.edit']),
             sources: [$sourceA, $sourceB],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser(makeUser(1), 'app');
@@ -149,7 +149,7 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.posts.view']),
             sources: [$sourceWild, $sourceLow],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser(makeUser(1), 'app');
@@ -168,12 +168,12 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.posts.view', 'app.posts.edit']),
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser(makeUser(1), 'app');
 
-        expect($set->toArray())->toBe(['app.posts.view', 'app.posts.edit'])
+        expect($set->keys())->toBe(['app.posts.view', 'app.posts.edit'])
             ->and($set->has('app.orphan.unknown'))->toBeFalse();
     });
 
@@ -183,7 +183,7 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog([]),   // каталог пустой — не важно
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $set = $resolver->forUser(makeUser(1), 'app');
@@ -214,7 +214,7 @@ describe('EffectivePermissionResolver', function () {
         $resolver = new EffectivePermissionResolver(
             catalog: makeCatalog(['app.posts.view']),
             sources: [$source],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $user = makeUser(1);
@@ -257,7 +257,7 @@ describe('EffectivePermissionResolver', function () {
                 $makeOrderedSource(GrantPriority::ClassRole, 'app.a'),
                 $makeOrderedSource(GrantPriority::DirectGrant, 'app.c'),
             ],
-            cache: new PermissionResolverCache,
+            cache: new PermissionCache,
         );
 
         $resolver->forUser(makeUser(1), 'app');

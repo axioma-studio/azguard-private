@@ -1,8 +1,9 @@
 # AzGuard
 
-[![Tests](https://github.com/axioma-studio/azguard-private/actions/workflows/tests.yml/badge.svg)](https://github.com/axioma-studio/azguard-private/actions/workflows/tests.yml)
-[![Lint](https://github.com/axioma-studio/azguard-private/actions/workflows/lint.yml/badge.svg)](https://github.com/axioma-studio/azguard-private/actions/workflows/lint.yml)
-[![Static Analysis](https://github.com/axioma-studio/azguard-private/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/axioma-studio/azguard-private/actions/workflows/static-analysis.yml)
+[![Tests](https://github.com/axioma-studio/azguard/actions/workflows/tests.yml/badge.svg)](https://github.com/axioma-studio/azguard/actions/workflows/tests.yml)
+[![Code Style](https://github.com/axioma-studio/azguard/actions/workflows/code-style.yml/badge.svg)](https://github.com/axioma-studio/azguard/actions/workflows/code-style.yml)
+[![Static Analysis](https://github.com/axioma-studio/azguard/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/axioma-studio/azguard/actions/workflows/static-analysis.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Code-first RBAC** для Laravel с поддержкой multi-panel архитектуры и PHP Attributes.
 
@@ -24,7 +25,7 @@
 ## Установка
 
 ```bash
-composer require azguard/azguard
+composer require axioma-studio/azguard-core
 php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```
@@ -82,7 +83,7 @@ $user->roles()->attach($role);
 
 ```php
 // В контроллере / политике
-$user->hasAzPermission('app.users.view');
+$user->hasPermission('app.users.view');
 
 // Через Gate
 Gate::allows('app.users.create');
@@ -136,7 +137,7 @@ Gate::allows('app.users.create');
 ```
 azguard-private/
 ├── packages/
-│   ├── core/      # azguard/azguard — основной пакет
+│   ├── core/      # axioma-studio/azguard-core — основной пакет
 │   └── filament/  # azguard/filament — Filament-интеграция
 ├── tests/         # Feature + Unit + Arch тесты
 ├── .github/

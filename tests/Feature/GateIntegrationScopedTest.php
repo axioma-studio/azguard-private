@@ -48,7 +48,7 @@ describe('Gate integration — entity-scoped roles', function (): void {
         $user->roles()->attach($role);
         $user->load('roles');
 
-        // SuperAdmin via global role — hasScopedPermission delegates to hasAzPermission first
+        // SuperAdmin via global role — hasScopedPermission delegates to hasPermission first
         expect($user->hasScopedPermission('projects.edit', $project))->toBeTrue();
     });
 

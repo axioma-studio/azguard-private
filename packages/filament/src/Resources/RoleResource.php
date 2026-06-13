@@ -9,15 +9,15 @@ use AzGuard\Filament\Resources\RoleResource\Pages\EditRole;
 use AzGuard\Filament\Resources\RoleResource\Pages\ListRoles;
 use AzGuard\Models\Role;
 use BackedEnum;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Get;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -86,7 +86,7 @@ final class RoleResource extends Resource
             TextInput::make('class_name')
                 ->label('FQCN PHP-класса')
                 ->placeholder('App\\Roles\\EditorRole')
-                ->helperText('Полное имя класса, реализующего getAzPermissions().')
+                ->helperText('Полное имя класса, реализующего permissions().')
                 ->nullable()
                 ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
                 ->columnSpan('full'),

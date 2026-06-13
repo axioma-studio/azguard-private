@@ -51,7 +51,7 @@ Route::middleware('azguard.context')->group(function () {
 });
 ```
 
-С этого момента `hasAzPermission('app.posts.edit')` автоматически учитывает
+С этого момента `hasPermission('app.posts.edit')` автоматически учитывает
 права пользователя в текущем workspace.
 
 ## Стратегии

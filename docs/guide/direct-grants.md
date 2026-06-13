@@ -50,16 +50,16 @@ use AzGuard\Facades\AzGuard;
 // Permanent
 AzGuard::forUser($user)
     ->on('app')
-    ->give(DocumentsPermission::Export);
+    ->grant(DocumentsPermission::Export);
 
 // With a 1-hour TTL
 AzGuard::forUser($user)
     ->on('app')
     ->ttl(3600)
-    ->give(DocumentsPermission::Export);
+    ->grant(DocumentsPermission::Export);
 
 // Shorthand
-AzGuard::grantDirect($user, DocumentsPermission::Export, 'app', ttl: 3600);
+AzGuard::grant($user, DocumentsPermission::Export, 'app', ttl: 3600);
 ```
 
 ::: info Idempotent
@@ -84,7 +84,7 @@ php artisan az-guard:grant 7 admin.reports.view admin --model=App\\Models\\Admin
 ```php
 // Single permission — enum
 AzGuard::forUser($user)->on('app')->revoke(DocumentsPermission::Export);
-AzGuard::revokeDirect($user, DocumentsPermission::Export, 'app');
+AzGuard::revoke($user, DocumentsPermission::Export, 'app');
 
 // All grants for a panel
 AzGuard::forUser($user)->on('app')->revokeAll();
@@ -183,8 +183,8 @@ Event::listen(GrantRevoked::class, function (GrantRevoked $event): void {
 
 | Method | Code |
 |---|---|
-| Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->give(DocumentsPermission::Export)` |
-| Shorthand grant | `AzGuard::grantDirect($u, DocumentsPermission::Export, 'app', ttl: 3600)` |
+| Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->grant(DocumentsPermission::Export)` |
+| Shorthand grant | `AzGuard::grant($u, DocumentsPermission::Export, 'app', ttl: 3600)` |
 | Artisan grant | `php artisan az-guard:grant {id} {perm} {panel}` |
 | Revoke | `AzGuard::forUser($u)->on('app')->revoke(DocumentsPermission::Export)` |
 | Check (model) | `$user->hasDirectGrant(DocumentsPermission::Export, 'app')` |

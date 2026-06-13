@@ -117,7 +117,7 @@ Static PHP roles are version-controlled. Use DB roles only when end-users need t
 // ✅ Temporary exception via grant
 (new GrantBuilder($user))
     ->on('app')
-    ->give(DocumentsPermission::Delete)
+    ->grant(DocumentsPermission::Delete)
     ->until(now()->addWeek());
 
 // ❌ Role created just for one person

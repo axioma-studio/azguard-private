@@ -25,6 +25,7 @@ final readonly class PermissionSet
     /** @var list<string> Wildcard patterns only (keys containing '*'). */
     private array $patterns;
 
+    /** @param list<string> $keys */
     private function __construct(array $keys)
     {
         $unique = array_unique($keys);
@@ -99,7 +100,7 @@ final readonly class PermissionSet
         }
 
         foreach ($this->patterns as $pattern) {
-            $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote($pattern, '/')).'$/';
+            $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote((string) $pattern, '/')).'$/';
 
             if (preg_match($regex, $key)) {
                 return true;
@@ -115,7 +116,11 @@ final readonly class PermissionSet
     public function grants(string $key): bool
     {
         // has() already handles wildcard, so no double-check needed.
-        return $this->has($key) || $this->matchesWildcard($key);
+        if ($this->has($key)) {
+            return true;
+        }
+
+        return $this->matchesWildcard($key);
     }
 
     public function isWildcard(): bool
@@ -140,16 +145,6 @@ final readonly class PermissionSet
     public function keys(): array
     {
         return array_keys($this->index);
-    }
-
-    /**
-     * @deprecated Use {@see keys()} instead. This alias will be removed in v2.0.
-     *
-     * @return list<string>
-     */
-    public function toArray(): array
-    {
-        return $this->keys();
     }
 
     public function count(): int

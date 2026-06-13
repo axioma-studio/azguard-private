@@ -1,8 +1,27 @@
 {
     "name": "axioma-studio/azguard-context",
-    "description": "Multi-workspace / multi-site context support for AzGuard (opt-in)",
+    "description": "Multi-workspace / multi-site authorization context for AzGuard — context-scoped roles and pluggable merge strategies (opt-in).",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "rbac",
+        "permissions",
+        "multi-tenancy",
+        "workspace",
+        "authorization"
+    ],
+    "homepage": "https://github.com/axioma-studio/azguard",
+    "authors": [
+        {
+            "name": "Dmitry Vostrikov",
+            "email": "dv.vostrikov@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/axioma-studio/azguard/issues",
+        "source": "https://github.com/axioma-studio/azguard"
+    },
     "require": {
         "php": "^8.3",
         "axioma-studio/azguard-core": "*",
@@ -10,18 +29,9 @@
         "illuminate/http": "^11.0|^12.0",
         "illuminate/support": "^11.0|^12.0"
     },
-    "require-dev": {
-        "orchestra/testbench": "^9.0|^10.0",
-        "phpunit/phpunit": "^11.0"
-    },
     "autoload": {
         "psr-4": {
             "AzGuard\\Context\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "AzGuard\\Context\\Tests\\": "tests/"
         }
     },
     "extra": {

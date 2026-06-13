@@ -28,8 +28,8 @@ final class TestGuardPanelProvider extends PanelProvider
     {
         AzGuard::registerPanel(function (): Panel {
             $panel = $this->getPanel();
-            $panel->setBasePath(basePath: __DIR__.'/Posts');
-            $panel->setNamespace(namespace: 'AzGuard\Tests\Stubs\Posts');
+            $panel->basePath(basePath: __DIR__.'/Posts');
+            $panel->namespace(namespace: 'AzGuard\Tests\Stubs\Posts');
 
             return $panel;
         });

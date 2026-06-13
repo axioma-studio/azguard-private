@@ -15,7 +15,7 @@ it('sets and resets current panel around request lifecycle', function (): void {
     );
 
     Route::middleware([SetCurrentPanel::class.':web'])
-        ->get('/set-current-panel-test', fn (): string => (string) AzGuard::currentPanel()?->id());
+        ->get('/set-current-panel-test', fn (): string => (string) AzGuard::currentPanel()?->getId());
 
     $this->get('/set-current-panel-test')
         ->assertOk()

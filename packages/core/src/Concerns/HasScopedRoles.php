@@ -7,17 +7,16 @@ namespace AzGuard\Concerns;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
 use AzGuard\Support\Config;
+use AzGuard\Support\ScopedRoleCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 /**
  * Adds entity-scoped role support to Eloquent models.
  *
- * Renamed from HasScopes (which conflicted with Laravel's own "scope"
- * terminology for Eloquent query scopes). HasScopes is kept as a
- * deprecated BC alias.
+ * Named "ScopedRoles" rather than "Scopes" to avoid clashing with
+ * Laravel's own "scope" terminology for Eloquent query scopes.
  *
  * Provides:
  * - assignScopedRole()    — assign a role scoped to a specific entity
@@ -38,9 +37,6 @@ trait HasScopedRoles
      */
     public const SCOPE_KEY = 'azguard_scope_filter';
 
-    /** @var array<string, Collection<int, ModelHasScope>> */
-    private static array $scopeCache = [];
-
     public static function bootHasScopedRoles(): void
     {
         static::addGlobalScope(self::SCOPE_KEY, function (Builder $builder): void {
@@ -54,25 +50,19 @@ trait HasScopedRoles
                 return;
             }
 
-            $cacheKey = $user->getAuthIdentifier().'|'.static::class;
-
-            if (! isset(self::$scopeCache[$cacheKey])) {
-                self::$scopeCache[$cacheKey] = $user->scopes()
+            $scopes = app(ScopedRoleCache::class)->remember(
+                $user->getAuthIdentifier().'|'.static::class,
+                fn () => $user->scopes()
                     ->where('scope_entity_type', static::class)
-                    ->get();
-            }
+                    ->get(),
+            );
 
-            foreach (self::$scopeCache[$cacheKey] as $scope) {
+            foreach ($scopes as $scope) {
                 if (class_exists($scope->scope_class)) {
                     app($scope->scope_class)->apply($builder, $user, $scope->scopeEntity);
                 }
             }
         });
-    }
-
-    public static function flushScopeCache(): void
-    {
-        self::$scopeCache = [];
     }
 
     /**

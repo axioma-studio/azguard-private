@@ -27,7 +27,7 @@ abstract class PanelProvider extends ServiceProvider
         AzGuard::registerPanel(function (): Panel {
             $panel = $this->getPanel();
             $reflection = new ReflectionClass($this);
-            $panel->setBasePath(basePath: dirname(path: $reflection->getFileName()));
+            $panel->basePath(basePath: dirname(path: $reflection->getFileName()));
 
             return $panel;
         });
@@ -113,7 +113,7 @@ abstract class PanelProvider extends ServiceProvider
         if (! $this->cachedPanel instanceof Panel) {
             $reflection = new ReflectionClass($this);
             $this->cachedPanel = $this->panel(panel: Panel::make());
-            $this->cachedPanel->setNamespace(namespace: $reflection->getNamespaceName());
+            $this->cachedPanel->namespace(namespace: $reflection->getNamespaceName());
         }
 
         return $this->cachedPanel;

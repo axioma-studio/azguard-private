@@ -11,6 +11,7 @@ use BackedEnum;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use ReflectionAttribute;
 use ReflectionMethod;
 use Symfony\Component\HttpFoundation\Response;
 use UnitEnum;
@@ -75,7 +76,7 @@ final class CheckAccess
         $attributes = $method->getAttributes(name: CheckPermissionAttribute::class);
 
         return array_map(
-            callback: static fn ($attribute): CheckPermissionAttribute => $attribute->newInstance(),
+            callback: static fn (ReflectionAttribute $attribute): CheckPermissionAttribute => $attribute->newInstance(),
             array: $attributes,
         );
     }

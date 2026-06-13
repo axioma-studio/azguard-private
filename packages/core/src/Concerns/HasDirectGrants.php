@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  *
  * Usage:
  *   $user->directGrants()->create(['panel_id' => 'app', 'permission_key' => 'app.posts.edit']);
- *   $user->hasDirectGrant('app.posts.edit', 'app'); // true
- *   $user->activeDirectGrants('app'); // Collection of active grants
+ *   $user->hasGrant('app.posts.edit', 'app'); // true
+ *   $user->grants('app'); // Collection of active grants
  */
 trait HasDirectGrants
 {
@@ -35,7 +35,7 @@ trait HasDirectGrants
      *
      * @return Collection<int, DirectGrant>
      */
-    public function activeDirectGrants(string $panelId): Collection
+    public function grants(string $panelId): Collection
     {
         return $this->directGrants()
             ->where('panel_id', $panelId)
@@ -46,7 +46,7 @@ trait HasDirectGrants
     /**
      * Check whether this model has a specific active direct grant for a panel.
      */
-    public function hasDirectGrant(string $permission, ?string $panelId = null): bool
+    public function hasGrant(string $permission, ?string $panelId = null): bool
     {
         $query = $this->directGrants()
             ->where('permission_key', $permission)
@@ -63,15 +63,15 @@ trait HasDirectGrants
      * Assign a direct grant for the given permission in a panel.
      * Silently ignores duplicates via firstOrCreate.
      */
-    public function grantDirect(string $permission, string $panelId, ?DateTimeInterface $expiresAt = null): static
+    public function grant(string $permission, string $panelId, ?DateTimeInterface $expiresAt = null): static
     {
         $this->directGrants()->firstOrCreate(
             ['panel_id' => $panelId, 'permission_key' => $permission],
             ['expires_at' => $expiresAt],
         );
 
-        if (method_exists($this, 'clearAzPermissionsCache')) {
-            $this->clearAzPermissionsCache($panelId);
+        if (method_exists($this, 'flushPermissions')) {
+            $this->flushPermissions($panelId);
         }
 
         return $this;
@@ -80,15 +80,15 @@ trait HasDirectGrants
     /**
      * Revoke a direct grant for the given permission in a panel.
      */
-    public function revokeGrant(string $permission, string $panelId): static
+    public function revoke(string $permission, string $panelId): static
     {
         $this->directGrants()
             ->where('panel_id', $panelId)
             ->where('permission_key', $permission)
             ->delete();
 
-        if (method_exists($this, 'clearAzPermissionsCache')) {
-            $this->clearAzPermissionsCache($panelId);
+        if (method_exists($this, 'flushPermissions')) {
+            $this->flushPermissions($panelId);
         }
 
         return $this;

@@ -8,13 +8,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('hasDirectGrant() returns false when no grants exist', function () {
+it('hasGrant() returns false when no grants exist', function () {
     $user = UserWithDirectGrants::factory()->create();
 
-    expect($user->hasDirectGrant('app.reports.view', 'app'))->toBeFalse();
+    expect($user->hasGrant('app.reports.view', 'app'))->toBeFalse();
 });
 
-it('hasDirectGrant() returns true after creating an active grant', function () {
+it('hasGrant() returns true after creating an active grant', function () {
     $user = UserWithDirectGrants::factory()->create();
 
     $user->directGrants()->create([
@@ -23,10 +23,10 @@ it('hasDirectGrant() returns true after creating an active grant', function () {
         'expires_at' => null,
     ]);
 
-    expect($user->hasDirectGrant('app.reports.view', 'app'))->toBeTrue();
+    expect($user->hasGrant('app.reports.view', 'app'))->toBeTrue();
 });
 
-it('hasDirectGrant() returns false for expired grant', function () {
+it('hasGrant() returns false for expired grant', function () {
     $user = UserWithDirectGrants::factory()->create();
 
     $user->directGrants()->create([
@@ -35,10 +35,10 @@ it('hasDirectGrant() returns false for expired grant', function () {
         'expires_at' => now()->subSecond(),
     ]);
 
-    expect($user->hasDirectGrant('app.reports.view', 'app'))->toBeFalse();
+    expect($user->hasGrant('app.reports.view', 'app'))->toBeFalse();
 });
 
-it('hasDirectGrant() returns true for non-expired grant', function () {
+it('hasGrant() returns true for non-expired grant', function () {
     $user = UserWithDirectGrants::factory()->create();
 
     $user->directGrants()->create([
@@ -47,10 +47,10 @@ it('hasDirectGrant() returns true for non-expired grant', function () {
         'expires_at' => now()->addHour(),
     ]);
 
-    expect($user->hasDirectGrant('app.reports.view', 'app'))->toBeTrue();
+    expect($user->hasGrant('app.reports.view', 'app'))->toBeTrue();
 });
 
-it('hasDirectGrant() is isolated per panel', function () {
+it('hasGrant() is isolated per panel', function () {
     $user = UserWithDirectGrants::factory()->create();
 
     $user->directGrants()->create([
@@ -59,11 +59,11 @@ it('hasDirectGrant() is isolated per panel', function () {
         'expires_at' => null,
     ]);
 
-    expect($user->hasDirectGrant('admin.users.view', 'admin'))->toBeTrue()
-        ->and($user->hasDirectGrant('admin.users.view', 'app'))->toBeFalse();
+    expect($user->hasGrant('admin.users.view', 'admin'))->toBeTrue()
+        ->and($user->hasGrant('admin.users.view', 'app'))->toBeFalse();
 });
 
-it('activeDirectGrants() returns only non-expired grants for panel', function () {
+it('grants() returns only non-expired grants for panel', function () {
     $user = UserWithDirectGrants::factory()->create();
 
     $user->directGrants()->create(['panel_id' => 'app', 'permission_key' => 'app.active', 'expires_at' => null]);
@@ -71,7 +71,7 @@ it('activeDirectGrants() returns only non-expired grants for panel', function ()
     $user->directGrants()->create(['panel_id' => 'app', 'permission_key' => 'app.future', 'expires_at' => now()->addHour()]);
     $user->directGrants()->create(['panel_id' => 'admin', 'permission_key' => 'admin.other', 'expires_at' => null]);
 
-    $active = $user->activeDirectGrants('app');
+    $active = $user->grants('app');
 
     expect($active)->toHaveCount(2)
         ->and($active->pluck('permission_key')->all())
@@ -92,7 +92,7 @@ it('DirectGrant::isExpired() and isActive() reflect expires_at correctly', funct
         ->and($future->isActive())->toBeTrue();
 });
 
-it('hasAzPermission() via HasDirectGrants trait returns true for active grant', function () {
+it('hasPermission() via HasDirectGrants trait returns true for active grant', function () {
     $user = UserWithDirectGrants::factory()->create();
 
     $user->directGrants()->create([
@@ -101,7 +101,7 @@ it('hasAzPermission() via HasDirectGrants trait returns true for active grant', 
         'expires_at' => null,
     ]);
 
-    $user->clearAzPermissionsCache('app');
+    $user->flushPermissions('app');
 
-    expect($user->hasAzPermission('app.special', 'app'))->toBeTrue();
+    expect($user->hasPermission('app.special', 'app'))->toBeTrue();
 });

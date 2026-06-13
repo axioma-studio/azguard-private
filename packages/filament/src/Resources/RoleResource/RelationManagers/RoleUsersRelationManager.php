@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament\Resources\RoleResource\RelationManagers;
 
-use App\Models\User;
+use Filament\Actions\AttachAction;
+use Filament\Actions\DetachAction;
+use Filament\Actions\DetachBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions\AttachAction;
-use Filament\Tables\Actions\DetachAction;
-use Filament\Tables\Actions\DetachBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Override;
@@ -30,7 +29,7 @@ final class RoleUsersRelationManager extends RelationManager
     #[Override]
     public function form(Schema $schema): Schema
     {
-        $userModel = config('auth.providers.users.model', User::class);
+        $userModel = config('auth.providers.users.model', 'App\\Models\\User');
         $labelColumn = config('az-guard.filament.user_label_column', 'name');
 
         return $schema->components([

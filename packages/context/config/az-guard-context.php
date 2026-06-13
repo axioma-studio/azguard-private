@@ -15,7 +15,7 @@ return [
     |   ContextOnlyStrategy        — только context, global игнорируется
     |   DenyWithoutContextStrategy — пустой set без контекста
     |
-    | Можно подставить свой класс, реализующий ContextMergeStrategy.
+    | Можно подставить свой класс, реализующий MergeStrategy.
     |
     */
     'merge_strategy' => GlobalPlusContextStrategy::class,

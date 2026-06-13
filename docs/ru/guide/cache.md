@@ -32,7 +32,7 @@ php artisan azguard:clear-cache --user=42
 
 Кеш автоматически сбрасывается при:
 - `assignRole()` / `revokeRole()`
-- `grantPermission()` / `revokeGrantedPermission()`
+- `grantPermission()` / `revokeedPermission()`
 
 ## Кеш в Octane
 

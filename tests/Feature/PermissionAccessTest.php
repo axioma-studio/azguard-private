@@ -20,7 +20,7 @@ class FakePostPolicy
 {
     public function view($user)
     {
-        return $user->hasAzPermission('admin.post.view', 'admin');
+        return $user->hasPermission('admin.post.view', 'admin');
     }
 }
 
@@ -42,8 +42,8 @@ it('grants access when user has a role with the required permission', function (
     $user->roles()->attach($role);
 
     // 4. Проверка: HasAzGuard должен залезть в FakeAdminRole и найти там разрешение
-    expect($user->hasAzPermission('admin.post.view', 'admin'))->toBeTrue();
-    expect($user->hasAzPermission('admin.post.delete', 'admin'))->toBeFalse();
+    expect($user->hasPermission('admin.post.view', 'admin'))->toBeTrue();
+    expect($user->hasPermission('admin.post.delete', 'admin'))->toBeFalse();
 
     $this->actingAs($user);
 

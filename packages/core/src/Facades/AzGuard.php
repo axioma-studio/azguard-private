@@ -25,9 +25,9 @@ use UnitEnum;
  *
  * --- Grants API (Phase 5–8) ---
  * @method static GrantBuilder forUser(Authenticatable $user)
- * @method static DirectGrant grantDirect(Authenticatable $user, string $permissionKey, string $panelId = 'app', ?int $ttl = null)
- * @method static int revokeDirect(Authenticatable $user, string $permissionKey, string $panelId = 'app')
- * @method static Collection<int, DirectGrant> activeGrants(Authenticatable $user, string $panelId = 'app')
+ * @method static DirectGrant grant(Authenticatable $user, string $permissionKey, string $panelId = 'app', ?int $ttl = null)
+ * @method static int revoke(Authenticatable $user, string $permissionKey, string $panelId = 'app')
+ * @method static Collection<int, DirectGrant> grants(Authenticatable $user, string $panelId = 'app')
  *
  * @see AzGuardManager
  */

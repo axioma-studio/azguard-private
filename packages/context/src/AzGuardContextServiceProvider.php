@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AzGuard\Context;
 
-use AzGuard\Context\Contracts\ContextMergeStrategy;
+use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Context\Contracts\ResolvesContext;
 use AzGuard\Context\Middleware\SetAuthorizationContext;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
+use AzGuard\Contracts\ContextGuard as ContextGuardContract;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -36,7 +37,7 @@ final class AzGuardContextServiceProvider extends ServiceProvider
         $this->app->singleton(AuthorizationContextManager::class);
 
         // Стратегия — конфигурируется в az-guard-context.php
-        $this->app->bind(ContextMergeStrategy::class, function (Application $app): ContextMergeStrategy {
+        $this->app->bind(MergeStrategy::class, function (Application $app): MergeStrategy {
             $class = config('az-guard-context.merge_strategy', GlobalPlusContextStrategy::class);
 
             return $app->make($class);
@@ -56,10 +57,14 @@ final class AzGuardContextServiceProvider extends ServiceProvider
         // ContextualRoleGrantSource
         $this->app->singleton(ContextualRoleGrantSource::class, fn (Application $app): ContextualRoleGrantSource => new ContextualRoleGrantSource(
             manager: $app->make(AuthorizationContextManager::class),
-            strategy: $app->make(ContextMergeStrategy::class),
+            strategy: $app->make(MergeStrategy::class),
         ));
 
         $this->app->tag([ContextualRoleGrantSource::class], 'azguard.grant_sources');
+
+        // ContextGuard — реализация core-контракта для one-off контекстных проверок
+        // ($user->hasPermissionIn(...) / hasPermission(..., $context)).
+        $this->app->singleton(ContextGuardContract::class, ContextGuard::class);
     }
 
     public function boot(): void

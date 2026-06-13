@@ -34,11 +34,13 @@ class ModelHasScope extends Model
         'role_id',
     ];
 
+    /** @return MorphTo<Model, $this> */
     public function scopeEntity(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /** @return BelongsTo<Role, $this> */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Config::roleModel());

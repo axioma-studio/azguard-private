@@ -65,7 +65,7 @@ interface AzGuardManagerInterface
     /**
      * Возвращает fluent GrantBuilder для пользователя.
      *
-     * AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x');
+     * AzGuard::forUser($user)->on('app')->ttl(3600)->grant('app.x');
      */
     public function forUser(Authenticatable $user): GrantBuilder;
 
@@ -74,7 +74,7 @@ interface AzGuardManagerInterface
      *
      * @param  int|null  $ttl  TTL в секундах. null = бессрочно.
      */
-    public function grantDirect(
+    public function grant(
         Authenticatable $user,
         string $permissionKey,
         string $panelId,
@@ -86,7 +86,7 @@ interface AzGuardManagerInterface
      *
      * @return int Количество удалённых записей.
      */
-    public function revokeDirect(
+    public function revoke(
         Authenticatable $user,
         string $permissionKey,
         string $panelId,
@@ -97,7 +97,7 @@ interface AzGuardManagerInterface
      *
      * @return Collection<int, DirectGrant>
      */
-    public function activeGrants(
+    public function grants(
         Authenticatable $user,
         string $panelId,
     ): Collection;

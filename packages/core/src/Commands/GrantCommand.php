@@ -53,7 +53,7 @@ final class GrantCommand extends Command
             $builder = $builder->ttl($ttl);
         }
 
-        $grant = $builder->give($permKey);
+        $grant = $builder->grant($permKey);
 
         $expiresAt = $grant->expires_at instanceof CarbonImmutable
             ? $grant->expires_at->toDateTimeString()
