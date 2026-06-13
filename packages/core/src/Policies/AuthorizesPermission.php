@@ -16,11 +16,11 @@ trait AuthorizesPermission
 
     protected function allows(BackedEnum $permission, Authenticatable $user): bool
     {
-        if (! method_exists($user, 'hasAzPermission')) {
+        if (! method_exists($user, 'hasPermission')) {
             return false;
         }
 
-        return $user->hasAzPermission(permission: $this->resolvePermission(permission: $permission));
+        return $user->hasPermission(permission: $this->resolvePermission(permission: $permission));
     }
 
     protected function resolvePermission(BackedEnum $permission): string

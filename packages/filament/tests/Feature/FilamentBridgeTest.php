@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AzGuard\Filament\Concerns\AuthorizesAzGuardPermissions;
 
-test('trait проверяет hasAzPermission', function () {
+test('trait проверяет hasPermission', function () {
     $checker = new class
     {
         use AuthorizesAzGuardPermissions;

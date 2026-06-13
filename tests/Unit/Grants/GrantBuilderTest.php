@@ -38,7 +38,7 @@ class GrantBuilderTest extends TestCase
 
         $grant = (new GrantBuilder($this->user))
             ->on('app')
-            ->give('app.documents.export');
+            ->grant('app.documents.export');
 
         $this->assertInstanceOf(DirectGrant::class, $grant);
         $this->assertNull($grant->expires_at);
@@ -59,7 +59,7 @@ class GrantBuilderTest extends TestCase
         $grant = (new GrantBuilder($this->user))
             ->on('app')
             ->ttl(3600)
-            ->give('app.documents.export');
+            ->grant('app.documents.export');
 
         $this->assertNotNull($grant->expires_at);
         $this->assertTrue($grant->expires_at->eq(Carbon::parse('2025-01-01 13:00:00')));
@@ -68,8 +68,8 @@ class GrantBuilderTest extends TestCase
     public function test_give_is_idempotent_and_updates_expires_at(): void
     {
         $builder = (new GrantBuilder($this->user))->on('app');
-        $builder->ttl(null)->give('app.documents.export');  // бессрочно
-        $builder->ttl(7200)->give('app.documents.export'); // обновляем TTL
+        $builder->ttl(null)->grant('app.documents.export');  // бессрочно
+        $builder->ttl(7200)->grant('app.documents.export'); // обновляем TTL
 
         $this->assertDatabaseCount('az_direct_grants', 1);
     }
@@ -81,7 +81,7 @@ class GrantBuilderTest extends TestCase
         Event::fake();
 
         $builder = (new GrantBuilder($this->user))->on('app');
-        $builder->give('app.documents.export');
+        $builder->grant('app.documents.export');
 
         $deleted = $builder->revoke('app.documents.export');
 
@@ -107,8 +107,8 @@ class GrantBuilderTest extends TestCase
         Event::fake();
 
         $builder = (new GrantBuilder($this->user))->on('app');
-        $builder->give('app.documents.export');
-        $builder->give('app.documents.view');
+        $builder->grant('app.documents.export');
+        $builder->grant('app.documents.view');
 
         $deleted = $builder->revokeAll();
 
@@ -129,7 +129,7 @@ class GrantBuilderTest extends TestCase
         $builder = (new GrantBuilder($this->user))->on('app');
 
         // Активный
-        $builder->ttl(null)->give('app.a');
+        $builder->ttl(null)->grant('app.a');
         // Истёкший — вставим напрямую
         DirectGrant::create([
             'grantable_type' => $this->user::class,
@@ -139,7 +139,7 @@ class GrantBuilderTest extends TestCase
             'expires_at' => Carbon::parse('2025-01-01'),
         ]);
 
-        $list = $builder->list();
+        $list = $builder->grants();
 
         $this->assertInstanceOf(Collection::class, $list);
         $this->assertCount(1, $list);
@@ -150,6 +150,6 @@ class GrantBuilderTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
 
-        (new GrantBuilder($this->user))->give('app.x');
+        (new GrantBuilder($this->user))->grant('app.x');
     }
 }

@@ -25,10 +25,10 @@ abstract class AzGuardResource extends Resource
 
         $user = auth()->user();
 
-        if ($user === null || ! method_exists($user, 'hasAzPermission')) {
+        if ($user === null || ! method_exists($user, 'hasPermission')) {
             return false;
         }
 
-        return $user->hasAzPermission(permission: $permission);
+        return $user->hasPermission(permission: $permission);
     }
 }

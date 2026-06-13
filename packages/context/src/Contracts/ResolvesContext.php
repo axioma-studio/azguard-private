@@ -22,7 +22,7 @@ use Illuminate\Http\Request;
  *               : null;
  *       }
  *
- *       public function panel(): string { return 'app'; }
+ *       public function panelId(): string { return 'app'; }
  *   }
  *
  * Регистрируется в PanelProvider:
@@ -39,5 +39,5 @@ interface ResolvesContext
     /**
      * Панель, для которой работает этот resolver.
      */
-    public function panel(): string;
+    public function panelId(): string;
 }

@@ -156,7 +156,7 @@ describe('HasAzGuard — entity-scoped roles (HasScopedRoles)', function (): voi
         ]);
 
         // Patch ManagerRole to return ['*'] by adding superadmin globally
-        // Instead we test via hasAzPermission fallback path:
+        // Instead we test via hasPermission fallback path:
         // assign scoped role that has the perm
         Role::create([
             'name' => 'editor',
@@ -167,7 +167,7 @@ describe('HasAzGuard — entity-scoped roles (HasScopedRoles)', function (): voi
         $user->assignRole('superadmin');
         $user->load('roles');
 
-        // hasScopedPermission should pass through to global hasAzPermission
+        // hasScopedPermission should pass through to global hasPermission
         // ManagerRole has test.post.view so global role grants it
         expect($user->hasScopedPermission('test.post.view', $project))->toBeTrue();
     });

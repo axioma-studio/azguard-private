@@ -34,13 +34,13 @@ final class DirectGrantPolicy
      */
     public function check(Authenticatable $user, string|array $arguments): bool
     {
-        if (! method_exists($user, 'hasDirectGrant')) {
+        if (! method_exists($user, 'hasGrant')) {
             return false;
         }
 
         [$permissionKey, $panelId] = $this->parseArguments($arguments);
 
-        return $user->hasDirectGrant($permissionKey, $panelId);
+        return $user->hasGrant($permissionKey, $panelId);
     }
 
     /**

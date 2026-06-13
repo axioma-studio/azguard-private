@@ -32,12 +32,8 @@ final class Panel
         return new self;
     }
 
-    public function id(?string $id = null): static|string
+    public function id(string $id): static
     {
-        if ($id === null) {
-            return $this->id;
-        }
-
         $this->id = $id;
 
         return $this;
@@ -62,14 +58,14 @@ final class Panel
         return $this;
     }
 
-    public function setNamespace(string $namespace): static
+    public function namespace(string $namespace): static
     {
         $this->namespace = $namespace;
 
         return $this;
     }
 
-    public function setBasePath(string $basePath): static
+    public function basePath(string $basePath): static
     {
         $this->basePath = $basePath;
 
@@ -126,23 +122,27 @@ final class Panel
         return $this;
     }
 
-    public function getPermissionName(string $permission): string
+    /**
+     * Resolve a permission (string or enum) to its fully-qualified key,
+     * applying panel scoping ("{panelId}.{permission}") when enabled.
+     */
+    public function resolvePermission(string|UnitEnum $permission): string
+    {
+        if ($permission instanceof BackedEnum) {
+            return $this->scope($permission->value);
+        }
+
+        if ($permission instanceof UnitEnum) {
+            return $this->scope($permission->name);
+        }
+
+        return $this->scope($permission);
+    }
+
+    private function scope(string $permission): string
     {
         return $this->isScopedByPanelId
             ? "{$this->id}.{$permission}"
             : $permission;
-    }
-
-    public function resolvePermission(string|UnitEnum $permission): string
-    {
-        if ($permission instanceof BackedEnum) {
-            return $this->getPermissionName(permission: $permission->value);
-        }
-
-        if ($permission instanceof UnitEnum) {
-            return $this->getPermissionName(permission: $permission->name);
-        }
-
-        return $this->getPermissionName(permission: $permission);
     }
 }

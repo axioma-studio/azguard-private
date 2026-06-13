@@ -88,7 +88,7 @@ final class GrantBuilderTest extends TestCase
 
         $grant = (new GrantBuilder($user))
             ->on('app')
-            ->give('app.documents.view');
+            ->grant('app.documents.view');
 
         $this->assertInstanceOf(DirectGrant::class, $grant);
         $this->assertDatabaseHas('az_guard_direct_grants', [
@@ -115,7 +115,7 @@ final class GrantBuilderTest extends TestCase
         $grant = (new GrantBuilder($user))
             ->on('app')
             ->ttl(3600)
-            ->give('app.x.edit');
+            ->grant('app.x.edit');
 
         $this->assertTrue($grant->expires_at->between($before, $after));
 
@@ -126,8 +126,8 @@ final class GrantBuilderTest extends TestCase
     {
         $user = $this->makeUser(3);
 
-        (new GrantBuilder($user))->on('app')->give('app.y.view');
-        (new GrantBuilder($user))->on('app')->ttl(7200)->give('app.y.view');
+        (new GrantBuilder($user))->on('app')->grant('app.y.view');
+        (new GrantBuilder($user))->on('app')->ttl(7200)->grant('app.y.view');
 
         $this->assertDatabaseCount('az_guard_direct_grants', 1);
         $grant = DirectGrant::first();
@@ -139,7 +139,7 @@ final class GrantBuilderTest extends TestCase
         Event::fake([GrantRevoked::class]);
 
         $user = $this->makeUser(4);
-        (new GrantBuilder($user))->on('app')->give('app.z.delete');
+        (new GrantBuilder($user))->on('app')->grant('app.z.delete');
 
         $deleted = (new GrantBuilder($user))->on('app')->revoke('app.z.delete');
 
@@ -169,9 +169,9 @@ final class GrantBuilderTest extends TestCase
         Event::fake([GrantRevoked::class]);
 
         $user = $this->makeUser(6);
-        (new GrantBuilder($user))->on('app')->give('app.a.view');
-        (new GrantBuilder($user))->on('app')->give('app.b.view');
-        (new GrantBuilder($user))->on('admin')->give('admin.c.view');
+        (new GrantBuilder($user))->on('app')->grant('app.a.view');
+        (new GrantBuilder($user))->on('app')->grant('app.b.view');
+        (new GrantBuilder($user))->on('admin')->grant('admin.c.view');
 
         $deleted = (new GrantBuilder($user))->on('app')->revokeAll();
 
@@ -183,7 +183,7 @@ final class GrantBuilderTest extends TestCase
     public function test_list_returns_active_grants_only(): void
     {
         $user = $this->makeUser(7);
-        (new GrantBuilder($user))->on('app')->give('app.active.view');
+        (new GrantBuilder($user))->on('app')->grant('app.active.view');
 
         // Добавляем истекший grant напрямую
         DirectGrant::create([
@@ -194,7 +194,7 @@ final class GrantBuilderTest extends TestCase
             'expires_at' => now()->subHour(),
         ]);
 
-        $list = (new GrantBuilder($user))->on('app')->list();
+        $list = (new GrantBuilder($user))->on('app')->grants();
 
         $this->assertCount(1, $list);
         $this->assertSame('app.active.view', $list->first()->permission_key);

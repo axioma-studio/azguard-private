@@ -70,16 +70,16 @@ final class HasDirectGrantsTest extends TestCase
     public function test_has_direct_grant_returns_true_when_grant_exists(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.x.view');
+        (new GrantBuilder($user))->on('app')->grant('app.x.view');
 
-        $this->assertTrue($user->hasDirectGrant('app.x.view', 'app'));
+        $this->assertTrue($user->hasGrant('app.x.view', 'app'));
     }
 
     public function test_has_direct_grant_returns_false_when_grant_missing(): void
     {
         $user = $this->createStubUser();
 
-        $this->assertFalse($user->hasDirectGrant('app.x.view', 'app'));
+        $this->assertFalse($user->hasGrant('app.x.view', 'app'));
     }
 
     public function test_has_direct_grant_returns_false_for_expired_grant(): void
@@ -94,37 +94,37 @@ final class HasDirectGrantsTest extends TestCase
             'expires_at' => now()->subMinute(),
         ]);
 
-        $this->assertFalse($user->hasDirectGrant('app.x.view', 'app'));
+        $this->assertFalse($user->hasGrant('app.x.view', 'app'));
     }
 
     public function test_has_direct_grant_is_cached_in_memory(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.y.view');
+        (new GrantBuilder($user))->on('app')->grant('app.y.view');
 
-        $user->hasDirectGrant('app.y.view', 'app');
+        $user->hasGrant('app.y.view', 'app');
         DirectGrant::query()->delete();
 
-        $this->assertTrue($user->hasDirectGrant('app.y.view', 'app'));
+        $this->assertTrue($user->hasGrant('app.y.view', 'app'));
     }
 
     public function test_clear_direct_grants_cache_invalidates_memory_cache(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.z.view');
+        (new GrantBuilder($user))->on('app')->grant('app.z.view');
 
-        $user->hasDirectGrant('app.z.view', 'app');
+        $user->hasGrant('app.z.view', 'app');
         DirectGrant::query()->delete();
         $user->clearDirectGrantsCache();
 
-        $this->assertFalse($user->hasDirectGrant('app.z.view', 'app'));
+        $this->assertFalse($user->hasGrant('app.z.view', 'app'));
     }
 
     public function test_direct_grants_returns_active_collection(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.a.view');
-        (new GrantBuilder($user))->on('app')->give('app.b.edit');
+        (new GrantBuilder($user))->on('app')->grant('app.a.view');
+        (new GrantBuilder($user))->on('app')->grant('app.b.edit');
 
         DirectGrant::create([
             'model_type' => StubUserModel::class,
@@ -143,8 +143,8 @@ final class HasDirectGrantsTest extends TestCase
     public function test_direct_grants_without_panel_returns_all_active(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.x.view');
-        (new GrantBuilder($user))->on('admin')->give('admin.x.view');
+        (new GrantBuilder($user))->on('app')->grant('app.x.view');
+        (new GrantBuilder($user))->on('admin')->grant('admin.x.view');
 
         $this->assertCount(2, $user->directGrants());
     }
@@ -152,7 +152,7 @@ final class HasDirectGrantsTest extends TestCase
     public function test_has_permission_checks_direct_grant_as_fallback(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.reports.view');
+        (new GrantBuilder($user))->on('app')->grant('app.reports.view');
 
         $this->assertTrue($user->hasPermission('app.reports.view'));
     }
@@ -167,12 +167,12 @@ final class HasDirectGrantsTest extends TestCase
     public function test_flush_permissions_clears_both_caches(): void
     {
         $user = $this->createStubUser();
-        (new GrantBuilder($user))->on('app')->give('app.test.view');
+        (new GrantBuilder($user))->on('app')->grant('app.test.view');
 
-        $user->hasDirectGrant('app.test.view', 'app');
+        $user->hasGrant('app.test.view', 'app');
         DirectGrant::query()->delete();
         $user->flushPermissions();
 
-        $this->assertFalse($user->hasDirectGrant('app.test.view', 'app'));
+        $this->assertFalse($user->hasGrant('app.test.view', 'app'));
     }
 }

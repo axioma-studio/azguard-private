@@ -83,7 +83,7 @@ final class AzGuardManager implements AzGuardManagerInterface
      * Return a fluent GrantBuilder for a user.
      *
      * Example:
-     *   AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x.view');
+     *   AzGuard::forUser($user)->on('app')->ttl(3600)->grant('app.x.view');
      */
     #[Override]
     public function forUser(Authenticatable $user): GrantBuilder
@@ -97,13 +97,13 @@ final class AzGuardManager implements AzGuardManagerInterface
      * @param  int|null  $ttl  TTL in seconds. null = permanent.
      */
     #[Override]
-    public function grantDirect(
+    public function grant(
         Authenticatable $user,
         string $permissionKey,
         string $panelId = 'app',
         ?int $ttl = null,
     ): DirectGrant {
-        return $this->forUser($user)->on($panelId)->ttl($ttl)->give($permissionKey);
+        return $this->forUser($user)->on($panelId)->ttl($ttl)->grant($permissionKey);
     }
 
     /**
@@ -112,7 +112,7 @@ final class AzGuardManager implements AzGuardManagerInterface
      * @return int Number of deleted records.
      */
     #[Override]
-    public function revokeDirect(
+    public function revoke(
         Authenticatable $user,
         string $permissionKey,
         string $panelId = 'app',
@@ -126,10 +126,10 @@ final class AzGuardManager implements AzGuardManagerInterface
      * @return Collection<int, DirectGrant>
      */
     #[Override]
-    public function activeGrants(
+    public function grants(
         Authenticatable $user,
         string $panelId = 'app',
     ): Collection {
-        return $this->forUser($user)->on($panelId)->list();
+        return $this->forUser($user)->on($panelId)->grants();
     }
 }

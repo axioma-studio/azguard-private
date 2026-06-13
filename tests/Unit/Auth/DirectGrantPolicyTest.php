@@ -30,7 +30,7 @@ class DirectGrantPolicyTest extends TestCase
     {
         return $this->getMockBuilder(UserWithDirectGrants::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['hasDirectGrant'])
+            ->onlyMethods(['hasGrant'])
             ->getMock();
     }
 
@@ -97,7 +97,7 @@ class DirectGrantPolicyTest extends TestCase
     {
         $user = $this->createUserMock();
         $user->expects($this->once())
-            ->method('hasDirectGrant')
+            ->method('hasGrant')
             ->with('app.x', null)
             ->willReturn(true);
 
@@ -110,7 +110,7 @@ class DirectGrantPolicyTest extends TestCase
     {
         $user = $this->createUserMock();
         $user->expects($this->once())
-            ->method('hasDirectGrant')
+            ->method('hasGrant')
             ->with('app.x', 'app')
             ->willReturn(false);
 
@@ -126,7 +126,7 @@ class DirectGrantPolicyTest extends TestCase
 
         $user = $this->createUserMock();
         $user->expects($this->once())
-            ->method('hasDirectGrant')
+            ->method('hasGrant')
             ->with('app.x', 'app')
             ->willReturn(true);
 

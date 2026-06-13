@@ -86,7 +86,7 @@ final class RoleResource extends Resource
             TextInput::make('class_name')
                 ->label('FQCN PHP-класса')
                 ->placeholder('App\\Roles\\EditorRole')
-                ->helperText('Полное имя класса, реализующего getAzPermissions().')
+                ->helperText('Полное имя класса, реализующего permissions().')
                 ->nullable()
                 ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
                 ->columnSpan('full'),

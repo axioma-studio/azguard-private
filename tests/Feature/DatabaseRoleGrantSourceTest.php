@@ -32,7 +32,7 @@ it('returns permissions assigned to user via DB role', function () {
     ]);
 
     $user->assignRole('editor');
-    $user->clearAzPermissionsCache('app');
+    $user->flushPermissions('app');
 
     $source = app(DatabaseRoleGrantSource::class);
     $result = $source->permissionsFor($user, 'app');
@@ -53,7 +53,7 @@ it('aggregates permissions across multiple DB roles', function () {
 
     $user->assignRole('editor');
     $user->assignRole('viewer');
-    $user->clearAzPermissionsCache('app');
+    $user->flushPermissions('app');
 
     $source = app(DatabaseRoleGrantSource::class);
     $result = $source->permissionsFor($user, 'app');
@@ -76,7 +76,7 @@ it('wildcard role grants all permissions', function () {
     ]);
 
     $user->assignRole('superadmin');
-    $user->clearAzPermissionsCache('app');
+    $user->flushPermissions('app');
 
     $source = app(DatabaseRoleGrantSource::class);
     $result = $source->permissionsFor($user, 'app');
@@ -97,7 +97,7 @@ it('does not return permissions for other panels', function () {
     ]);
 
     $user->assignRole('admin-editor');
-    $user->clearAzPermissionsCache('app');
+    $user->flushPermissions('app');
 
     $source = app(DatabaseRoleGrantSource::class);
     $result = $source->permissionsFor($user, 'app');

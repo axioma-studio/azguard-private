@@ -13,6 +13,6 @@ final class AdminPostPolicy
     #[GateAbility(permission: AdminPermission::PostView)]
     public function view(User $user): bool
     {
-        return $user->hasAzPermission('admin.post.view', 'admin');
+        return $user->hasPermission('admin.post.view', 'admin');
     }
 }

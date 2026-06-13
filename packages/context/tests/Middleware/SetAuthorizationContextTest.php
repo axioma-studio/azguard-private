@@ -28,7 +28,7 @@ final class SetAuthorizationContextTest extends TestCase
                 return $this->ctx;
             }
 
-            public function panel(): string
+            public function panelId(): string
             {
                 return 'app';
             }
@@ -56,7 +56,7 @@ final class SetAuthorizationContextTest extends TestCase
                 return null;
             }
 
-            public function panel(): string
+            public function panelId(): string
             {
                 return 'app';
             }
@@ -87,7 +87,7 @@ final class SetAuthorizationContextTest extends TestCase
                 return $this->ctx;
             }
 
-            public function panel(): string
+            public function panelId(): string
             {
                 return 'app';
             }
@@ -101,7 +101,7 @@ final class SetAuthorizationContextTest extends TestCase
                 return $this->ctx;
             }
 
-            public function panel(): string
+            public function panelId(): string
             {
                 return 'admin';
             }

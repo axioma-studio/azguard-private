@@ -27,7 +27,7 @@ describe('HasAzGuard — role management API', function (): void {
         $user->assignRole('manager');
         $user->load('roles');
 
-        expect($user->hasAzRole('manager'))->toBeTrue();
+        expect($user->hasRole('manager'))->toBeTrue();
 
         Event::assertDispatched(RoleAttached::class, fn (RoleAttached $e): bool => $e->role->getKey() === $role->getKey(),
         );
@@ -46,7 +46,7 @@ describe('HasAzGuard — role management API', function (): void {
         $user->assignRole($role);
         $user->load('roles');
 
-        expect($user->hasAzRole('manager'))->toBeTrue();
+        expect($user->hasRole('manager'))->toBeTrue();
         Event::assertDispatched(RoleAttached::class);
     });
 
@@ -56,7 +56,7 @@ describe('HasAzGuard — role management API', function (): void {
         $user = User::factory()->create();
         $user->assignRole('ghost-role');
 
-        expect($user->hasAzRole('ghost-role'))->toBeFalse();
+        expect($user->hasRole('ghost-role'))->toBeFalse();
         Event::assertNotDispatched(RoleAttached::class);
     });
 
@@ -76,7 +76,7 @@ describe('HasAzGuard — role management API', function (): void {
         $user->removeRole('manager');
         $user->load('roles');
 
-        expect($user->hasAzRole('manager'))->toBeFalse();
+        expect($user->hasRole('manager'))->toBeFalse();
 
         Event::assertDispatched(RoleDetached::class, fn (RoleDetached $e): bool => $e->role->getKey() === $role->getKey(),
         );
@@ -105,8 +105,8 @@ describe('HasAzGuard — role management API', function (): void {
         $user->syncRoles(['editor']);
         $user->load('roles');
 
-        expect($user->hasAzRole('manager'))->toBeFalse();
-        expect($user->hasAzRole('editor'))->toBeTrue();
+        expect($user->hasRole('manager'))->toBeFalse();
+        expect($user->hasRole('editor'))->toBeTrue();
 
         Event::assertDispatched(RoleDetached::class);
         Event::assertDispatched(RoleAttached::class);
@@ -137,12 +137,12 @@ describe('HasAzGuard — role management API', function (): void {
 
         // Populate cache
         $user->load('roles');
-        $before = $user->getAzPermissions('test');
+        $before = $user->permissions('test');
 
         $user->assignRole($role);
         $user->load('roles');
 
-        $after = $user->getAzPermissions('test');
+        $after = $user->permissions('test');
 
         // Cache was cleared and rebuilt — permissions should differ
         expect($after->contains('test.post.view'))->toBeTrue();

@@ -192,17 +192,17 @@ final class AuthorizerTest extends TestCase
                 throw new LogicException('not implemented in stub');
             }
 
-            public function grantDirect(Authenticatable $user, string $permissionKey, string $panelId, ?int $ttl): DirectGrant
+            public function grant(Authenticatable $user, string $permissionKey, string $panelId, ?int $ttl): DirectGrant
             {
                 throw new LogicException('not implemented in stub');
             }
 
-            public function revokeDirect(Authenticatable $user, string $permissionKey, string $panelId): int
+            public function revoke(Authenticatable $user, string $permissionKey, string $panelId): int
             {
                 return 0;
             }
 
-            public function activeGrants(Authenticatable $user, string $panelId): Collection
+            public function grants(Authenticatable $user, string $panelId): Collection
             {
                 return new Collection;
             }

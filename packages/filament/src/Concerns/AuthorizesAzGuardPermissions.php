@@ -12,22 +12,22 @@ trait AuthorizesAzGuardPermissions
     {
         $user = $this->authUser();
 
-        if ($user === null || ! method_exists($user, 'hasAzPermission')) {
+        if ($user === null || ! method_exists($user, 'hasPermission')) {
             return false;
         }
 
-        return $user->hasAzPermission(permission: $permission);
+        return $user->hasPermission(permission: $permission);
     }
 
     protected function userHasAzRole(string $role): bool
     {
         $user = $this->authUser();
 
-        if ($user === null || ! method_exists($user, 'hasAzRole')) {
+        if ($user === null || ! method_exists($user, 'hasRole')) {
             return false;
         }
 
-        return $user->hasAzRole(name: $role);
+        return $user->hasRole(name: $role);
     }
 
     protected function authUser(): ?Authenticatable

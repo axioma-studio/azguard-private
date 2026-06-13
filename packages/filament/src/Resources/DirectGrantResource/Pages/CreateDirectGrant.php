@@ -16,7 +16,7 @@ use Override;
  * Страница создания Direct Grant.
  *
  * Переопределяет handleRecordCreation, чтобы:
- *  - выдать грант через AzGuardManager::forUser()->on()->ttl()->give()
+ *  - выдать грант через AzGuardManager::forUser()->on()->ttl()->grant()
  *  - правильно заполнить grantable_type из конфигурации
  */
 final class CreateDirectGrant extends CreateRecord
@@ -31,7 +31,7 @@ final class CreateDirectGrant extends CreateRecord
 
     /**
      * Выдаём грант через AzGuardManager, а не прямым insert,
-     * чтобы соблюдался тот же контракт что у grantDirect() / GrantBuilder.
+     * чтобы соблюдался тот же контракт что у grant() / GrantBuilder.
      */
     #[Override]
     protected function handleRecordCreation(array $data): Model
@@ -58,6 +58,6 @@ final class CreateDirectGrant extends CreateRecord
             ->forUser($user)
             ->on($data['panel_id'])
             ->ttl($ttl)
-            ->give($data['permission_key']);
+            ->grant($data['permission_key']);
     }
 }

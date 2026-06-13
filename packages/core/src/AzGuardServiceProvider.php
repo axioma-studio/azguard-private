@@ -207,7 +207,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         Blade::directive('endazrole', fn (): string => '<?php endif; ?>');
 
-        Blade::directive('azdirect', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && method_exists(auth()->user(), 'hasDirectGrant') && auth()->user()->hasDirectGrant({$expression})): ?>");
+        Blade::directive('azdirect', fn (string $expression): string => "<?php if (\\AzGuard\\Support\\BladeHelper::authed() && method_exists(auth()->user(), 'hasGrant') && auth()->user()->hasGrant({$expression})): ?>");
 
         Blade::directive('endazdirect', fn (): string => '<?php endif; ?>');
     }

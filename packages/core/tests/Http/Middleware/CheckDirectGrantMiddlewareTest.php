@@ -77,7 +77,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
                 return '';
             }
 
-            public function hasDirectGrant(string $key, ?string $panel): bool
+            public function hasGrant(string $key, ?string $panel): bool
             {
                 return false;
             }
@@ -124,7 +124,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
                 return '';
             }
 
-            public function hasDirectGrant(string $key, ?string $panel): bool
+            public function hasGrant(string $key, ?string $panel): bool
             {
                 return $key === $this->grantKey;
             }
@@ -188,7 +188,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
 
     public function test_middleware_uses_null_panel_when_not_provided(): void
     {
-        // Пользователь всегда проходит, если hasDirectGrant() = true
+        // Пользователь всегда проходит, если hasGrant() = true
         $user = new class implements Authenticatable
         {
             public function getAuthIdentifierName(): string
@@ -223,7 +223,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
                 return '';
             }
 
-            public function hasDirectGrant(string $key, ?string $panel): bool
+            public function hasGrant(string $key, ?string $panel): bool
             {
                 return true;
             }
@@ -244,7 +244,7 @@ final class CheckDirectGrantMiddlewareTest extends TestCase
     {
         $this->expectException(HttpException::class);
 
-        // У пользователя нет метода hasDirectGrant — fallback false
+        // У пользователя нет метода hasGrant — fallback false
         $user = new class implements Authenticatable
         {
             public function getAuthIdentifierName(): string
