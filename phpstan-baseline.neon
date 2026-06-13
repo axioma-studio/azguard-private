@@ -337,33 +337,9 @@ parameters:
 			path: packages/filament/src/Resources/DirectGrantResource.php
 
 		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DeleteAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DeleteBulkAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
 			message: '#^Class App\\Models\\User not found\.$#'
 			identifier: class.notFound
 			count: 2
-			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
-			message: '#^Invoking callable on an unknown class Filament\\Forms\\Get\.$#'
-			identifier: class.notFound
-			count: 3
-			path: packages/filament/src/Resources/DirectGrantResource.php
-
-		-
-			message: '#^Parameter \$get of anonymous function has invalid type Filament\\Forms\\Get\.$#'
-			identifier: class.notFound
-			count: 3
 			path: packages/filament/src/Resources/DirectGrantResource.php
 
 		-
@@ -385,36 +361,6 @@ parameters:
 			path: packages/filament/src/Resources/RoleResource.php
 
 		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DeleteAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DeleteBulkAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\EditAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource.php
-
-		-
-			message: '#^Invoking callable on an unknown class Filament\\Forms\\Get\.$#'
-			identifier: class.notFound
-			count: 2
-			path: packages/filament/src/Resources/RoleResource.php
-
-		-
-			message: '#^Parameter \$get of anonymous function has invalid type Filament\\Forms\\Get\.$#'
-			identifier: class.notFound
-			count: 2
-			path: packages/filament/src/Resources/RoleResource.php
-
-		-
 			message: '#^Call to an undefined method AzGuard\\Registry\\Contracts\\PermissionDefinition\:\:label\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -424,30 +370,6 @@ parameters:
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:dbPermissions\(\)\.$#'
 			identifier: method.notFound
 			count: 2
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Forms\\Components\\Section\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\Action\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DeleteAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DeleteBulkAction\.$#'
-			identifier: class.notFound
-			count: 1
 			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
 
 		-
@@ -467,24 +389,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: packages/filament/src/Resources/RoleResource/RelationManagers/RolePermissionsRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\AttachAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RoleUsersRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DetachAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RoleUsersRelationManager.php
-
-		-
-			message: '#^Call to static method make\(\) on an unknown class Filament\\Tables\\Actions\\DetachBulkAction\.$#'
-			identifier: class.notFound
-			count: 1
-			path: packages/filament/src/Resources/RoleResource/RelationManagers/RoleUsersRelationManager.php
 
 		-
 			message: '#^Class App\\Models\\User not found\.$#'

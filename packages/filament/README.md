@@ -1,7 +1,7 @@
 # AzGuard for Filament
 
-Config-driven, zero-boilerplate resource permissions for [Filament](https://filamentphp.com)
-(v4 and v5), plus a UI for managing roles and direct grants — powered by
+Config-driven, zero-boilerplate resource permissions for [Filament 5](https://filamentphp.com),
+plus a UI for managing roles and direct grants — powered by
 [`axioma-studio/azguard-core`](../core).
 
 You declare **how** permissions are shaped once, in config; the plugin discovers

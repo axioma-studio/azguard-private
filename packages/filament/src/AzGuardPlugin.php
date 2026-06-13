@@ -13,7 +13,7 @@ use Filament\Resources\Resource;
 use Override;
 
 /**
- * AzGuard Filament plugin (supports Filament 4 and 5).
+ * AzGuard Filament plugin (Filament 5).
  *
  * Register in your PanelProvider:
  *
