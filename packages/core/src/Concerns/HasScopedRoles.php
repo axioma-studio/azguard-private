@@ -15,9 +15,8 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Adds entity-scoped role support to Eloquent models.
  *
- * Renamed from HasScopes (which conflicted with Laravel's own "scope"
- * terminology for Eloquent query scopes). HasScopes is kept as a
- * deprecated BC alias.
+ * Named "ScopedRoles" rather than "Scopes" to avoid clashing with
+ * Laravel's own "scope" terminology for Eloquent query scopes.
  *
  * Provides:
  * - assignScopedRole()    — assign a role scoped to a specific entity

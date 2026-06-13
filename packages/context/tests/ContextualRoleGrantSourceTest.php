@@ -87,7 +87,7 @@ final class ContextualRoleGrantSourceTest extends TestCase
         $set = $source->permissionsFor($this->user(), 'app');
 
         $this->assertFalse($set->isWildcard());
-        $this->assertCount(0, $set->toArray());
+        $this->assertCount(0, $set->keys());
     }
 
     public function test_with_context_no_rows_returns_empty(): void
@@ -97,7 +97,7 @@ final class ContextualRoleGrantSourceTest extends TestCase
 
         $set = $source->permissionsFor($this->user(), 'app');
 
-        $this->assertCount(0, $set->toArray());
+        $this->assertCount(0, $set->keys());
     }
 
     public function test_with_context_returns_matching_keys(): void
@@ -142,6 +142,6 @@ final class ContextualRoleGrantSourceTest extends TestCase
         $set = $source->permissionsFor($user, 'app');
 
         $this->assertFalse($set->grants('admin.users.view'));
-        $this->assertCount(0, $set->toArray());
+        $this->assertCount(0, $set->keys());
     }
 }

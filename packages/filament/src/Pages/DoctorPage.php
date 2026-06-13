@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Filament\Pages;
 
 use AzGuard\Filament\AzGuardPlugin;
-use AzGuard\Guard\GuardDoctor;
+use AzGuard\Guard\AzGuardDiagnostics;
 use BackedEnum;
 use Filament\Pages\Page;
 use Override;
@@ -15,7 +15,7 @@ use UnitEnum;
 /**
  * Страница диагностики AzGuard в Filament UI.
  *
- * Отображает результат GuardDoctor::diagnose() в трёх секциях:
+ * Отображает результат AzGuardDiagnostics::diagnose() в трёх секциях:
  *  - Abilities  — зарегистрированные Gate abilities (таблица)
  *  - Warnings   — предупреждения (жёлтый)
  *  - Errors     — ошибки согласованности (красный)
@@ -75,8 +75,8 @@ final class DoctorPage extends Page
      */
     private static function runDiagnose(): array
     {
-        /** @var GuardDoctor $doctor */
-        $doctor = app(GuardDoctor::class);
+        /** @var AzGuardDiagnostics $doctor */
+        $doctor = app(AzGuardDiagnostics::class);
 
         // Фильтруем по panelId из плагина, если он зарегистрирован
         $panelFilter = null;

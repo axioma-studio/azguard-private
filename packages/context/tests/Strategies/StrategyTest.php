@@ -8,16 +8,10 @@ use AzGuard\Context\Strategies\ContextOnlyStrategy;
 use AzGuard\Context\Strategies\DenyWithoutContextStrategy;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
 use AzGuard\Registry\Values\PermissionSet;
-use Illuminate\Auth\GenericUser;
 use PHPUnit\Framework\TestCase;
 
 final class StrategyTest extends TestCase
 {
-    private function user(): GenericUser
-    {
-        return new GenericUser(['id' => 1]);
-    }
-
     // -----------------------------------------------------------------------
     // GlobalPlusContextStrategy
     // -----------------------------------------------------------------------
@@ -27,7 +21,7 @@ final class StrategyTest extends TestCase
         $strategy = new GlobalPlusContextStrategy;
         $global = PermissionSet::fromKeys(['app.posts.view']);
 
-        $result = $strategy->merge($this->user(), 'app', $global, null);
+        $result = $strategy->merge($global, null);
 
         $this->assertTrue($result->grants('app.posts.view'));
         $this->assertFalse($result->grants('app.posts.edit'));
@@ -39,7 +33,7 @@ final class StrategyTest extends TestCase
         $global = PermissionSet::fromKeys(['app.posts.view']);
         $context = PermissionSet::fromKeys(['app.posts.edit']);
 
-        $result = $strategy->merge($this->user(), 'app', $global, $context);
+        $result = $strategy->merge($global, $context);
 
         $this->assertTrue($result->grants('app.posts.view'));
         $this->assertTrue($result->grants('app.posts.edit'));
@@ -51,7 +45,7 @@ final class StrategyTest extends TestCase
         $global = PermissionSet::fromKeys(['app.posts.view']);
         $context = PermissionSet::wildcard();
 
-        $result = $strategy->merge($this->user(), 'app', $global, $context);
+        $result = $strategy->merge($global, $context);
 
         $this->assertTrue($result->isWildcard());
     }
@@ -65,10 +59,10 @@ final class StrategyTest extends TestCase
         $strategy = new ContextOnlyStrategy;
         $global = PermissionSet::fromKeys(['app.posts.view']);
 
-        $result = $strategy->merge($this->user(), 'app', $global, null);
+        $result = $strategy->merge($global, null);
 
         $this->assertFalse($result->grants('app.posts.view'));
-        $this->assertCount(0, $result->toArray());
+        $this->assertCount(0, $result->keys());
     }
 
     public function test_context_only_ignores_global(): void
@@ -77,7 +71,7 @@ final class StrategyTest extends TestCase
         $global = PermissionSet::fromKeys(['app.posts.view']);
         $context = PermissionSet::fromKeys(['app.posts.edit']);
 
-        $result = $strategy->merge($this->user(), 'app', $global, $context);
+        $result = $strategy->merge($global, $context);
 
         $this->assertFalse($result->grants('app.posts.view'));
         $this->assertTrue($result->grants('app.posts.edit'));
@@ -92,7 +86,7 @@ final class StrategyTest extends TestCase
         $strategy = new DenyWithoutContextStrategy;
         $global = PermissionSet::fromKeys(['app.posts.view']);
 
-        $result = $strategy->merge($this->user(), 'app', $global, null);
+        $result = $strategy->merge($global, null);
 
         $this->assertFalse($result->grants('app.posts.view'));
     }
@@ -103,7 +97,7 @@ final class StrategyTest extends TestCase
         $global = PermissionSet::fromKeys(['app.posts.view']);
         $context = PermissionSet::fromKeys(['app.posts.edit']);
 
-        $result = $strategy->merge($this->user(), 'app', $global, $context);
+        $result = $strategy->merge($global, $context);
 
         $this->assertTrue($result->grants('app.posts.view'));
         $this->assertTrue($result->grants('app.posts.edit'));
@@ -115,7 +109,7 @@ final class StrategyTest extends TestCase
         $global = PermissionSet::fromKeys(['app.posts.view']);
         $context = PermissionSet::empty();
 
-        $result = $strategy->merge($this->user(), 'app', $global, $context);
+        $result = $strategy->merge($global, $context);
 
         // context передан (не null) => merge = global union empty = global
         $this->assertTrue($result->grants('app.posts.view'));

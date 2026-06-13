@@ -142,16 +142,6 @@ final readonly class PermissionSet
         return array_keys($this->index);
     }
 
-    /**
-     * @deprecated Use {@see keys()} instead. This alias will be removed in v2.0.
-     *
-     * @return list<string>
-     */
-    public function toArray(): array
-    {
-        return $this->keys();
-    }
-
     public function count(): int
     {
         return count($this->index);

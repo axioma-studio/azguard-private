@@ -71,14 +71,14 @@ final class PermissionSetTest extends TestCase
 
         $filtered = $set->filter(fn (string $k) => in_array($k, $known, true));
 
-        $this->assertSame(['app.documents.view'], $filtered->toArray());
+        $this->assertSame(['app.documents.view'], $filtered->keys());
     }
 
     public function test_deduplication_on_create(): void
     {
         $set = PermissionSet::fromKeys(['app.x', 'app.x', 'app.y']);
 
-        $this->assertCount(2, $set->toArray());
+        $this->assertCount(2, $set->keys());
     }
 
     public function test_grants_combines_has_and_wildcard_pattern(): void
@@ -95,7 +95,6 @@ final class PermissionSetTest extends TestCase
         $set = PermissionSet::fromKeys(['app.a', 'app.b']);
 
         $this->assertSame(['app.a', 'app.b'], $set->keys());
-        $this->assertSame($set->keys(), $set->toArray());
     }
 
     public function test_count(): void

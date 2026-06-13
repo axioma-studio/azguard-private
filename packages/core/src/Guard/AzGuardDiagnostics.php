@@ -22,8 +22,6 @@ use UnitEnum;
  * - #[GateAbility] attributes pointing to enums outside the panel Permissions/ dir
  * - roles referencing unknown or unprefixed permissions
  * - policy classes with no #[GateAbility] methods (orphans)
- *
- * Previously named GuardDoctor. The old class is kept as a @deprecated alias.
  */
 class AzGuardDiagnostics
 {

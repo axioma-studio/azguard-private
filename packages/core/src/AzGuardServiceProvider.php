@@ -27,7 +27,6 @@ use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Guard\Authorizer;
 use AzGuard\Guard\AzGuardDiagnostics;
-use AzGuard\Guard\GuardDoctor;
 use AzGuard\Http\Middleware\CheckAccess;
 use AzGuard\Http\Middleware\CheckDirectGrant;
 use AzGuard\Http\Middleware\LoadAzGuardRoles;
@@ -63,10 +62,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->app->singleton(PolicyAttributeRegistrar::class);
 
-        // Canonical binding — use AzGuardDiagnostics going forward.
         $this->app->singleton(AzGuardDiagnostics::class);
-        // BC alias — resolving the old GuardDoctor name from the container still works.
-        $this->app->alias(AzGuardDiagnostics::class, GuardDoctor::class);
 
         // ─── Registry ─────────────────────────────────────────────────────────
 

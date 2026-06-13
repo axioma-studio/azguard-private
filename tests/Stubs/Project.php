@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Tests\Stubs;
 
-use AzGuard\Concerns\InteractsWithAzScopes;
+use AzGuard\Concerns\HasScopedRoles;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 class Project extends Model
 {
     use HasFactory;
-    use InteractsWithAzScopes;
+    use HasScopedRoles;
 
     protected $fillable = ['name'];
 

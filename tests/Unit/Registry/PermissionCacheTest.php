@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use AzGuard\Registry\Resolver\PermissionResolverCache;
+use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Registry\Values\PermissionSet;
 
-describe('PermissionResolverCache', function () {
+describe('PermissionCache', function () {
 
     it('generates canonical cache key', function () {
-        expect(PermissionResolverCache::keyFor(42, 'app'))
+        expect(PermissionCache::keyFor(42, 'app'))
             ->toBe('azguard.perms.42.app');
 
-        expect(PermissionResolverCache::keyFor('uuid-123', 'admin'))
+        expect(PermissionCache::keyFor('uuid-123', 'admin'))
             ->toBe('azguard.perms.uuid-123.admin');
     });
 
     it('remembers result for same user+panel', function () {
-        $cache = new PermissionResolverCache;
+        $cache = new PermissionCache;
         $calls = 0;
 
         $set = $cache->rememberForRequest(1, 'app', function () use (&$calls): PermissionSet {
@@ -33,21 +33,21 @@ describe('PermissionResolverCache', function () {
         });
 
         expect($calls)->toBe(1)
-            ->and($set2->toArray())->toBe(['app.posts.view']);
+            ->and($set2->keys())->toBe(['app.posts.view']);
     });
 
     it('stores separate entries for different users', function () {
-        $cache = new PermissionResolverCache;
+        $cache = new PermissionCache;
 
         $setA = $cache->rememberForRequest(1, 'app', fn () => PermissionSet::fromKeys(['app.posts.view']));
         $setB = $cache->rememberForRequest(2, 'app', fn () => PermissionSet::fromKeys(['app.tags.view']));
 
-        expect($setA->toArray())->toBe(['app.posts.view'])
-            ->and($setB->toArray())->toBe(['app.tags.view']);
+        expect($setA->keys())->toBe(['app.posts.view'])
+            ->and($setB->keys())->toBe(['app.tags.view']);
     });
 
     it('forgetAll clears entire request cache', function () {
-        $cache = new PermissionResolverCache;
+        $cache = new PermissionCache;
         $calls = 0;
 
         $cache->rememberForRequest(1, 'app', function () use (&$calls): PermissionSet {
@@ -68,7 +68,7 @@ describe('PermissionResolverCache', function () {
     });
 
     it('forgetForUser removes only that user+panel entry', function () {
-        $cache = new PermissionResolverCache;
+        $cache = new PermissionCache;
         $calls = 0;
 
         $cache->rememberForRequest(1, 'app', fn () => PermissionSet::fromKeys(['app.posts.view']));

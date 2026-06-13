@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\AzGuardManager;
+use AzGuard\Contracts\ContextGuard;
 use AzGuard\Contracts\PermissionContext;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Registry\Values\PermissionSet;
-use AzGuard\Support\AzGuardContextBridge;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -25,7 +25,12 @@ trait HasPermissions
     public function hasPermission(string $permission, string $panelId = 'app', ?PermissionContext $context = null): bool
     {
         if ($context !== null) {
-            return AzGuardContextBridge::checkWithContext($this, $permission, $panelId, $context);
+            $guard = $this->contextGuard();
+
+            // No context package installed — fall back to a global check.
+            return $guard === null
+                ? $this->permissionSet($panelId)->grants($permission)
+                : $guard->checkInContext($this, $context->contextType(), $context->contextId(), $permission, $panelId);
         }
 
         return $this->permissionSet($panelId)->grants($permission);
@@ -43,13 +48,24 @@ trait HasPermissions
         string $permission,
         string $panelId = 'app',
     ): bool {
-        return AzGuardContextBridge::checkInContext(
-            user: $this,
-            contextType: $contextType,
-            contextId: $contextId,
-            permission: $permission,
-            panelId: $panelId,
-        );
+        return $this->contextGuard()?->checkInContext(
+            $this,
+            $contextType,
+            $contextId,
+            $permission,
+            $panelId,
+        ) ?? false;
+    }
+
+    /**
+     * Resolve the optional context package's ContextGuard, or null when the
+     * azguard/context package is not installed.
+     */
+    private function contextGuard(): ?ContextGuard
+    {
+        return app()->bound(ContextGuard::class)
+            ? app(ContextGuard::class)
+            : null;
     }
 
     /**
@@ -80,7 +96,7 @@ trait HasPermissions
      */
     public function permissions(string $panelId = 'app'): Collection
     {
-        return collect($this->permissionSet($panelId)->toArray());
+        return collect($this->permissionSet($panelId)->keys());
     }
 
     /**

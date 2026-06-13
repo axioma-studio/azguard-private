@@ -10,7 +10,7 @@ use AzGuard\Support\Config;
 /**
  * Shared helper: resolve a Role model from a name string or a Role instance.
  *
- * Used by HasAzGuard and HasScopes to avoid duplicating the same
+ * Used by HasAzGuard and HasScopedRoles to avoid duplicating the same
  * string-to-model lookup logic.
  */
 trait ResolvesRole

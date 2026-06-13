@@ -6,7 +6,7 @@ use AzGuard\Models\ModelHasScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
-use AzGuard\Concerns\InteractsWithAzScopes;
+use AzGuard\Concerns\HasScopedRoles;
 use AzGuard\Models\Role;
 use AzGuard\Tests\Stubs\Roles\ManagerRole;
 use AzGuard\Tests\Stubs\User;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
 // Stub entity model for scoping
 class Project extends Model
 {
-    use InteractsWithAzScopes;
+    use HasScopedRoles;
 
     protected $table = 'projects';
 
@@ -41,7 +41,7 @@ beforeEach(function (): void {
     }
 });
 
-describe('HasAzGuard — entity-scoped roles (InteractsWithAzScopes)', function (): void {
+describe('HasAzGuard — entity-scoped roles (HasScopedRoles)', function (): void {
 
     it('assignScopedRole creates ModelHasScope record with role_id', function (): void {
         $user = User::factory()->create();
