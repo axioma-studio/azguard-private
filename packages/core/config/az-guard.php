@@ -51,6 +51,12 @@ return [
     'column_names' => [
         'role_pivot_key' => null,      // null = auto (id)
         'model_morph_key' => 'model_id',
+
+        // Morph key type for the polymorphic columns of model_has_roles,
+        // model_has_scopes and az_direct_grants: 'int' (default), 'ulid' or
+        // 'uuid'. Set it to match the primary-key type of the models that get
+        // roles/scopes/grants (e.g. 'ulid' for ULID-keyed User/entities).
+        'morph_type' => env('AZ_GUARD_MORPH_TYPE', 'int'),
     ],
 
     /*

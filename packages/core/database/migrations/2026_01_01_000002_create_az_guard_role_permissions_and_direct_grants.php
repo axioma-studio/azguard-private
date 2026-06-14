@@ -1,5 +1,6 @@
 <?php
 
+use AzGuard\Support\Schema\MorphColumns;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -33,7 +34,7 @@ return new class extends Migration
         // Прямые grants пользователю (без роли)
         Schema::create($t['direct_grants'] ?? 'az_guard_direct_grants', function (Blueprint $table) {
             $table->id();
-            $table->morphs('grantable');            // пользователь (User или любая модель)
+            MorphColumns::add($table, 'grantable');  // пользователь (User или любая модель)
             $table->string('permission_key');       // resolved key
             $table->string('panel_id');             // "app"
             $table->timestamp('expires_at')->nullable(); // null = бессрочно

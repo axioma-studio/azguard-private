@@ -101,6 +101,21 @@ final class Config
         return (string) config('az-guard.column_names.model_morph_key', 'model_id');
     }
 
+    /**
+     * Morph key type for polymorphic tables (model_has_roles, model_has_scopes,
+     * az_direct_grants). Drives MorphColumns; unknown values fall back to 'int'.
+     *
+     * @return 'int'|'ulid'|'uuid'
+     */
+    public static function morphType(): string
+    {
+        return match ((string) config('az-guard.column_names.morph_type', 'int')) {
+            'ulid' => 'ulid',
+            'uuid' => 'uuid',
+            default => 'int',
+        };
+    }
+
     // ─── Features ──────────────────────────────────────────────────────────
 
     public static function isEnabled(string $feature): bool

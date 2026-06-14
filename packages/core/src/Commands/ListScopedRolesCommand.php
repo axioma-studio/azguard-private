@@ -33,11 +33,13 @@ class ListScopedRolesCommand extends Command
     public function handle(): int
     {
         $userModelClass = $this->resolveUserModelClass();
-        $identifier = $this->argument('user');
+        $identifier = (string) $this->argument('user');
 
-        $user = is_numeric($identifier)
-            ? $userModelClass::find((int) $identifier)
-            : $userModelClass::where('email', $identifier)->first();
+        // Resolve by email when the identifier looks like one, otherwise by
+        // primary key — works for int, ULID and UUID keys alike.
+        $user = str_contains($identifier, '@')
+            ? $userModelClass::where('email', $identifier)->first()
+            : $userModelClass::find($identifier);
 
         if ($user === null) {
             $this->error("Пользователь [{$identifier}] не найден.");

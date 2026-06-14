@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AzGuard\Tests\ContextTestCase;
 use AzGuard\Tests\FilamentTestCase;
+use AzGuard\Tests\MorphTypeTestCase;
 use AzGuard\Tests\Stubs\User;
 use AzGuard\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,6 +39,9 @@ uses(ContextTestCase::class, RefreshDatabase::class)
 
 uses(FilamentTestCase::class, RefreshDatabase::class)
     ->in('Feature/Filament');
+
+uses(MorphTypeTestCase::class, RefreshDatabase::class)
+    ->in('Feature/MorphTypeTest.php');
 
 uses(RefreshDatabase::class)
     ->in('Unit');
