@@ -20,7 +20,10 @@ trait AuthorizesPermission
             return false;
         }
 
-        return $user->hasPermission(permission: $this->resolvePermission(permission: $permission));
+        return $user->hasPermission(
+            permission: $this->resolvePermission(permission: $permission),
+            panelId: $this->panelId(),
+        );
     }
 
     protected function resolvePermission(BackedEnum $permission): string
