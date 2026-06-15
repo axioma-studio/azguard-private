@@ -23,13 +23,13 @@ Your `User` model must already use `HasAzGuard`.
 
 ```php
 // Assign
-$user->assignScopedRole(EditorRole::class, $project, panel: 'app');
+$user->assignScopedRole(EditorRole::class, $project);
 
 // Remove
-$user->removeScopedRole(EditorRole::class, $project, panel: 'app');
+$user->removeScopedRole(EditorRole::class, $project);
 
 // Check
-$user->hasScopedRole(EditorRole::class, $project, panel: 'app'); // bool
+$user->hasScopedRole(EditorRole::class, $project); // bool
 ```
 
 ## Checking a scoped permission
@@ -41,7 +41,7 @@ $user->hasScopedRole(EditorRole::class, $project, panel: 'app'); // bool
 3. **Scoped roles** — permissions from `assignScopedRole($entity)` checked for the given entity.
 
 ```php
-if ($user->hasScopedPermission(AppGuard::permission(DocumentsPermission::Edit), $project)) {
+if ($user->hasScopedPermission(DocumentsPermission::Edit, $project)) {
     // user can edit this specific project
 }
 ```
@@ -66,5 +66,5 @@ Gate::allows('app.documents.edit', $project); // uses scoped resolution
 Scoped permission cache is cleared automatically on `assignScopedRole()` and `removeScopedRole()`. For manual flush:
 
 ```bash
-php artisan azguard:cache-reset --user=42
+php artisan guard:cache-reset
 ```

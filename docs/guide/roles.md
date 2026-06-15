@@ -4,34 +4,32 @@ In AzGuard, a role is a **PHP class** that declares which permissions it grants.
 
 ## Static roles (recommended)
 
-Static roles implement `RoleInterface`. Their permissions are declared in code and never drift from what's deployed.
+Static roles extend `BaseRole` (which implements `RoleInterface`). Their permissions are declared in code and never drift from what's deployed.
 
 ```php
 // app/AzGuard/App/Roles/EditorRole.php
 namespace App\AzGuard\App\Roles;
 
-use AzGuard\Contracts\RoleInterface;
-use App\AzGuard\App\Permissions\DocumentsPermission;
-use App\AzGuard\App\Permissions\CommentsPermission;
+use AzGuard\Roles\BaseRole;
 
-class EditorRole implements RoleInterface
+class EditorRole extends BaseRole
 {
-    public function getName(): string  { return 'editor'; }
-    public function getPanel(): string { return 'app'; }
-    public function getLevel(): int    { return 10; }
+    public function getLevel(): int { return 10; }
 
     public function permissions(): array
     {
         return [
-            DocumentsPermission::View,
-            DocumentsPermission::Create,
-            DocumentsPermission::Edit,
-            CommentsPermission::View,
-            CommentsPermission::Create,
+            'app.documents.view',
+            'app.documents.create',
+            'app.documents.edit',
+            'app.comments.view',
+            'app.comments.create',
         ];
     }
 }
 ```
+
+`BaseRole` derives `getName()` from the class name (`EditorRole` → `editor`) and defaults `getLevel()` to `0`. Override either as needed. `permissions()` returns full panel-prefixed keys, or `['*']` for a super-admin.
 
 ### Role levels
 
@@ -45,24 +43,15 @@ class EditorRole implements RoleInterface
 | `admin` | 100 |
 | `super-admin` | 999 |
 
-Levels are **not** used for permission inheritance — a `manager` does not automatically inherit `editor` permissions unless you explicitly list them. They exist for your app logic:
-
-```php
-// True if the user's highest role level is >= 50
-$user->hasRoleLevel('>= 50');
-
-// Returns the numeric level of the user's highest role
-$user->getRoleLevel();   // e.g. 50
-
-// Examples: '>= 50', '> 10', '== 100', '< 100'
-```
+Levels are **not** used for permission inheritance — a `manager` does not automatically inherit `editor` permissions unless you explicitly list them. They exist for your own app logic. Each role declares its level via `getLevel()`, and the value is stored in the `level` column when roles are synced to the database, so you can compare or order by it in your own queries.
 
 ## Generating roles
 
 ```bash
-php artisan azguard:make-role App EditorRole
-php artisan azguard:make-role Admin SuperAdminRole
+php artisan make:guard-role
 ```
+
+The command is interactive: it asks which panel the role belongs to and the role name, then generates the class under that panel's `Roles/` directory.
 
 ## Assigning roles
 
@@ -70,13 +59,13 @@ php artisan azguard:make-role Admin SuperAdminRole
 // By class name (most explicit — preferred)
 $user->assignRole(EditorRole::class);
 
-// By string name (panel auto-resolved from registration)
+// By string name
 $user->assignRole('editor');
 
-// Explicit panel — required when the same name exists in multiple panels
-$user->assignRole('admin', panel: 'admin');
+// Multiple roles at once (variadic — adds them)
+$user->assignRole('editor', 'admin');
 
-// Multiple roles at once — replaces the full list
+// Replace the full list in one call
 $user->syncRoles([EditorRole::class, ViewerRole::class]);
 
 // Remove a single role
@@ -94,14 +83,9 @@ $user->syncRoles([]);
 ## Checking roles
 
 ```php
-$user->hasRole('editor');                     // bool — by string name
-$user->hasRole(EditorRole::class);            // bool — by class
-$user->hasAnyRole(['editor', 'admin']);        // true if at least one matches
-$user->hasAllRoles(['editor', 'moderator']);   // true only if ALL match
+$user->hasRole('editor');                     // bool — by role name
 $user->getRoleNames();                         // Collection<string>
-$user->getRoles();                             // Collection of role objects
-$user->hasRoleLevel('>= 50');                 // compare against level
-$user->getRoleLevel();                         // int: highest level
+$user->roles();                                // the roles() relation (Role models)
 ```
 
 ## Inspecting assigned roles
@@ -110,102 +94,99 @@ $user->getRoleLevel();                         // int: highest level
 // All role names as strings
 $user->getRoleNames();            // Collection<string> — ['editor', 'viewer']
 
-// Permissions inherited through roles
-$user->getPermissionsViaRoles();  // Collection<string>
-
-// Combined: permissions from roles + direct grants
-$user->getAllPermissions();        // Collection<string>
+// All resolved permission keys (roles + direct grants) for a panel
+$user->permissions('app');        // Collection<int, string>
 ```
 
 ## Query users by role
 
-AzGuard provides Eloquent scopes:
+`HasAzGuard` exposes a `roles()` relation. Query it with standard Eloquent:
 
 ```php
-// All users with 'editor' role
-User::role('editor')->get();
-User::role(EditorRole::class)->get();
+// All users with the 'editor' role
+User::whereHas('roles', fn ($q) => $q->where('name', 'editor'))->get();
 
 // Users with any of these roles
-User::role(['editor', 'admin'])->get();
+User::whereHas('roles', fn ($q) => $q->whereIn('name', ['editor', 'admin']))->get();
 
 // Users WITHOUT a specific role
-User::withoutRole('editor')->get();
-User::withoutRole(['editor', 'viewer'])->get();
+User::whereDoesntHave('roles', fn ($q) => $q->where('name', 'editor'))->get();
 
 // Combine with other clauses
-User::role('editor')
+User::whereHas('roles', fn ($q) => $q->where('name', 'editor'))
     ->where('active', true)
     ->orderBy('name')
     ->paginate();
 
 // Eager-load roles to avoid N+1 in list views
-User::with('azRoles')->paginate();
+User::with('roles')->paginate();
 
 // Users with no roles at all
-User::doesntHave('azRoles')->get();
+User::doesntHave('roles')->get();
 ```
 
 ## Dynamic (DB-backed) roles
 
-For admin UIs where roles are managed at runtime:
+For admin UIs where roles are managed at runtime, use the `Role` model and the `guard:role-permissions` command. Role rows live in the `roles` table; their DB-level permission keys in `az_guard_role_permissions`.
 
 ```php
-use AzGuard\Models\DynamicRole;
+use AzGuard\Models\Role;
 
-// Create
-$role = DynamicRole::create([
+// Create a DB role
+$role = Role::create([
     'name'  => 'tenant-admin',
-    'panel' => 'app',
     'level' => 20,
 ]);
-
-// Attach permissions
-$role->givePermissions([
-    DocumentsPermission::View,
-    DocumentsPermission::Create,
-]);
-
-// Sync (replaces the permission list)
-$role->syncPermissions([DocumentsPermission::View]);
-
-// Revoke one
-$role->revokePermission(DocumentsPermission::Create);
 
 // Assign to a user
 $user->assignRole($role);
 
-// List all dynamic roles
-DynamicRole::where('panel', 'app')->get();
+// Inspect its DB-level permissions
+$role->dbPermissions;                                   // HasMany<RolePermission>
+$role->hasDbPermission('app.documents.view', 'app');    // bool
 ```
 
-Dynamic roles are stored in `az_guard_roles`; their permissions in `az_guard_role_permissions`.
+Manage a DB role's permission keys with Artisan:
+
+```bash
+# Add a permission key to a role for the 'app' panel
+php artisan guard:role-permissions add tenant-admin app.documents.view --panel=app
+
+# Remove one
+php artisan guard:role-permissions remove tenant-admin app.documents.create --panel=app
+
+# Replace the full list
+php artisan guard:role-permissions sync tenant-admin --panel=app --keys=app.documents.view,app.documents.edit
+
+# List a role's keys
+php artisan guard:role-permissions list tenant-admin --panel=app
+```
 
 ## Syncing static roles to DB
 
-If your app uses the `az_guard_roles` table as a reference (e.g., for Filament dropdowns), keep it in sync after deploying new PHP role classes:
+If your app uses the `roles` table as a reference (e.g., for Filament dropdowns), keep it in sync after deploying new PHP role classes:
 
 ```bash
-php artisan azguard:sync-roles
-php artisan azguard:sync-roles --panel=app
+php artisan guard:sync-roles
+php artisan guard:sync-roles --panel=app
+php artisan guard:sync-roles --dry-run    # preview without writing
 ```
 
 This is safe to run in CI/CD pipelines.
 
-## Listing roles
+## Listing a role's permissions
 
 ```bash
-php artisan azguard:list-roles
-php artisan azguard:list-roles --panel=app
+php artisan guard:role-permissions list {role} --panel=app
 ```
 
 ## Gotchas
 
-**Role names are panel-scoped.** Two roles named `admin` in panels `app` and `admin` are different roles. Specify the panel explicitly when ambiguous: `$user->assignRole('admin', panel: 'admin')`.
+**Roles are resolved by name.** `assignRole('admin')` looks the role up by its `getName()`. Assign by class (`assignRole(AdminRole::class)`) when you want to be unambiguous.
 
 **`syncRoles([])` removes all roles.** This is intentional. Pass only the roles you want the user to have after the call.
 
-**Role names must be unique within a panel.** Registering two roles with the same `getName()` in the same panel will cause a conflict at boot time.
+**Role names should be unique.** Two role classes with the same `getName()` resolve to the same role record. Keep names distinct.
 
 **Levels are not inherited.** A level-100 `SuperAdmin` does not automatically include all lower-level permissions. List them explicitly.
 

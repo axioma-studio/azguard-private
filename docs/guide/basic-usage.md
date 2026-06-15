@@ -26,21 +26,14 @@ Permissions in AzGuard are PHP enum cases, not strings in a database. Define one
 
 ```php
 // app/AzGuard/App/Permissions/DocumentsPermission.php
-use AzGuard\Contracts\PermissionInterface;
-use AzGuard\Attributes\GateAbility;
-
-enum DocumentsPermission: string implements PermissionInterface
+enum DocumentsPermission: string
 {
-    #[GateAbility]
     case View   = 'documents.view';
 
-    #[GateAbility]
     case Create = 'documents.create';
 
-    #[GateAbility]
     case Edit   = 'documents.edit';
 
-    #[GateAbility]
     case Delete = 'documents.delete';
 }
 ```
@@ -53,21 +46,18 @@ Roles are PHP classes that declare which permissions they grant:
 
 ```php
 // app/AzGuard/App/Roles/EditorRole.php
-use AzGuard\Contracts\RoleInterface;
-use App\AzGuard\App\Permissions\DocumentsPermission;
+use AzGuard\Roles\BaseRole;
 
-class EditorRole implements RoleInterface
+class EditorRole extends BaseRole
 {
-    public function getName(): string  { return 'editor'; }
-    public function getPanel(): string { return 'app'; }
-    public function getLevel(): int    { return 10; }
+    public function getLevel(): int { return 10; }
 
     public function permissions(): array
     {
         return [
-            DocumentsPermission::View,
-            DocumentsPermission::Create,
-            DocumentsPermission::Edit,
+            'app.documents.view',
+            'app.documents.create',
+            'app.documents.edit',
         ];
     }
 }
@@ -81,7 +71,9 @@ See [Roles](./roles.md) for dynamic (DB-backed) roles and level-based hierarchy.
 // Assign one role
 $user->assignRole(EditorRole::class);
 $user->assignRole('editor');                     // by name
-$user->assignRole('editor', panel: 'app');       // explicit panel
+
+// Assign several at once (variadic)
+$user->assignRole('editor', 'viewer');
 
 // Remove one role
 $user->removeRole(EditorRole::class);
@@ -98,38 +90,36 @@ $user->syncRoles([]);
 ## Check roles
 
 ```php
-$user->hasRole('editor');                          // bool
-$user->hasRole(EditorRole::class);                // bool
-$user->hasAnyRole(['editor', 'admin']);            // true if user has at least one
-$user->hasAllRoles(['editor', 'moderator']);       // true only if user has all
+$user->hasRole('editor');                          // bool — by role name
 $user->getRoleNames();                             // Collection<string>
-$user->getRoles();                                 // Collection of role class strings
+$user->roles();                                    // the roles() relation
 ```
 
 ## Check permissions
 
 ```php
-// Via the trait — always prefer enum cases
+// Via the trait — an enum case is scoped to the panel automatically
 $user->hasPermission(DocumentsPermission::View);
-$user->hasAnyPermission([DocumentsPermission::Edit, DocumentsPermission::Delete]);
-$user->hasAllPermissions([DocumentsPermission::View, DocumentsPermission::Edit]);
+// A string must be the full panel-prefixed key
+$user->hasPermission('app.documents.view');
+// Silent check — never throws (safe in Blade)
+$user->checkPermission(DocumentsPermission::View);
 
-// Via Laravel Gate — pass the enum directly
+// Via Laravel Gate — pass the full permission key
 use Illuminate\Support\Facades\Gate;
 
-Gate::allows(DocumentsPermission::View);   // ✅ enum — type-safe
-Gate::check(DocumentsPermission::View);    // alias
+Gate::allows('app.documents.view');
 
 // In a controller action — throws 403 on failure
-$this->authorize(DocumentsPermission::View);
+$this->authorize('app.documents.view');
 
-// Middleware on a route — the only place a string is unavoidable
+// Middleware on a route
 Route::get('/documents', DocumentController::class)
-    ->middleware('can:' . DocumentsPermission::View->value);
+    ->middleware('can:app.documents.view');
 ```
 
-::: tip Always use enum constants, never raw strings
-Passing a raw string to `Gate::allows('app.documents.veiw')` fails silently — a typo is an undetected security hole. Enum constants are type-safe, IDE-navigable, and refactor-safe.
+::: tip Enum cases vs. string keys
+An enum case (`DocumentsPermission::View`) is scoped to its panel automatically and is refactor-safe. Strings must be the full panel-prefixed key (`'app.documents.view'`); a typo fails silently, so prefer enum cases in PHP and reserve strings for Gate/Blade/routes.
 :::
 
 ::: tip Always check permissions, not roles
@@ -139,52 +129,40 @@ Prefer `$user->hasPermission(...)` or `Gate::allows(...)` over `$user->hasRole(.
 ## Inspect what a user has
 
 ```php
-// All permissions resolved across all assigned roles + direct grants
-$user->getAllPermissions();          // Collection<string>
+// All resolved permission keys for the current (or given) panel
+$user->permissions();                // Collection<int, string>
+$user->permissions('app');           // for an explicit panel
 
-// Only permissions granted directly (not via roles)
-$user->getDirectPermissions();       // Collection — see Direct Grants
+// The underlying PermissionSet (supports wildcards)
+$user->permissionSet('app');         // PermissionSet
 
-// Only permissions coming from roles
-$user->getPermissionsViaRoles();     // Collection<string>
-
-// Permission keys as strings
-$user->getPermissionNames();         // Collection<string>
-
-// All roles
-$user->getRoles();                   // Collection of role class strings
+// Role names
 $user->getRoleNames();               // Collection<string>
 
-// Check specific permission origin
-$user->hasDirectPermission(DocumentsPermission::View);   // bool
-$user->hasPermissionViaRole(DocumentsPermission::View);  // bool
+// Direct grants for a panel (requires HasDirectGrants)
+$user->grants('app');                // Collection<DirectGrant>
+$user->hasGrant(DocumentsPermission::View, 'app');  // bool
 ```
 
-## Query scopes
+## Query users by role
 
-AzGuard adds Eloquent query scopes to any model using `HasAzGuard`:
+`HasAzGuard` exposes a `roles()` relation. Query it with standard Eloquent:
 
 ```php
 // Users that have a specific role
-User::role('editor')->get();
-User::role(EditorRole::class)->get();
-User::role(['editor', 'admin'])->get();     // has any of these roles
+User::whereHas('roles', fn ($q) => $q->where('name', 'editor'))->get();
+
+// Users that have any of these roles
+User::whereHas('roles', fn ($q) => $q->whereIn('name', ['editor', 'admin']))->get();
 
 // Users that do NOT have a specific role
-User::withoutRole('editor')->get();
-User::withoutRole(['editor', 'viewer'])->get();
-
-// Users that have a specific permission (via any role or direct grant)
-User::permission(DocumentsPermission::Edit)->get();
-
-// Users that do NOT have a specific permission
-User::withoutPermission(DocumentsPermission::Delete)->get();
+User::whereDoesntHave('roles', fn ($q) => $q->where('name', 'editor'))->get();
 ```
 
-Scopes can be chained with other Eloquent calls:
+These can be chained with other Eloquent calls:
 
 ```php
-User::role('editor')
+User::whereHas('roles', fn ($q) => $q->where('name', 'editor'))
     ->where('active', true)
     ->orderBy('name')
     ->paginate();
@@ -194,18 +172,15 @@ User::role('editor')
 
 ```php
 // Eager-load roles for a user list (avoids N+1)
-User::with('azRoles')->paginate();
+User::with('roles')->paginate();
 
 // Users with no roles at all
-User::doesntHave('azRoles')->get();
-
-// Count users per role
-User::role('editor')->count();
+User::doesntHave('roles')->get();
 
 // Count users per role, grouped
-User::with('azRoles')
+User::with('roles')
     ->get()
-    ->flatMap->azRoles
+    ->flatMap->roles
     ->countBy('name');
 // => ['editor' => 12, 'admin' => 3, 'viewer' => 47]
 ```
@@ -221,8 +196,8 @@ public function edit(Document $document): Response
     return view('documents.edit', [
         'document' => $document,
         'can' => [
-            'edit'   => Gate::allows(DocumentsPermission::Edit,   $document),
-            'delete' => Gate::allows(DocumentsPermission::Delete, $document),
+            'edit'   => Gate::allows('app.documents.edit',   $document),
+            'delete' => Gate::allows('app.documents.delete', $document),
         ],
     ]);
 }
@@ -234,25 +209,22 @@ public function edit(Document $document): Response
     <a href="{{ route('documents.edit', $document) }}">Edit</a>
 @endif
 
-{{-- ✅ Option 2: FQCN with ->value --}}
-@can(\App\AzGuard\App\Permissions\DocumentsPermission::Edit->value)
+{{-- ✅ Option 2: full panel-prefixed key string --}}
+@can('app.documents.edit')
     <a href="{{ route('documents.edit', $document) }}">Edit</a>
 @endcan
 
-@cannot(\App\AzGuard\App\Permissions\DocumentsPermission::Delete->value)
+@cannot('app.documents.delete')
     <span class="text-muted">No delete access</span>
 @endcannot
 
-@canany([
-    \App\AzGuard\App\Permissions\DocumentsPermission::Create->value,
-    \App\AzGuard\App\Permissions\DocumentsPermission::Edit->value,
-])
+@canany(['app.documents.create', 'app.documents.edit'])
     <div class="editor-toolbar">...</div>
 @endcanany
 ```
 
-::: tip Why `->value` in Blade?
-Blade templates have no `use` statements. Pass pre-resolved booleans from the controller whenever possible. When you must use the directive directly, append `->value` to the enum case, or use the fully-qualified class name.
+::: tip Strings in Blade
+Blade directives take the full panel-prefixed permission key (`'app.documents.edit'`). Pass pre-resolved booleans from the controller whenever possible to keep templates simple.
 :::
 
 See [Blade Directives](./blade-directives.md) for role checks and custom directives.

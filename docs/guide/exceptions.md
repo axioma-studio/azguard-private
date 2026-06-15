@@ -33,11 +33,12 @@ These exceptions are thrown during boot (or first request) if the configuration 
 
 | Exception | When thrown |
 |---|---|
-| `PanelNotFoundException` | A panel name is referenced that is not registered in `config/az-guard.php` |
-| `InvalidRoleClassException` | A class listed in a panel's `roles()` does not implement `RoleInterface` |
-| `InvalidPermissionClassException` | A class listed in a panel's `permissions()` does not implement `PermissionInterface` |
-| `DuplicatePermissionKeyException` | Two enum cases across different enums resolve to the same full key |
-| `MissingMigrationException` | `azguard:doctor` detects that one of the required migrations has not been run |
+| `AzGuard\Exceptions\PanelNotFoundException` | A panel id is referenced that is not registered in `config/az-guard.php` |
+| `AzGuard\Exceptions\PanelNotSetException` | A permission check runs with no resolvable current panel |
+| `AzGuard\Registry\Exceptions\InvalidPermissionKeyException` | A permission key cannot be resolved or is malformed |
+| `AzGuard\Registry\Exceptions\InvalidCatalogException` | The permission catalog is invalid (e.g. two enum cases resolve to the same full key) |
+
+All extend `AzGuard\Exceptions\AzGuardException`.
 
 ## Handling authorization failures
 
@@ -87,12 +88,12 @@ The default Laravel behaviour redirects unauthenticated users to the login page.
 
 ## Exception debugging
 
-Run `php artisan azguard:doctor` — it reports configuration exceptions before they reach production. In CI, add the doctor command as a check:
+Run `php artisan guard:doctor` — it reports configuration problems before they reach production. In CI, add the doctor command as a check:
 
 ```yaml
 # .github/workflows/ci.yml
 - name: AzGuard doctor check
-  run: php artisan azguard:doctor --ci
+  run: php artisan guard:doctor
 ```
 
-`--ci` makes the command exit with a non-zero code if any errors are found, failing the pipeline.
+The command exits with a non-zero code if any errors are found, failing the pipeline.

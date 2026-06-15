@@ -10,17 +10,19 @@ Use **static roles** for the base role set (every tenant gets them), and **dynam
 
 ```php
 // app/AzGuard/App/Roles/ViewerRole.php — base role, same for all tenants
-class ViewerRole implements RoleInterface
+use AzGuard\Roles\BaseRole;
+
+class ViewerRole extends BaseRole
 {
-    public function getName(): string  { return 'viewer'; }
-    public function getPanel(): string { return 'app'; }
-    public function getLevel(): int    { return 1; }
+    public function getName(): string { return 'viewer'; }
+    public function getLevel(): int   { return 1; }
 
     public function permissions(): array
     {
+        // Full, panel-prefixed permission keys
         return [
-            DocumentsPermission::View,
-            InvoicesPermission::View,
+            'app.documents.view',
+            'app.invoices.view',
         ];
     }
 }
@@ -41,7 +43,7 @@ public function handle(Request $request, Closure $next): Response
 
     if ($tenant) {
         app(AuthorizationContextManager::class)->set(
-            AuthorizationContext::for(
+            new AuthorizationContext(
                 panelId:     'app',
                 contextType: 'tenant',
                 contextId:   (string) $tenant->id,
@@ -56,19 +58,25 @@ public function handle(Request $request, Closure $next): Response
 ## Creating tenant-specific roles
 
 ```php
-use AzGuard\Models\DynamicRole;
+use AzGuard\Models\Role;
+use AzGuard\Models\RolePermission;
 
 // In a controller or job
 public function createRole(CreateRoleRequest $request, Tenant $tenant): JsonResponse
 {
-    $role = DynamicRole::create([
-        'name'       => $request->name,
-        'panel'      => 'app',
-        'level'      => $request->level ?? 5,
-        'tenant_id'  => $tenant->id,  // your application scope column
+    // Namespace the role name by tenant to keep DB roles distinct
+    $role = Role::create([
+        'name'  => "tenant-{$tenant->id}-{$request->name}",
+        'level' => $request->level ?? 5,
     ]);
 
-    $role->syncPermissions($request->permissions);
+    foreach ($request->permissions as $key) {
+        RolePermission::firstOrCreate([
+            'role_id'        => $role->id,
+            'permission_key' => $key,   // full key, e.g. 'app.documents.edit'
+            'panel_id'       => 'app',
+        ]);
+    }
 
     return response()->json(['role' => $role], 201);
 }
@@ -77,11 +85,8 @@ public function createRole(CreateRoleRequest $request, Tenant $tenant): JsonResp
 ## Checking in context
 
 ```php
-// Permission check automatically includes the context
-$user->hasPermissionIn('app', DocumentsPermission::View, [
-    'contextType' => 'tenant',
-    'contextId'   => (string) $tenant->id,
-]);
+// One-off contextual check: hasPermissionIn(contextType, contextId, permission, panelId)
+$user->hasPermissionIn('tenant', (string) $tenant->id, DocumentsPermission::View, 'app');
 ```
 
 See [Context](/guide/context) for the full context API.

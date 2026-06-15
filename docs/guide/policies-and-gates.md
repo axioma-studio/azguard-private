@@ -9,7 +9,7 @@ When the panel provider boots:
 1. It scans `**/Policies/**/*Policy.php` under your Guards directory.
 2. `PolicyAttributeRegistrar` reads `#[GateAbility]` attributes on policy methods.
 3. For each method, it calls `Gate::define(resolvedAbility, [Policy::class, 'method'])`.
-4. If `#[AzGuardPolicy(model: Foo::class)]` is present (or autodiscovered), it also calls `Gate::policy($model, $policy)`.
+4. If `#[GuardPolicy(model: Foo::class)]` is present (or autodiscovered), it also calls `Gate::policy($model, $policy)`.
 
 ## Writing a policy
 
@@ -17,32 +17,32 @@ When the panel provider boots:
 namespace App\Guards\App\Documents\Policies;
 
 use AzGuard\Attributes\GateAbility;
-use AzGuard\Attributes\AzGuardPolicy;
+use AzGuard\Attributes\GuardPolicy;
 use App\Models\Documents\Document;
-use App\Guards\App\AppGuard;
+use App\Models\User;
 use App\Guards\App\Permissions\DocumentsPermission;
 
-#[AzGuardPolicy(model: Document::class)]
+#[GuardPolicy(model: Document::class)]
 class DocumentsPolicy
 {
     #[GateAbility(permission: DocumentsPermission::View)]
     public function canView(User $user, Document $document): bool
     {
-        return $user->hasPermission(AppGuard::permission(DocumentsPermission::View))
+        return $user->hasPermission(DocumentsPermission::View)
             && $user->id === $document->owner_id;
     }
 
     #[GateAbility(permission: DocumentsPermission::Edit)]
     public function canEdit(User $user, Document $document): bool
     {
-        return $user->hasPermission(AppGuard::permission(DocumentsPermission::Edit))
+        return $user->hasPermission(DocumentsPermission::Edit)
             && ! $document->isLocked();
     }
 
     #[GateAbility(permission: DocumentsPermission::Delete)]
     public function canDelete(User $user, Document $document): bool
     {
-        return $user->hasPermission(AppGuard::permission(DocumentsPermission::Delete));
+        return $user->hasPermission(DocumentsPermission::Delete);
     }
 }
 ```
@@ -74,12 +74,12 @@ Gate::authorize(DocumentsPermission::Edit, $document);
     <button>Delete</button>
 @endcan
 
-{{-- ✅ Shorthand — panel resolved from middleware context --}}
-@azcan('documents.view')
+{{-- ✅ AzGuard directive — pass the full panel-prefixed key --}}
+@azcan('app.documents.view')
     <a href="...">View</a>
 @endazcan
 ```
 
 ::: tip Enum vs string
-Enum cases are type-safe and refactor-safe. `@azcan` accepts the short key without the panel prefix — use it for panel-scoped templates. In PHP code (controllers, services, jobs), always pass the enum directly to `Gate::allows()` / `Gate::authorize()`.
+Enum cases are type-safe and refactor-safe. `@azcan` calls `hasPermission()` directly, so a string argument must be the full panel-prefixed key (`app.documents.view`). In PHP code (controllers, services, jobs), always pass the enum directly to `Gate::allows()` / `Gate::authorize()`.
 :::

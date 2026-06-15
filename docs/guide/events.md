@@ -6,15 +6,13 @@ AzGuard dispatches Laravel events at key points in the permission lifecycle. You
 
 | Event class | When fired |
 |---|---|
-| `RoleAssigned` | After `$user->assignRole(...)` succeeds |
-| `RoleRemoved` | After `$user->removeRole(...)` succeeds |
-| `RolesSynced` | After `$user->syncRoles(...)` completes |
-| `DirectGrantCreated` | After a direct grant is created |
-| `DirectGrantRevoked` | After a direct grant is revoked (soft-deleted) |
-| `DirectGrantExpired` | When the cache resolver encounters an expired grant |
-| `PermissionCacheFlushed` | After `$user->flushPermissions()` is called |
+| `RoleAttached` | After a role is attached via `$user->assignRole(...)` / `syncRoles(...)` |
+| `RoleDetached` | After a role is detached via `$user->removeRole(...)` / `syncRoles(...)` |
+| `GrantGiven` | After a direct grant is created |
+| `GrantRevoked` | After a direct grant is revoked |
 
-All event classes live in the `AzGuard\Events` namespace.
+All event classes live in the `AzGuard\Events` namespace. AzGuard **automatically
+flushes the permission cache** on these events — you do not need a flush listener.
 
 ## Listening to events
 
@@ -22,14 +20,14 @@ All event classes live in the `AzGuard\Events` namespace.
 
 ```php
 // app/Providers/EventServiceProvider.php
-use AzGuard\Events\RoleAssigned;
-use AzGuard\Events\DirectGrantCreated;
+use AzGuard\Events\RoleAttached;
+use AzGuard\Events\GrantGiven;
 
 protected $listen = [
-    RoleAssigned::class => [
+    RoleAttached::class => [
         App\Listeners\AuditRoleChange::class,
     ],
-    DirectGrantCreated::class => [
+    GrantGiven::class => [
         App\Listeners\NotifyAdminOfGrant::class,
     ],
 ];
@@ -39,15 +37,14 @@ protected $listen = [
 
 ```php
 // app/Providers/AppServiceProvider.php
-use AzGuard\Events\RoleAssigned;
+use AzGuard\Events\RoleAttached;
 
 public function boot(): void
 {
-    Event::listen(RoleAssigned::class, function (RoleAssigned $event) {
+    Event::listen(RoleAttached::class, function (RoleAttached $event) {
         Log::info('Role assigned', [
-            'user_id'  => $event->user->getKey(),
-            'role'     => $event->role,
-            'panel'    => $event->panel,
+            'model_id' => $event->model->getKey(),
+            'role'     => $event->role->name,
         ]);
     });
 }
@@ -55,52 +52,35 @@ public function boot(): void
 
 ## Event payloads
 
-### `RoleAssigned`
+### `RoleAttached`
 
 ```php
-public readonly Authenticatable $user;
-public readonly string $role;   // role name, e.g. 'editor'
-public readonly string $panel;  // panel id, e.g. 'app'
+public Model $model;  // the model the role was attached to
+public Role  $role;   // the AzGuard\Models\Role instance
 ```
 
-### `RoleRemoved`
+### `RoleDetached`
 
 ```php
-public readonly Authenticatable $user;
-public readonly string $role;
-public readonly string $panel;
+public Model $model;
+public Role  $role;
 ```
 
-### `RolesSynced`
+### `GrantGiven`
 
 ```php
-public readonly Authenticatable $user;
-public readonly array  $added;    // role names added
-public readonly array  $removed;  // role names removed
-public readonly string $panel;
+public Authenticatable $user;
+public string          $permissionKey;  // e.g. 'app.documents.view'
+public string          $panelId;        // panel id, e.g. 'app'
+public DirectGrant     $grant;          // the AzGuard\Models\DirectGrant
 ```
 
-### `DirectGrantCreated`
+### `GrantRevoked`
 
 ```php
-public readonly Authenticatable $user;
-public readonly string          $permissionKey;  // e.g. 'app.documents.view'
-public readonly string          $panel;
-public readonly ?Carbon         $expiresAt;      // null = permanent
-```
-
-### `DirectGrantRevoked`
-
-```php
-public readonly Authenticatable $user;
-public readonly string          $permissionKey;
-public readonly string          $panel;
-```
-
-### `PermissionCacheFlushed`
-
-```php
-public readonly Authenticatable $user;
+public Authenticatable $user;
+public string          $permissionKey;
+public string          $panelId;
 ```
 
 ## Audit log example
@@ -111,47 +91,48 @@ A full audit listener pattern:
 // app/Listeners/AuditRoleChange.php
 namespace App\Listeners;
 
-use AzGuard\Events\RoleAssigned;
-use AzGuard\Events\RoleRemoved;
+use AzGuard\Events\RoleAttached;
+use AzGuard\Events\RoleDetached;
 use App\Models\AuditLog;
 
 class AuditRoleChange
 {
-    public function handleAssigned(RoleAssigned $event): void
+    public function handleAttached(RoleAttached $event): void
     {
         AuditLog::create([
-            'event'    => 'role.assigned',
-            'user_id'  => $event->user->getKey(),
+            'event'    => 'role.attached',
+            'user_id'  => $event->model->getKey(),
             'metadata' => [
-                'role'  => $event->role,
-                'panel' => $event->panel,
+                'role' => $event->role->name,
             ],
         ]);
     }
 
-    public function handleRemoved(RoleRemoved $event): void
+    public function handleDetached(RoleDetached $event): void
     {
         AuditLog::create([
-            'event'    => 'role.removed',
-            'user_id'  => $event->user->getKey(),
+            'event'    => 'role.detached',
+            'user_id'  => $event->model->getKey(),
             'metadata' => [
-                'role'  => $event->role,
-                'panel' => $event->panel,
+                'role' => $event->role->name,
             ],
         ]);
     }
 }
 ```
 
-## Disabling events
+## Suppressing events in tests
 
-To suppress events in tests or bulk operations:
+AzGuard dispatches plain Laravel events, so use the framework's own `Event::fake()`
+to suppress (and assert on) them in tests or bulk operations:
 
 ```php
-// Temporarily disable all AzGuard events
-AzGuard::withoutEvents(function () {
-    User::all()->each->assignRole('viewer');
-});
-```
+use Illuminate\Support\Facades\Event;
+use AzGuard\Events\RoleAttached;
 
-This uses the same pattern as `Model::withoutEvents()` and is safe to nest.
+Event::fake([RoleAttached::class]);
+
+User::all()->each->assignRole('viewer');
+
+Event::assertDispatched(RoleAttached::class);
+```

@@ -1,66 +1,83 @@
 # Расширение
 
-## Кастомный PermissionChecker
+## Кастомный GrantSource
 
 ```php
-use AzGuard\Contracts\PermissionCheckerInterface;
+use AzGuard\Registry\Contracts\GrantSource;
+use AzGuard\Registry\Values\PermissionSet;
+use Illuminate\Contracts\Auth\Authenticatable;
 
-class TenantPermissionChecker implements PermissionCheckerInterface
+class TenantGrantSource implements GrantSource
 {
-    public function check(Authenticatable $user, PermissionInterface $permission): bool
+    public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
         // Кастомная логика: например, учитываем tenant
         $tenantId = app(TenantContext::class)->getCurrentTenantId();
 
-        return DB::table('azguard_user_roles')
+        $keys = DB::table('tenant_permissions')
             ->where('user_id', $user->getAuthIdentifier())
             ->where('tenant_id', $tenantId)
-            ->exists();
+            ->pluck('permission_key')
+            ->all();
+
+        return PermissionSet::of($keys);
+    }
+
+    public function priority(): int
+    {
+        return 85;
     }
 }
 
-// Регистрация в ServiceProvider
-$this->app->bind(PermissionCheckerInterface::class, TenantPermissionChecker::class);
+// Регистрация в register() сервис-провайдера
+use AzGuard\Facades\AzGuard;
+
+public function register(): void
+{
+    AzGuard::registerGrantSource(TenantGrantSource::class);
+}
 ```
 
-## Кастомный RoleResolver
+## Кастомная стратегия слияния (Context)
 
 ```php
-use AzGuard\Contracts\RoleResolverInterface;
+use AzGuard\Context\Contracts\MergeStrategy;
+use AzGuard\Registry\Values\PermissionSet;
 
-class CachedRoleResolver implements RoleResolverInterface
+class CustomMergeStrategy implements MergeStrategy
 {
-    public function resolve(Authenticatable $user): array
+    public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet
     {
-        return Cache::remember(
-            "azguard_roles_{$user->getAuthIdentifier()}",
-            300,
-            fn () => $user->azguardRoles()->get()->toArray()
-        );
+        // Кастомная логика объединения глобальных и контекстных прав
+        return $context ?? $global;
     }
 }
+```
+
+Подключается через `config/az-guard-context.php`:
+
+```php
+'merge_strategy' => App\AzGuard\CustomMergeStrategy::class,
 ```
 
 ## Расширение трейта
 
 ```php
+use AzGuard\Concerns\HasAzGuard;
+
 trait HasCustomAzGuard
 {
     use HasAzGuard;
 
-    public function hasAnyRole(array $roles): bool
+    public function hasEveryPermission(array $permissions): bool
     {
-        foreach ($roles as $role) {
-            if ($this->hasRole($role)) return true;
+        foreach ($permissions as $permission) {
+            if (! $this->hasPermission($permission)) {
+                return false;
+            }
         }
-        return false;
-    }
 
-    public function canAccessPanel(string $panel): bool
-    {
-        return $this->azguardRoles()
-            ->where('panel', $panel)
-            ->exists();
+        return true;
     }
 }
 ```

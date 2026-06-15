@@ -5,9 +5,8 @@
 ## 1. Установка
 
 ```bash
-composer require axioma-studio/azguard
-php artisan vendor:publish --tag=azguard-config
-php artisan vendor:publish --tag=azguard-migrations
+composer require axioma-studio/azguard-core
+php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```
 
@@ -28,12 +27,8 @@ class User extends Authenticatable
 // app/AzGuard/App/Permissions/PostsPermission.php
 namespace App\AzGuard\App\Permissions;
 
-use AzGuard\Contracts\PermissionInterface;
-use AzGuard\Attributes\GateAbility;
-
-enum PostsPermission: string implements PermissionInterface
+enum PostsPermission: string
 {
-    #[GateAbility]
     case View   = 'posts.view';
     case Create = 'posts.create';
     case Edit   = 'posts.edit';
@@ -47,17 +42,16 @@ enum PostsPermission: string implements PermissionInterface
 // app/AzGuard/App/Roles/EditorRole.php
 namespace App\AzGuard\App\Roles;
 
-use AzGuard\Contracts\RoleInterface;
-use App\AzGuard\App\Permissions\PostsPermission;
+use AzGuard\Roles\BaseRole;
 
-class EditorRole implements RoleInterface
+class EditorRole extends BaseRole
 {
     public function permissions(): array
     {
         return [
-            PostsPermission::View,
-            PostsPermission::Create,
-            PostsPermission::Edit,
+            'app.posts.view',
+            'app.posts.create',
+            'app.posts.edit',
         ];
     }
 }
@@ -66,8 +60,8 @@ class EditorRole implements RoleInterface
 ## 5. Назначьте роль и проверьте
 
 ```php
-// Назначение
-$user->assignRole(EditorRole::class);
+// Назначение (по имени роли — из getName(): класс EditorRole → 'editor')
+$user->assignRole('editor');
 
 // Проверка
 $user->hasPermission(PostsPermission::View);  // true

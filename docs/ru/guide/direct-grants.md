@@ -5,56 +5,54 @@
 ## Выдача гранта
 
 ```php
-// Бессрочный грант
-$user->grantPermission(ReportsPermission::Export);
+// Бессрочный грант (panelId обязателен)
+$user->grant(ReportsPermission::Export, 'app');
 
-// С TTL
-$user->grantPermission(
-    permission: ReportsPermission::Export,
-    expiresAt: now()->addHours(24),
-);
+// С TTL — передайте дату истечения
+$user->grant(ReportsPermission::Export, 'app', now()->addHours(24));
 
-// С опциональным замечанием
-$user->grantPermission(
-    permission: ReportsPermission::Export,
-    expiresAt: now()->addHour(),
-    note: 'Бета-доступ, выдан через админпанель',
-);
+// Fluent-билдер: ttl() задаётся в секундах
+AzGuard::forUser($user)->on('app')->ttl(86400)->grant(ReportsPermission::Export);
+
+// Короткая форма через фасад: AzGuard::grant($user, $perm, $panelId = 'app', ?int $ttl)
+AzGuard::grant($user, ReportsPermission::Export, 'app', 3600);
 ```
 
 ## Отзыв гранта
 
 ```php
-$user->revokePermission(ReportsPermission::Export);
+$user->revoke(ReportsPermission::Export, 'app');
 
-// Отзвать все гранты
-$user->revokeAllDirectPermissions();
+// Отозвать все гранты пользователя в панели
+AzGuard::forUser($user)->on('app')->revokeAll();
 ```
 
 ## Проверка и получение
 
 ```php
 // Был ли грант выдан?
-$user->hasDirectPermission(ReportsPermission::Export);  // true / false
+$user->hasGrant(ReportsPermission::Export, 'app');  // true / false
 
-// Список всех действующих грантов
-$user->directPermissions();  // Collection
+// Список всех действующих грантов в панели
+$user->grants('app');  // Collection
 ```
 
 ## TTL и автоматическая очистка
 
-Истёкшие гранты не влияют на `hasPermission()` автоматически. Для регулярной очистки используйте Artisan-команду:
+Истёкшие гранты автоматически игнорируются при проверке `hasPermission()` —
+их отфильтровывает scope `active()`. Команда нужна лишь чтобы держать таблицу чистой:
 
 ```bash
-php artisan azguard:purge-expired-grants
+php artisan guard:prune-grants
 ```
 
-Или запланируйте через планировщик:
+Можно ограничить конкретной панелью:
 
-```php
-// app/Console/Kernel.php
-$schedule->command('azguard:purge-expired-grants')->hourly();
+```bash
+php artisan guard:prune-grants --panel=app
 ```
+
+Либо включить ежедневный запуск через `prune_expired_daily => true` в `config/az-guard.php`.
 
 ## Приоритет проверки
 

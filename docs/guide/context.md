@@ -19,7 +19,7 @@ php artisan migrate
 | **AuthorizationContext** | Value object: `panelId` + `contextType` + `contextId` |
 | **AuthorizationContextManager** | Singleton: хранит активный контекст per-panel на время request |
 | **ResolvesContext** | Интерфейс resolver-а — извлекает контекст из `Request` |
-| **ContextMergeStrategy** | Стратегия объединения глобальных и контекстных прав |
+| **MergeStrategy** | Стратегия объединения глобальных и контекстных прав |
 | **ContextualRoleGrantSource** | `GrantSource` с приоритетом 95, читает таблицу `az_guard_context_roles` |
 
 ## Быстрый старт
@@ -42,7 +42,7 @@ final class WorkspaceContextResolver implements ResolvesContext
             : null;
     }
 
-    public function panel(): string
+    public function panelId(): string
     {
         return 'app';
     }
@@ -91,23 +91,29 @@ $user->hasPermission('app.posts.edit');
 Не меняет глобальный `AuthorizationContextManager`:
 
 ```php
+use AzGuard\Context\AuthorizationContext;
+
 // Через удобный alias
 $user->hasPermissionIn('workspace', $workspaceId, 'app.posts.edit');
 
-// Через основной метод с duck-typed объектом
-$user->hasPermission('app.posts.edit', 'app', (object) [
-    'contextType' => 'workspace',
-    'contextId'   => $workspaceId,
-]);
+// Через основной метод с объектом PermissionContext
+$user->hasPermission('app.posts.edit', 'app', new AuthorizationContext(
+    panelId: 'app',
+    contextType: 'workspace',
+    contextId: $workspaceId,
+));
 ```
 
 ### Тихая версия (для Blade / UI)
 
 ```php
-$user->checkAzPermission('app.posts.edit', 'app', (object) [
-    'contextType' => 'workspace',
-    'contextId'   => $workspaceId,
-]);
+use AzGuard\Context\AuthorizationContext;
+
+$user->checkPermission('app.posts.edit', 'app', new AuthorizationContext(
+    panelId: 'app',
+    contextType: 'workspace',
+    contextId: $workspaceId,
+));
 ```
 
 ### Blade-директива
@@ -165,18 +171,13 @@ DB::table('az_guard_context_roles')->insert([
 Можно реализовать свою стратегию:
 
 ```php
-use AzGuard\Context\Contracts\ContextMergeStrategy;
+use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Registry\Values\PermissionSet;
-use Illuminate\Contracts\Auth\Authenticatable;
 
-final class MyStrategy implements ContextMergeStrategy
+final class MyStrategy implements MergeStrategy
 {
-    public function merge(
-        Authenticatable $user,
-        string $panelId,
-        PermissionSet $global,
-        ?PermissionSet $context,
-    ): PermissionSet {
+    public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet
+    {
         // ваша логика
     }
 }

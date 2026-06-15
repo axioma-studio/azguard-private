@@ -17,29 +17,27 @@ Every other popular Laravel permission package (Spatie, Bouncer, Laratrust) stor
 Permissions live in PHP. The database is only ever asked "which role does this user have?" — never "what does this permission allow?"
 
 ```php
-// Permission — a backed enum. IDE-completable. PHPStan-checkable. Git-trackable.
-enum DocumentsPermission: string implements PermissionInterface
+// Permission — a plain backed enum. IDE-completable. PHPStan-checkable. Git-trackable.
+// Values are unscoped; the panel prefixes them.
+enum DocumentsPermission: string
 {
-    #[GateAbility]
     case View   = 'documents.view';
-    #[GateAbility]
     case Edit   = 'documents.edit';
-    #[GateAbility]
     case Delete = 'documents.delete';
 }
 
 // Role — a PHP class. Readable. Testable. Diffable.
-class EditorRole implements RoleInterface
+class EditorRole extends BaseRole
 {
-    public function getName(): string  { return 'editor'; }
-    public function getPanel(): string { return 'app'; }
-    public function getLevel(): int    { return 10; }
+    public function getName(): string { return 'editor'; }
+    public function getLevel(): int   { return 10; }
 
     public function permissions(): array
     {
+        // Full, panel-prefixed permission keys
         return [
-            AppGuard::permission(DocumentsPermission::View),
-            AppGuard::permission(DocumentsPermission::Edit),
+            'app.documents.view',
+            'app.documents.edit',
         ];
     }
 }
@@ -81,9 +79,9 @@ $this->authorize('update', $post);   // ✅ via policy
 ### Built-in diagnostics
 
 ```bash
-php artisan azguard:doctor            # finds orphaned policies, typos, missing abilities
-php artisan azguard:list-permissions  # shows all permissions across all panels
-php artisan azguard:sync-roles        # syncs PHP role classes to DB
+php artisan guard:doctor            # finds orphaned policies, typos, missing abilities
+php artisan guard:list-permissions  # shows all permissions across all panels
+php artisan guard:sync-roles        # syncs PHP role classes to DB
 ```
 
 ## When AzGuard is the right choice

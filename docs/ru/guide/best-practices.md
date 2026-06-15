@@ -10,11 +10,11 @@
 
 ```php
 // ✅ Хорошо — роль отражает бизнес-роль
-$user->assignRole(EditorRole::class);
+$user->assignRole('editor');
 
 // ❌ Плохо — 15 прямых грантов вместо одной роли
-$user->grantPermission(PostsPermission::View);
-$user->grantPermission(PostsPermission::Create);
+$user->grant(PostsPermission::View, 'app');
+$user->grant(PostsPermission::Create, 'app');
 // ...
 ```
 
@@ -29,24 +29,26 @@ $user->grantPermission(PostsPermission::Create);
 ## Принцип минимальных прав
 
 ```php
+use AzGuard\Roles\BaseRole;
+
 // ✅ Хорошо — каждая роль содержит только нужные права
-class ViewerRole implements RoleInterface
+class ViewerRole extends BaseRole
 {
     public function permissions(): array
     {
-        return [PostsPermission::View, CommentsPermission::View];
+        return ['app.posts.view', 'app.comments.view'];
     }
 }
 
 // ❌ Плохо — роль «на всякий случай» с лишними правами
-class ViewerRole implements RoleInterface
+class ViewerRole extends BaseRole
 {
     public function permissions(): array
     {
         return [
-            PostsPermission::View,
-            PostsPermission::Edit,   // Зачем?
-            PostsPermission::Delete, // Точно не нужно
+            'app.posts.view',
+            'app.posts.edit',   // Зачем?
+            'app.posts.delete', // Точно не нужно
         ];
     }
 }

@@ -4,7 +4,7 @@ AzGuard is built around contracts and interfaces, making it straightforward to r
 
 ## Custom GrantSource
 
-A `GrantSource` is anything that produces a `PermissionSet` for a user. AzGuard ships with two: `RoleGrantSource` (reads from roles) and `DirectGrantSource` (reads from direct grants). You can add your own:
+A `GrantSource` is anything that produces a `PermissionSet` for a user. AzGuard ships with several: `ClassRoleGrantSource` and `DatabaseRoleGrantSource` (read from roles) and `DirectGrantSource` (reads from direct grants). You can add your own:
 
 ```php
 use AzGuard\Registry\Contracts\GrantSource;
@@ -33,17 +33,14 @@ class SubscriptionGrantSource implements GrantSource
 }
 ```
 
-Register it in a service provider:
+Register it in a service provider's `register()` method:
 
 ```php
-use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Facades\AzGuard;
 
-public function boot(): void
+public function register(): void
 {
-    $this->app->extend(EffectivePermissionResolver::class, function ($resolver) {
-        $resolver->addSource(new SubscriptionGrantSource);
-        return $resolver;
-    });
+    AzGuard::registerGrantSource(SubscriptionGrantSource::class);
 }
 ```
 
@@ -71,28 +68,37 @@ class DatabaseCatalogBuilder implements PermissionCatalogBuilder
 }
 ```
 
-## Replacing the User model
+## Swapping AzGuard models
 
-If you use UUIDs or a custom primary key, extend the pivot models in `config/az-guard.php`:
+You can replace any of AzGuard's models with your own subclass via `config/az-guard.php`:
 
 ```php
 'models' => [
-    'role'              => \AzGuard\Models\Role::class,
-    'permission'        => \AzGuard\Models\Permission::class,
-    'model_has_role'    => \App\Models\AzGuard\ModelHasRole::class,  // custom
+    'role'         => \App\Models\AzGuard\Role::class,         // custom
+    'scope'        => \AzGuard\Models\ModelHasScope::class,
+    'direct_grant' => \AzGuard\Models\DirectGrant::class,
 ],
 ```
 
 ```php
-// app/Models/AzGuard/ModelHasRole.php
-use AzGuard\Models\ModelHasRole as BaseModelHasRole;
+// app/Models/AzGuard/Role.php
+use AzGuard\Models\Role as BaseRole;
 
-class ModelHasRole extends BaseModelHasRole
+class Role extends BaseRole
 {
     // Override as needed, e.g., for UUID foreign keys
     protected $keyType = 'string';
     public $incrementing = false;
 }
+```
+
+For string-based (UUID/ULID) morph keys, set the morph-type column type in config
+instead of subclassing:
+
+```php
+'column_names' => [
+    'morph_type' => 'ulid',   // 'int' (default), 'ulid', or 'uuid'
+],
 ```
 
 ## Custom authorization response

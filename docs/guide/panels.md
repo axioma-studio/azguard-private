@@ -77,9 +77,9 @@ $user->hasPermission('app.documents.view');
 A single user can have completely different roles in different panels:
 
 ```php
-// User is editor in app, but read-only in admin
-$user->assignRole('editor', panel: 'app');
-$user->assignRole('viewer', panel: 'admin');
+// 'editor' grants app.* permissions; 'viewer' grants admin.* permissions
+$user->assignRole('editor');
+$user->assignRole('viewer');
 
 $user->hasPermission('app.documents.edit');   // true
 $user->hasPermission('admin.users.delete');   // false
@@ -88,7 +88,7 @@ $user->hasPermission('admin.users.delete');   // false
 ## Listing panels
 
 ```bash
-php artisan azguard:doctor
+php artisan guard:doctor
 # Shows all registered panels and their status
 ```
 

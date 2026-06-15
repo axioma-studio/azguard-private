@@ -26,7 +26,7 @@ All notable changes are documented here. AzGuard follows [Semantic Versioning](h
 - `AzDirectGrant` model with `expires_at` and `revoked_at`
 - `DirectGrantResource` in Filament
 - `giveAzPermission()` / `revokeAzPermission()` on User
-- `artisan azguard:grant` command
+- `artisan guard:grant` command
 
 ### Sprint 5 — Filament Integration
 - `azguard/filament` package released
@@ -51,4 +51,4 @@ All notable changes are documented here. AzGuard follows [Semantic Versioning](h
 - Panel system with `PanelProviderInterface`
 - `#[GateAbility]`, `#[CheckPermission]`, `#[RoleOnly]`, `#[SkipGuardCheck]` attributes
 - `Gate::before` wildcard integration
-- `azguard:doctor`, `azguard:sync-roles`, `azguard:cache-reset`
+- `guard:doctor`, `guard:sync-roles`, `guard:cache-reset`

@@ -8,7 +8,7 @@ AzGuard provides a declarative, attribute-based way to protect controller action
 Route::middleware([
     'azguard.panel:app',  // sets current panel → resolves permissions as app.*
     'azguard.roles',      // eager-loads the user's roles & direct grants
-    'check.access',       // reads #[CheckPermission] on the controller method
+    'azguard.check',      // reads #[CheckPermission] on the controller method
 ])->group(function () {
     Route::apiResource('documents', DocumentController::class);
     Route::apiResource('reports', ReportController::class);
@@ -17,9 +17,9 @@ Route::middleware([
 
 | Middleware | Alias | Purpose |
 |---|---|---|
-| `SetAzGuardPanel` | `azguard.panel` | Sets the active panel for this request |
+| `SetCurrentPanel` | `azguard.panel` | Sets the active panel for this request |
 | `LoadAzGuardRoles` | `azguard.roles` | Loads and caches roles + grants for `auth()->user()` |
-| `CheckAccessMiddleware` | `check.access` | Reads `#[CheckPermission]` and calls `Gate::allows()` |
+| `CheckAccess` | `azguard.check` | Reads `#[CheckPermission]` and calls `Gate::allows()` |
 
 All three aliases are registered automatically by `AzGuardServiceProvider`.
 
@@ -134,17 +134,17 @@ Multiple panels in the same application — register each group with its own pan
 ```php
 // App panel
 Route::prefix('app')
-    ->middleware(['auth', 'azguard.panel:app', 'azguard.roles', 'check.access'])
+    ->middleware(['auth', 'azguard.panel:app', 'azguard.roles', 'azguard.check'])
     ->group(base_path('routes/app.php'));
 
 // Admin panel
 Route::prefix('admin')
-    ->middleware(['auth', 'azguard.panel:admin', 'azguard.roles', 'check.access'])
+    ->middleware(['auth', 'azguard.panel:admin', 'azguard.roles', 'azguard.check'])
     ->group(base_path('routes/admin.php'));
 
 // API (stateless)
 Route::prefix('api')
-    ->middleware(['auth:sanctum', 'azguard.panel:api', 'azguard.roles', 'check.access'])
+    ->middleware(['auth:sanctum', 'azguard.panel:api', 'azguard.roles', 'azguard.check'])
     ->group(base_path('routes/api.php'));
 ```
 
@@ -156,15 +156,15 @@ DRY up your route definitions by registering named groups:
 // bootstrap/app.php (Laravel 11)
 ->withMiddleware(function (Middleware $middleware) {
     $middleware->appendToGroup('app-guard', [
-        \AzGuard\Http\Middleware\SetAzGuardPanel::class.':app',
+        \AzGuard\Http\Middleware\SetCurrentPanel::class.':app',
         \AzGuard\Http\Middleware\LoadAzGuardRoles::class,
-        \AzGuard\Http\Middleware\CheckAccessMiddleware::class,
+        \AzGuard\Http\Middleware\CheckAccess::class,
     ]);
 
     $middleware->appendToGroup('admin-guard', [
-        \AzGuard\Http\Middleware\SetAzGuardPanel::class.':admin',
+        \AzGuard\Http\Middleware\SetCurrentPanel::class.':admin',
         \AzGuard\Http\Middleware\LoadAzGuardRoles::class,
-        \AzGuard\Http\Middleware\CheckAccessMiddleware::class,
+        \AzGuard\Http\Middleware\CheckAccess::class,
     ]);
 })
 ```
@@ -183,9 +183,9 @@ Route::middleware(['auth', 'admin-guard'])
 ```php
 // Dedicated middleware class
 // app/Http/Middleware/RequireRole.php
-public function handle(Request $request, Closure $next, string $role, string $panel = 'app'): Response
+public function handle(Request $request, Closure $next, string $role): Response
 {
-    if (! $request->user()?->hasRole($role, panel: $panel)) {
+    if (! $request->user()?->hasRole($role)) {
         abort(403);
     }
     return $next($request);
@@ -193,7 +193,7 @@ public function handle(Request $request, Closure $next, string $role, string $pa
 ```
 
 ```php
-Route::middleware(['auth', 'app-guard', 'role:manager,app'])
+Route::middleware(['auth', 'app-guard', 'role:manager'])
     ->group(function () {
         Route::get('/reports', ReportsController::class);
     });

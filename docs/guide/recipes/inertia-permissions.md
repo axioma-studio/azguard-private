@@ -37,17 +37,12 @@ public function share(Request $request): array
 }
 ```
 
-## Using the TypeScript export
+## A typed permission map on the frontend
 
-Alternatively, export all permissions to TypeScript and use them with `usePage()`:
-
-```bash
-php artisan azguard:export-ts
-# outputs resources/js/permissions.ts
-```
+Alternatively, maintain a small `const` map of permission keys and use it with `usePage()`:
 
 ```typescript
-// resources/js/permissions.ts (auto-generated)
+// resources/js/permissions.ts
 export const Permissions = {
   app: {
     documents: {

@@ -4,22 +4,19 @@
 
 ```php
 // database/seeders/RolesAndPermissionsSeeder.php
-use App\AzGuard\App\Roles\{EditorRole, ViewerRole};
-use App\AzGuard\Admin\Roles\AdminRole;
-
 class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Синхронизируем роли с БД
-        Artisan::call('azguard:sync-roles');
+        // Синхронизируем классы ролей с БД (создаёт записи по имени роли)
+        Artisan::call('guard:sync-roles');
 
-        // Назначаем роли конкретным пользователям
+        // Назначаем роли по имени конкретным пользователям
         $admin = User::where('email', 'admin@example.com')->first();
-        $admin?->assignRole(AdminRole::class);
+        $admin?->assignRole('admin');
 
         $editor = User::where('email', 'editor@example.com')->first();
-        $editor?->assignRole(EditorRole::class);
+        $editor?->assignRole('editor');
     }
 }
 ```
@@ -44,7 +41,7 @@ public function test_seeder_assigns_correct_roles(): void
 public function editor(): static
 {
     return $this->afterCreating(function (User $user) {
-        $user->assignRole(EditorRole::class);
+        $user->assignRole('editor');
     });
 }
 

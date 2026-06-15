@@ -1,6 +1,6 @@
 # Permission Catalog
 
-The **permission catalog** is the single source of truth for every valid permission key in your application. AzGuard builds it at boot time by scanning all registered `PermissionInterface` enums for each panel.
+The **permission catalog** is the single source of truth for every valid permission key in your application. AzGuard builds it at boot time by scanning all registered permission enums for each panel.
 
 ## How it works
 
@@ -32,20 +32,22 @@ The core package does not register any `app.*` permissions. All `app.*` keys com
 ## Defining your own catalog
 
 ```bash
-php artisan azguard:make-permission App InvoicesPermission
+php artisan make:guard-permission App Invoices View
 ```
 
-Then register the class in your `AppPanelProvider::permissions()`:
+Then register the enum class in your panel provider via `permissionEnums()`:
 
 ```php
-class AppPanelProvider implements PanelProviderInterface
+class AppPanelProvider extends PanelProvider
 {
-    public function permissions(): array
+    public function panel(Panel $panel): Panel
     {
-        return [
-            DocumentsPermission::class,
-            InvoicesPermission::class,  // <-- add here
-        ];
+        return $panel
+            ->id('app')
+            ->permissionEnums([
+                DocumentsPermission::class,
+                InvoicesPermission::class,  // <-- add here
+            ]);
     }
 }
 ```
@@ -54,14 +56,11 @@ class AppPanelProvider implements PanelProviderInterface
 
 ```bash
 # All permissions for all panels
-php artisan azguard:list-permissions
+php artisan guard:list-permissions
 
-# Filtered by panel
-php artisan azguard:list-permissions --panel=app
-php artisan azguard:list-permissions --panel=admin
-
-# With Gate registration status
-php artisan azguard:list-permissions --panel=app --verbose
+# Filtered by panel (positional argument)
+php artisan guard:list-permissions app
+php artisan guard:list-permissions admin
 ```
 
 Example output:
@@ -85,7 +84,7 @@ Panel: app
 ## Validating the catalog
 
 ```bash
-php artisan azguard:doctor
+php artisan guard:doctor
 ```
 
 The doctor reports:
@@ -99,7 +98,7 @@ The doctor reports:
 The catalog is cached at boot time. After adding new permissions, run:
 
 ```bash
-php artisan azguard:cache-flush
+php artisan guard:cache-reset
 # or clear all caches:
 php artisan cache:clear
 ```

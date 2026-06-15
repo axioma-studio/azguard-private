@@ -11,21 +11,21 @@ Gate::before(function (User $user, string $ability): ?bool {
 });
 ```
 
-## Через роль с WildcardPermission
+## Через роль с wildcard
 
 ```php
-class SuperAdminRole implements RoleInterface
-{
-    public function getName(): string { return 'super-admin'; }
+use AzGuard\Roles\BaseRole;
 
+class SuperAdminRole extends BaseRole
+{
     public function permissions(): array
     {
-        return [WildcardPermission::All]; // AzGuard возвращает true для любой проверки
+        return ['*']; // AzGuard возвращает true для любой проверки
     }
 }
 
-// Назначение
-$user->assignRole(SuperAdminRole::class);
+// Назначение (по имени роли — 'super-admin')
+$user->assignRole('super-admin');
 
 // Теперь любая проверка возвращает true
 $user->hasPermission(PostsPermission::Delete); // true

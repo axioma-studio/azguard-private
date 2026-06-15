@@ -41,13 +41,25 @@ return [
     |--------------------------------------------------------------------------
     | Table Names
     |--------------------------------------------------------------------------
-    | Override if existing tables conflict. All four keys must be present.
+    | Override if existing tables conflict.
     */
     'table_names' => [
         'roles'            => 'roles',
         'model_has_roles'  => 'model_has_roles',
         'model_has_scopes' => 'model_has_scopes',
+        'role_permissions' => 'az_guard_role_permissions',
         'direct_grants'    => 'az_direct_grants',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Column Names
+    |--------------------------------------------------------------------------
+    | morph_type sets the key type for AzGuard's polymorphic columns:
+    | 'int' (default), 'ulid' or 'uuid'. Match it to your User's primary key.
+    */
+    'column_names' => [
+        'morph_type' => 'int',
     ],
 
     /*

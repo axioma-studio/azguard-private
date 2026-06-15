@@ -7,7 +7,7 @@
 → [github.com/axioma-studio/azguard/issues](https://github.com/axioma-studio/azguard-private/issues)
 
 Пожалуйста, включите:
-- Версию AzGuard (`composer show axioma-studio/azguard | grep versions`)
+- Версию AzGuard (`composer show axioma-studio/azguard-core | grep versions`)
 - Версии PHP и Laravel
 - Минимальный воспроизводящий пример
 - Текст исключения и stack trace (если применимо)
@@ -22,9 +22,9 @@
 
 Проверьте:
 1. Трейт `HasAzGuard` добавлен в модель User
-2. Роль синхронизирована с БД: `php artisan azguard:sync-roles`
-3. Пользователю назначена роль: `$user->assignRole(EditorRole::class)`
-4. Кэш сброшен: `php artisan azguard:cache-clear`
+2. Роль синхронизирована с БД: `php artisan guard:sync-roles`
+3. Пользователю назначена роль: `$user->assignRole('editor')`
+4. Кэш сброшен: `php artisan guard:cache-reset`
 
 ### Конфликт с существующей реализацией Gate
 

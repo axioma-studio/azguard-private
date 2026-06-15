@@ -11,50 +11,52 @@ Roles defined as PHP classes are **always available** without seeding. You can a
 $user->assignRole('editor');  // works out of the box
 ```
 
-## Seeding dynamic roles
+## Seeding dynamic (DB-backed) roles
 
-If you use `DynamicRole` for runtime-configurable roles, seed them in a dedicated seeder:
+For runtime-configurable roles, create `Role` records and attach permissions as
+`RolePermission` rows (full, panel-prefixed `permission_key` + `panel_id`):
 
 ```php
 // database/seeders/RolesSeeder.php
-use AzGuard\Models\DynamicRole;
-use App\AzGuard\App\Permissions\DocumentsPermission;
-use App\AzGuard\App\Permissions\ReportsPermission;
+use AzGuard\Models\Role;
+use AzGuard\Models\RolePermission;
 
 class RolesSeeder extends Seeder
 {
     public function run(): void
     {
-        $editor = DynamicRole::firstOrCreate(
-            ['name' => 'editor', 'panel' => 'app'],
-            ['level' => 10]
-        );
-        $editor->syncPermissions([
-            DocumentsPermission::View,
-            DocumentsPermission::Create,
-            DocumentsPermission::Edit,
+        $editor = Role::firstOrCreate(['name' => 'editor'], ['level' => 10]);
+        $this->addPermissions($editor, 'app', [
+            'app.documents.view',
+            'app.documents.create',
+            'app.documents.edit',
         ]);
 
-        $viewer = DynamicRole::firstOrCreate(
-            ['name' => 'viewer', 'panel' => 'app'],
-            ['level' => 1]
-        );
-        $viewer->syncPermissions([
-            DocumentsPermission::View,
+        $viewer = Role::firstOrCreate(['name' => 'viewer'], ['level' => 1]);
+        $this->addPermissions($viewer, 'app', [
+            'app.documents.view',
         ]);
 
-        $manager = DynamicRole::firstOrCreate(
-            ['name' => 'manager', 'panel' => 'app'],
-            ['level' => 50]
-        );
-        $manager->syncPermissions([
-            DocumentsPermission::View,
-            DocumentsPermission::Create,
-            DocumentsPermission::Edit,
-            DocumentsPermission::Delete,
-            ReportsPermission::View,
-            ReportsPermission::Export,
+        $manager = Role::firstOrCreate(['name' => 'manager'], ['level' => 50]);
+        $this->addPermissions($manager, 'app', [
+            'app.documents.view',
+            'app.documents.create',
+            'app.documents.edit',
+            'app.documents.delete',
+            'app.reports.view',
+            'app.reports.export',
         ]);
+    }
+
+    private function addPermissions(Role $role, string $panelId, array $keys): void
+    {
+        foreach ($keys as $key) {
+            RolePermission::firstOrCreate([
+                'role_id'        => $role->id,
+                'permission_key' => $key,
+                'panel_id'       => $panelId,
+            ]);
+        }
     }
 }
 ```
@@ -83,19 +85,19 @@ class UsersSeeder extends Seeder
             ['email' => 'admin@example.com'],
             ['name' => 'Admin User', 'password' => Hash::make('password')]
         );
-        $admin->assignRole('super-admin', panel: 'admin');
+        $admin->assignRole('super-admin');
 
         $editor = User::firstOrCreate(
             ['email' => 'editor@example.com'],
             ['name' => 'Editor User', 'password' => Hash::make('password')]
         );
-        $editor->assignRole('editor', panel: 'app');
+        $editor->assignRole('editor');
 
         $viewer = User::firstOrCreate(
             ['email' => 'viewer@example.com'],
             ['name' => 'Viewer User', 'password' => Hash::make('password')]
         );
-        $viewer->assignRole('viewer', panel: 'app');
+        $viewer->assignRole('viewer');
     }
 }
 ```
@@ -107,21 +109,21 @@ class UsersSeeder extends Seeder
 public function editor(): static
 {
     return $this->afterCreating(fn (User $u) =>
-        $u->assignRole('editor', panel: 'app')
+        $u->assignRole('editor')
     );
 }
 
 public function manager(): static
 {
     return $this->afterCreating(fn (User $u) =>
-        $u->assignRole('manager', panel: 'app')
+        $u->assignRole('manager')
     );
 }
 
 public function admin(): static
 {
     return $this->afterCreating(fn (User $u) =>
-        $u->assignRole('super-admin', panel: 'admin')
+        $u->assignRole('super-admin')
     );
 }
 ```
@@ -139,25 +141,25 @@ Always use `firstOrCreate` / `updateOrCreate` so seeders can be re-run safely:
 
 ```php
 // ✅ Idempotent — safe to run multiple times
-$role = DynamicRole::firstOrCreate(
-    ['name' => 'editor', 'panel' => 'app'],
+$role = Role::firstOrCreate(
+    ['name' => 'editor'],
     ['level' => 10]
 );
 
 // ❌ Creates duplicates on re-seed
-$role = DynamicRole::create(['name' => 'editor', ...]);
+$role = Role::create(['name' => 'editor', 'level' => 10]);
 ```
 
 ## Syncing static roles to the DB
 
-After deploying new PHP role classes, sync them to `az_guard_roles` so Filament dropdowns and API endpoints stay up to date:
+After deploying new PHP role classes, sync them to the `roles` table so Filament dropdowns and API endpoints stay up to date:
 
 ```bash
 # Sync all panels
-php artisan azguard:sync-roles
+php artisan guard:sync-roles
 
 # Sync a specific panel
-php artisan azguard:sync-roles --panel=app
+php artisan guard:sync-roles --panel=app
 ```
 
 This command is safe to include in your CI/CD deploy pipeline.

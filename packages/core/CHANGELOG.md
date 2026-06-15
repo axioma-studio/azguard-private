@@ -1,27 +1,37 @@
 # Changelog
 
-## 0.3.0
+All notable changes to `axioma-studio/azguard-core` are documented here.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
+the project adheres to [Semantic Versioning](https://semver.org/).
 
-### Direct Grants
+## [Unreleased]
 
-- `Models/DirectGrant` — Eloquent-модель с `scopeActive()`, `scopeForPanel()`, полиморфной связью `grantable`
-- Миграция `az_direct_grants` с unique-индексом
-- `Concerns/HasDirectGrants` — трейт: `hasDirectGrant()`, `activeDirectGrants()`, переопределение `hasAzPermission()`
-- `Grants/GrantBuilder` — fluent API: `on()`, `ttl()`, `give()`, `revoke()`, `revokeAll()`, `list()`
-- `Events/GrantGiven`, `Events/GrantRevoked`
-- `AzGuardManager::forUser()`, `grantDirect()`, `revokeDirect()`, `activeGrants()`
-- `Auth/DirectGrantPolicy` — Gate-политика `'direct-grant'`
-- `@azdirect` / `@endazdirect` Blade-директива
-- Middleware-алиас `az.grant` → `CheckDirectGrant`
-- Artisan: `az-guard:grant`, `az-guard:revoke-grant`, `az-guard:prune-grants`
-- Конфиг: `table_names.direct_grants`, `models.direct_grant`, `features.direct_grants`
-- Документация: `docs/guide/direct-grants.md`
+## [1.0.0]
 
-## 0.2.0
+### Added
 
-- `Gate::before` через `Authorizer`
-- Контракт роли: `name` = slug, `class_name` = FQCN класса роли
-- `hasAzPermission` поддерживает `*`
-- `PermissionName`, middleware `azguard.roles`
-- `PanelProvider` регистрирует abilities из `Permissions/*Permission::map()`
-- Laravel 13 в `illuminate/*`
+- Code-first RBAC for Laravel: roles, permissions, direct grants and panels.
+- `HasAzGuard` trait (composing `HasRoles`, `HasPermissions`, `HasDirectGrants`)
+  and `HasScopedRoles` for entity-scoped roles.
+- Authorization through the Laravel Gate (`Gate::allows`, `$user->can`) and
+  `$user->hasPermission(string|UnitEnum $permission, ?string $panelId = null)`,
+  which accepts a key string or a permission enum.
+- Pluggable grant sources (`GrantSource`, `priority(): int`): `ClassRole`,
+  `DatabaseRole`, `DirectGrant`. Register custom sources with
+  `AzGuard::registerGrantSource()`.
+- Optional `PermissionLayer` hook applied after the global set is resolved.
+- Typed `PermissionCatalog` built from permission enums and policy attributes.
+- Panels via `PanelProvider` and the fluent `Panel` builder; configurable
+  `az-guard.default_panel`.
+- Direct grants with TTL/expiry and a fluent `GrantBuilder`.
+- Events `RoleAttached`, `RoleDetached`, `GrantGiven`, `GrantRevoked` — the
+  permission cache is flushed automatically when they fire.
+- Artisan: `make:guard-*` generators and `guard:*` runtime commands.
+- ULID/UUID morph-key support via `az-guard.column_names.morph_type`.
+
+### Security
+
+- Per-request services (`PermissionCache`, resolver) are bound `scoped` for
+  Octane safety — no permission bleed between requests on a reused worker.
+- Fail-closed authorization; with no active panel and several registered panels
+  the Authorizer denies rather than evaluating against an arbitrary panel.

@@ -21,7 +21,7 @@
 - `resolvePermission`, `AzGuard::permission()`, `guard:doctor`
 - Generators: `make:guard-panel`, `make:guard-permission`, `make:guard-policy`, `make:guard-abilities`, `make:guard-role`
 - `AbilitiesDto`, `azguard/filament` (`GuardResource`)
-- **Sprint 4**: `InteractsWithAzScopes` — entity-scoped roles API (`assignScopedRole`, `removeScopedRole`, `hasScopedRole`, `hasScopedPermission`)
+- **Sprint 4**: `HasScopedRoles` — entity-scoped roles API (`assignScopedRole`, `removeScopedRole`, `hasScopedRole`, `hasScopedPermission`)
 - **v0.3**: Direct Grants — `HasDirectGrants`, `GrantBuilder`, `DirectGrantPolicy`, `@azdirect`, Artisan CLI
 
 ## Не в пакете
@@ -52,20 +52,20 @@ Priority resolution: global wildcard `*` → global roles → scoped roles.
 ## Контракт Direct Grants (v0.3)
 
 ```php
-// Установить трейт на User-модель
-use HasAzGuard, HasDirectGrants;
+// Установить трейт на User-модель (HasAzGuard включает HasDirectGrants)
+use HasAzGuard;
 
 // Fluent API
-AzGuard::forUser($user)->on('app')->ttl(3600)->give('app.x');
+AzGuard::forUser($user)->on('app')->ttl(3600)->grant('app.x');
 AzGuard::forUser($user)->on('app')->revoke('app.x');
 
 // Короткий хелпер
-AzGuard::grantDirect($user, 'app.x', 'app', ttl: 3600);
-AzGuard::revokeDirect($user, 'app.x', 'app');
-AzGuard::activeGrants($user, 'app'); // Collection<DirectGrant>
+AzGuard::grant($user, 'app.x', 'app', ttl: 3600);
+AzGuard::revoke($user, 'app.x', 'app');
+AzGuard::grants($user, 'app'); // Collection<DirectGrant>
 
 // Проверка
-$user->hasDirectGrant('app.x', 'app');             // bool
+$user->hasGrant('app.x', 'app');                   // bool
 Gate::allows('direct-grant', 'app.x');             // bool
 Gate::allows('direct-grant', ['app.x', 'app']);    // bool
 
@@ -73,15 +73,15 @@ Gate::allows('direct-grant', ['app.x', 'app']);    // bool
 // @azdirect('app.x') ... @endazdirect
 
 // Middleware
-// ->middleware('az.grant:app.x,app')
+// ->middleware('azguard.grant:app.x,app')
 
 // Artisan
-// php artisan az-guard:grant {id} {perm} {panel} [--ttl=] [--model=]
-// php artisan az-guard:revoke-grant {id} {perm} {panel} [--all] [--force]
-// php artisan az-guard:prune-grants [--panel=]
+// php artisan guard:grant {user-id} {permission} {panel} [--ttl=] [--model=]
+// php artisan guard:revoke-grant {user-id} {permission} {panel} [--all] [--force]
+// php artisan guard:prune-grants [--panel=]
 ```
 
-`hasAzPermission()` автоматически проверяет роль **ИЛИ** direct grant. Остальной код менять не нужно.
+`hasPermission()` автоматически проверяет роль **ИЛИ** direct grant. Остальной код менять не нужно.
 
 ## Чеклист нового permission
 
@@ -90,7 +90,7 @@ Gate::allows('direct-grant', ['app.x', 'app']);    // bool
 3. `#[CheckPermission]` на контроллере
 4. ключ в Abilities DTO (если UI)
 5. resolved string в роли
-6. `php artisan guard:doctor` (alias: `azguard:doctor`)
+6. `php artisan guard:doctor`
 7. тест allow/deny
 
 См. [recipes/index.md](guide/recipes/index.md), [filament.md](guide/filament.md), [entity-scopes.md](guide/entity-scopes.md), [direct-grants.md](guide/direct-grants.md).

@@ -49,18 +49,19 @@ public function test_role_change_takes_effect(): void
 
 ## Redis / persistent cache (optional)
 
-For high-traffic applications, enable cross-request caching:
+For high-traffic applications, enable cross-request caching by pointing `cache.store`
+at a persistent store (the default `'array'` store is request-scoped):
 
 ```php
 // config/az-guard.php
 'cache' => [
-    'enabled' => true,
-    'store'   => 'redis',   // any Laravel cache store
-    'ttl'     => 300,       // seconds — 5 minutes is a safe default
+    'store'           => 'redis',  // any Laravel cache store; 'array' = request-scoped only
+    'expiration_time' => 300,      // seconds — 5 minutes is a safe default
+    'key'             => 'az_guard',
 ],
 ```
 
-When enabled, resolved `PermissionSet` objects are serialized into the cache store. The cache key includes the user ID, panel, and a version tag. The tag is invalidated automatically when `flushPermissions()` is called.
+With a persistent store, resolved `PermissionSet` objects are serialized into the cache store. The cache key includes the user ID, panel, and a version tag. The tag is invalidated automatically when `flushPermissions()` is called.
 
 ::: warning Always flush after changes
 With persistent cache enabled, always call `$user->flushPermissions()` after any role or grant change that should take effect immediately. Without it, the old permission set will be served until the TTL expires.
@@ -76,12 +77,12 @@ The version tag is stored separately and bumped atomically on `flushPermissions(
 
 ## Redis strategy recommendations
 
-| Scenario | Recommended TTL | Notes |
+| Scenario | Recommended `expiration_time` | Notes |
 |---|---|---|
-| Low-traffic app | In-memory only (`enabled: false`) | No overhead, simplest setup |
+| Low-traffic app | Request-scoped only (`store: 'array'`) | No overhead, simplest setup |
 | Standard SaaS | 300s (5 min) | Good balance, minimal staleness |
 | High-traffic read-heavy | 600–1800s | Accept slightly longer flush delay |
-| Admin / security-critical | 60s or in-memory | Faster invalidation on role changes |
+| Admin / security-critical | 60s or `store: 'array'` | Faster invalidation on role changes |
 
 ## Cache invalidation via events
 
@@ -103,14 +104,14 @@ class UserObserver
 Or hook into AzGuard's own events:
 
 ```php
-use AzGuard\Events\RoleAssigned;
-use AzGuard\Events\RoleRevoked;
+use AzGuard\Events\RoleAttached;
+use AzGuard\Events\RoleDetached;
 use AzGuard\Events\GrantGiven;
 
 // AzGuard automatically flushes the cache on these events,
 // but you can listen to chain additional side effects:
-Event::listen(RoleAssigned::class, function (RoleAssigned $event): void {
-    Log::info("Role [{$event->roleName}] assigned to user #{$event->user->id}");
+Event::listen(RoleAttached::class, function (RoleAttached $event): void {
+    Log::info("Role [{$event->role->name}] assigned to model #{$event->model->getKey()}");
 });
 ```
 
@@ -123,11 +124,11 @@ AzGuard's in-memory cache uses a plain PHP array scoped to the current request �
 - Queue workers (each job is its own request cycle)
 
 ::: tip
-Disable persistent cache (`'enabled' => false`) in tests to avoid cross-test contamination. The in-memory cache is automatically cleared between test cases by `RefreshDatabase`.
+Keep the cache store on `'array'` in tests to avoid cross-test contamination. The request-scoped cache is automatically cleared between test cases by `RefreshDatabase`.
 :::
 
 ## Performance tips
 
 - **Do not call `flushPermissions()` in middleware** unless necessary — it defeats the request cache and re-queries on every check.
-- **Eager-load roles** when building user lists: `User::with('azRoles')->paginate()`. This prevents N+1 during the first permission resolution.
-- **With persistent cache**, set a TTL that reflects how frequently roles change in your app. 5 minutes is a safe starting point.
+- **Eager-load roles** when building user lists: `User::with('roles')->paginate()`. This prevents N+1 during the first permission resolution.
+- **With persistent cache**, set an `expiration_time` that reflects how frequently roles change in your app. 5 minutes is a safe starting point.

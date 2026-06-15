@@ -6,9 +6,10 @@
 
 ```php
 // Пользователь — редактор, но сегодня может публиковать
-$user->assignRole(EditorRole::class);
-$user->grantPermission(
+$user->assignRole('editor');
+$user->grant(
     PostsPermission::Publish,
+    'app',
     expiresAt: Carbon::now()->endOfDay()
 );
 

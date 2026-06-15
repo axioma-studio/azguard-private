@@ -41,7 +41,7 @@ Permissions are PHP enum cases. Rename one and your IDE and PHPStan catch every 
 AzGuard hooks into `Gate::before()`. Every standard primitive — `@can`, `Gate::allows()`, `$this->authorize()`, policies — works unchanged. No new API to learn.
 
 **🩺 Built-in diagnostics**
-`artisan azguard:doctor` scans your config, migrations, and role definitions and reports mismatches before they reach production.
+`artisan guard:doctor` scans your config, migrations, and role definitions and reports mismatches before they reach production.
 
 **🎯 Direct Grants with TTL**
 Grant a single permission to a single user for 1 hour without touching roles. Perfect for beta features, temporary overrides, and time-limited export access.
@@ -59,14 +59,17 @@ Attach a runtime context (tenant, team, project) to every permission check. Zero
 
 ```php [1. Define]
 // app/AzGuard/App/Permissions/DocumentsPermission.php
-enum DocumentsPermission: string implements PermissionInterface
+// Values are unscoped; the panel prefixes them to 'app.documents.*'.
+enum DocumentsPermission: string
 {
-    #[GateAbility]  // registers 'app.documents.view' with Laravel Gate
     case View   = 'documents.view';
     case Create = 'documents.create';
     case Edit   = 'documents.edit';
     case Delete = 'documents.delete';
 }
+
+// Register the enum on the panel (in your PanelProvider):
+// $panel->id('app')->permissionEnums([DocumentsPermission::class]);
 ```
 
 ```php [2. Protect]
@@ -100,8 +103,8 @@ $this->authorize('update', $document);               // ✅ via Policy
     <a href="{{ route('documents.edit', $doc) }}">Edit</a>
 @endcan
 
-// Query scopes
-User::role('editor')->where('active', true)->get();
+// Roles relation
+$user->roles()->where('name', 'editor')->exists();
 ```
 
 :::
@@ -111,9 +114,8 @@ User::role('editor')->where('active', true)->get();
 ## Quick install
 
 ```bash
-composer require axioma-studio/azguard
-php artisan vendor:publish --tag=azguard-config
-php artisan vendor:publish --tag=azguard-migrations
+composer require axioma-studio/azguard-core
+php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```
 
@@ -145,6 +147,6 @@ class User extends Authenticatable
 | Octane / Kubernetes safe (no shared state) | ✅ | ⚠️ | ✅ |
 | Native Gate integration | ✅ | ✅ | ✅ |
 | Runtime (DB) role creation | ✅ | ✅ | ✅ |
-| Built-in diagnostics (`doctor` command) | ✅ | ❌ | ❌ |
+| Built-in diagnostics (`guard:doctor` command) | ✅ | ❌ | ❌ |
 
 → [Full comparison with Spatie, Bouncer, and Laratrust](/guide/comparison)
