@@ -4,15 +4,25 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Cache;
 
-it('azguard:cache-reset clears configured az-guard cache store', function (): void {
-    Cache::store(config('az-guard.cache.store'))
-        ->put('azguard:test-key', 'value', 600);
+it('guard:cache-reset flushes the configured store with --force', function (): void {
+    // A named array-backed store so the command does not treat it as "disabled".
+    config()->set('cache.stores.azguard_test', ['driver' => 'array']);
+    config()->set('az-guard.cache.store', 'azguard_test');
 
-    expect(Cache::store(config('az-guard.cache.store'))->has('azguard:test-key'))->toBeTrue();
+    Cache::store('azguard_test')->put('guard:test-key', 'value', 600);
+    expect(Cache::store('azguard_test')->has('guard:test-key'))->toBeTrue();
 
-    $this->artisan('azguard:cache-reset')
-        ->expectsOutputToContain('AzGuard cache has been reset')
+    $this->artisan('guard:cache-reset', ['--force' => true])
+        ->expectsOutputToContain('Flushed')
         ->assertSuccessful();
 
-    expect(Cache::store(config('az-guard.cache.store'))->has('azguard:test-key'))->toBeFalse();
+    expect(Cache::store('azguard_test')->has('guard:test-key'))->toBeFalse();
+});
+
+it('guard:cache-reset is a no-op when cross-request caching is disabled (array)', function (): void {
+    config()->set('az-guard.cache.store', 'array');
+
+    $this->artisan('guard:cache-reset')
+        ->expectsOutputToContain('nothing to flush')
+        ->assertSuccessful();
 });

@@ -133,4 +133,24 @@ describe('PermissionSet', function () {
         expect($filtered->isEmpty())->toBeTrue()
             ->and($filtered->isWildcard())->toBeFalse();
     });
+
+    // Pins the documented wildcard semantics: '*' is GREEDY and spans dots, and
+    // the literal prefix is segment-anchored. This is intentional — do not switch
+    // the pattern to a non-greedy [^.]* without a deliberate breaking change.
+    it('wildcard pattern is greedy across dots and prefix-anchored', function () {
+        $prefix = PermissionSet::fromKeys(['app.documents.*']);
+
+        expect($prefix->matchesWildcard('app.documents.view'))->toBeTrue()
+            // greedy: spans further dot-segments
+            ->and($prefix->matchesWildcard('app.documents.nested.deep'))->toBeTrue()
+            // the segment boundary is anchored: 'documentsX' is not 'documents.'
+            ->and($prefix->matchesWildcard('app.documentsX.view'))->toBeFalse()
+            // requires something after the trailing dot
+            ->and($prefix->matchesWildcard('app.documents'))->toBeFalse();
+
+        $top = PermissionSet::fromKeys(['app.*']);
+
+        expect($top->matchesWildcard('app.documents.view'))->toBeTrue()
+            ->and($top->matchesWildcard('admin.documents.view'))->toBeFalse();
+    });
 });

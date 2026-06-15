@@ -106,5 +106,5 @@ it('does not return permissions for other panels', function () {
 });
 
 it('has priority 90', function () {
-    expect(app(DatabaseRoleGrantSource::class)->priority()->value)->toBe(90);
+    expect(app(DatabaseRoleGrantSource::class)->priority())->toBe(90);
 });

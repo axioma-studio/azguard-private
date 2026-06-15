@@ -1,11 +1,12 @@
 <?php
 
 use AzGuard\Models\Role;
+use AzGuard\Roles\BaseRole;
 use AzGuard\Tests\Stubs\User;
 use Illuminate\Support\Facades\Gate;
 
-// Создаем "фейковый" класс роли для теста, чтобы не зависеть от генератора
-class FakeAdminRole
+// Фейковый класс роли для теста (реализует контракт через BaseRole).
+class FakeAdminRole extends BaseRole
 {
     public function permissions(): array
     {

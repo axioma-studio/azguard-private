@@ -10,7 +10,7 @@ it('creates roles for panel from PHP role classes', function (): void {
     // Ensure roles table is empty
     expect(Role::query()->count())->toBe(0);
 
-    $this->artisan('azguard:sync-roles')
+    $this->artisan('guard:sync-roles')
         ->expectsOutputToContain('Синхронизация завершена')
         ->assertSuccessful();
 
@@ -18,7 +18,7 @@ it('creates roles for panel from PHP role classes', function (): void {
 });
 
 it('filters by panel option', function (): void {
-    $this->artisan('azguard:sync-roles', ['--panel' => 'test'])
+    $this->artisan('guard:sync-roles', ['--panel' => 'test'])
         ->expectsOutputToContain('Синхронизация завершена')
         ->assertSuccessful();
 });
@@ -37,7 +37,7 @@ it('supports dry-run mode without writing to database', function (): void {
 
     $beforeCount = Role::query()->count();
 
-    $this->artisan('azguard:sync-roles', ['--dry-run' => true])
+    $this->artisan('guard:sync-roles', ['--dry-run' => true])
         ->expectsOutputToContain('[dry-run] Изменения не будут записаны в БД.')
         ->expectsOutputToContain('Синхронизация завершена (dry-run)')
         ->assertSuccessful();

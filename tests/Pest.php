@@ -15,11 +15,15 @@ uses(TestCase::class)
 uses(TestCase::class, RefreshDatabase::class)
     ->in('Feature/AccessControlTest.php',
         'Feature/AuthorizerExtendedTest.php',
+        'Feature/AuthorizerPanelResolutionTest.php',
         'Feature/AuthorizerTest.php',
         'Feature/CacheResetCommandTest.php',
         'Feature/CheckAccessMiddlewareTest.php',
+        'Feature/CrossRequestCacheInvalidationTest.php',
+        'Feature/CustomGrantSourceTest.php',
         'Feature/DatabaseRoleGrantSourceTest.php',
         'Feature/DiscoveryTest.php',
+        'Feature/EnumPermissionArgumentTest.php',
         'Feature/DoctorCommandTest.php',
         'Feature/GateIntegrationScopedTest.php',
         'Feature/HasDirectGrantsTest.php',
@@ -32,6 +36,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/PolicyAttributeRegistrarTest.php',
         'Feature/SetCurrentPanelMiddlewareTest.php',
         'Feature/SyncRolesCommandTest.php',
+        'Feature/WildcardCatalogFilterTest.php',
     );
 
 uses(ContextTestCase::class, RefreshDatabase::class)
