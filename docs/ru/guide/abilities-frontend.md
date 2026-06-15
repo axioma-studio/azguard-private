@@ -12,7 +12,8 @@ public function share(Request $request): array
         'auth' => [
             'user' => $request->user(),
             'permissions' => $request->user()
-                ?->getAllPermissionKeys()  // ['app.posts.view', 'app.posts.edit', ...]
+                ?->permissions('app')  // Collection: ['app.posts.view', 'app.posts.edit', ...]
+                ?->values()
                 ?? [],
         ],
     ]);
@@ -33,7 +34,7 @@ const can = (permission) => usePage().props.auth.permissions.includes(permission
 // routes/api.php
 Route::get('/me/permissions', function (Request $request) {
     return response()->json([
-        'permissions' => $request->user()->getAllPermissionKeys(),
+        'permissions' => $request->user()->permissions('app')->values(),
         'roles'       => $request->user()->getRoleNames(),
     ]);
 })->middleware('auth:api');

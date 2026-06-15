@@ -13,7 +13,7 @@ use ReflectionMethod;
 
 class ListPermissionsCommand extends Command
 {
-    protected $signature = 'azguard:list-permissions {panel? : Panel ID (leave empty for all panels)}';
+    protected $signature = 'guard:list-permissions {panel? : Panel ID (leave empty for all panels)}';
 
     protected $description = 'List all registered AzGuard permissions grouped by panel';
 

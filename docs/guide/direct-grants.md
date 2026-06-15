@@ -52,7 +52,7 @@ AzGuard::forUser($user)
     ->on('app')
     ->grant(DocumentsPermission::Export);
 
-// With a 1-hour TTL
+// With a 1-hour TTL (seconds)
 AzGuard::forUser($user)
     ->on('app')
     ->ttl(3600)
@@ -60,23 +60,27 @@ AzGuard::forUser($user)
 
 // Shorthand
 AzGuard::grant($user, DocumentsPermission::Export, 'app', ttl: 3600);
+
+// Directly on the model (pass an optional expiry)
+$user->grant(DocumentsPermission::Export, 'app');
+$user->grant(DocumentsPermission::Export, 'app', now()->addHour());
 ```
 
 ::: info Idempotent
-Calling `give()` on an already-granted permission updates `expires_at` without creating a duplicate. Safe to call multiple times.
+Calling `grant()` on an already-granted permission updates `expires_at` without creating a duplicate. Safe to call multiple times.
 :::
 
 ### Artisan
 
 ```bash
 # Permanent
-php artisan az-guard:grant {user-id} {permission} {panel}
+php artisan guard:grant {user-id} {permission} {panel}
 
 # With TTL (seconds)
-php artisan az-guard:grant 42 app.documents.export app --ttl=3600
+php artisan guard:grant 42 app.documents.export app --ttl=3600
 
 # Different model
-php artisan az-guard:grant 7 admin.reports.view admin --model=App\\Models\\Admin
+php artisan guard:grant 7 admin.reports.view admin --model=App\\Models\\Admin
 ```
 
 ## Revoking a grant
@@ -92,35 +96,38 @@ AzGuard::forUser($user)->on('app')->revokeAll();
 
 ```bash
 # Artisan
-php artisan az-guard:revoke-grant 42 app.documents.export app
-php artisan az-guard:revoke-grant 42 - app --all --force
+php artisan guard:revoke-grant 42 app.documents.export app
+
+# Revoke every grant for the panel (permission arg is ignored with --all)
+php artisan guard:revoke-grant 42 - app --all --force
 ```
 
 ## Checking a grant
 
 ```php
 // On the User model — enum or string accepted, enum preferred
-$user->hasDirectGrant(DocumentsPermission::Export);
-$user->hasDirectGrant(DocumentsPermission::Export, 'app');
+$user->hasGrant(DocumentsPermission::Export);
+$user->hasGrant(DocumentsPermission::Export, 'app');
 
-// Via Laravel Gate
-Gate::allows('direct-grant', DocumentsPermission::Export);
-Gate::allows('direct-grant', [DocumentsPermission::Export, 'app']);
+// Via Laravel Gate — pass the full string key (optionally [key, panel])
+Gate::allows('direct-grant', 'app.documents.export');
+Gate::allows('direct-grant', ['app.documents.export', 'app']);
 
-// List active grants
-$grants = AzGuard::forUser($user)->on('app')->list();
-$grants = AzGuard::activeGrants($user, 'app');
+// List grants for a panel
+$grants = AzGuard::forUser($user)->on('app')->grants();
+$grants = AzGuard::grants($user, 'app');
 ```
 
 ## Blade
 
 ```blade
-@azdirect(\App\AzGuard\App\Permissions\DocumentsPermission::Export->value)
+{{-- Pass the full panel-prefixed key --}}
+@azdirect('app.documents.export')
     <button>Export</button>
 @endazdirect
 
-{{-- Explicit panel --}}
-@azdirect(\App\AzGuard\App\Permissions\DocumentsPermission::Export->value, 'app')
+{{-- Explicit panel as the second argument --}}
+@azdirect('app.documents.export', 'app')
     <button>Export</button>
 @endazdirect
 ```
@@ -128,13 +135,13 @@ $grants = AzGuard::activeGrants($user, 'app');
 ## Route middleware
 
 ```php
-// az.grant:{permission},{panel} — string form required by middleware
+// azguard.grant:{permission},{panel} — full key required by middleware
 Route::get('/export', ExportController::class)
-    ->middleware('az.grant:' . DocumentsPermission::Export->value . ',app');
+    ->middleware('azguard.grant:app.documents.export,app');
 
-// Panel inferred from AzGuard::currentPanel() if omitted
+// Panel inferred from the current AzGuard panel if omitted
 Route::get('/export', ExportController::class)
-    ->middleware('az.grant:' . DocumentsPermission::Export->value);
+    ->middleware('azguard.grant:app.documents.export');
 ```
 
 | Situation | HTTP status |
@@ -150,21 +157,21 @@ A grant with `expires_at < now()` is treated as inactive in all checks. Expired 
 ```php
 // bootstrap/app.php
 ->withSchedule(function (Schedule $schedule) {
-    $schedule->command('az-guard:prune-grants')->daily();
+    $schedule->command('guard:prune-grants')->daily();
 })
 ```
 
 ```bash
-php artisan az-guard:prune-grants
-php artisan az-guard:prune-grants --panel=app
+php artisan guard:prune-grants
+php artisan guard:prune-grants --panel=app
 ```
 
 ## Events
 
 | Event | When dispatched |
 |---|---|
-| `GrantGiven` | After every `give()` call |
-| `GrantRevoked` | After every `revoke()` / `revokeAll()` call |
+| `GrantGiven` | After every `grant()` call |
+| `GrantRevoked` | After every `revoke()` / `revokeAll()` call (`permissionKey` is `*` for `revokeAll()`) |
 
 ```php
 use AzGuard\Events\GrantGiven;
@@ -185,9 +192,9 @@ Event::listen(GrantRevoked::class, function (GrantRevoked $event): void {
 |---|---|
 | Fluent grant | `AzGuard::forUser($u)->on('app')->ttl(3600)->grant(DocumentsPermission::Export)` |
 | Shorthand grant | `AzGuard::grant($u, DocumentsPermission::Export, 'app', ttl: 3600)` |
-| Artisan grant | `php artisan az-guard:grant {id} {perm} {panel}` |
+| Artisan grant | `php artisan guard:grant {id} {perm} {panel}` |
 | Revoke | `AzGuard::forUser($u)->on('app')->revoke(DocumentsPermission::Export)` |
-| Check (model) | `$user->hasDirectGrant(DocumentsPermission::Export, 'app')` |
-| Check (Gate) | `Gate::allows('direct-grant', DocumentsPermission::Export)` |
-| Blade | `@azdirect(DocumentsPermission::Export->value) ... @endazdirect` |
-| Middleware | `->middleware('az.grant:' . DocumentsPermission::Export->value . ',app')` |
+| Check (model) | `$user->hasGrant(DocumentsPermission::Export, 'app')` |
+| Check (Gate) | `Gate::allows('direct-grant', 'app.documents.export')` |
+| Blade | `@azdirect('app.documents.export') ... @endazdirect` |
+| Middleware | `->middleware('azguard.grant:app.documents.export,app')` |

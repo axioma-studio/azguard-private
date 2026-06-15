@@ -12,14 +12,14 @@ features:
   - title: PHP 8 Attributes
     details: "#[CheckPermission], #[GateAbility], #[SkipGuardCheck] — declarative access control in your code."
   - title: Doctor & Sync
-    details: azguard:doctor finds orphaned policies and typos. azguard:sync-roles syncs PHP classes with DB.
+    details: guard:doctor finds orphaned policies and typos. guard:sync-roles syncs PHP classes with DB.
 footer: MIT License | Copyright © 2026 Axioma Studio
 ---
 
 ## Quick Start
 
 ```bash
-composer require axioma-studio/azguard
+composer require axioma-studio/azguard-core
 php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```

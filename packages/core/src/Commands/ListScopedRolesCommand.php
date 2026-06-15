@@ -9,21 +9,21 @@ use AzGuard\Models\ModelHasScope;
 use Illuminate\Console\Command;
 
 /**
- * Artisan command: azguard:list-scoped-roles {user}
+ * Artisan command: guard:list-scoped-roles {user}
  *
  * Lists all entity-scoped role assignments for a given user.
  * User can be identified by ID or email.
  *
  * Usage:
- *   php artisan azguard:list-scoped-roles 1
- *   php artisan azguard:list-scoped-roles admin@example.com
- *   php artisan azguard:list-scoped-roles 1 --entity="App\Models\Project"
+ *   php artisan guard:list-scoped-roles 1
+ *   php artisan guard:list-scoped-roles admin@example.com
+ *   php artisan guard:list-scoped-roles 1 --entity="App\Models\Project"
  */
 class ListScopedRolesCommand extends Command
 {
     use ResolvesUserModel;
 
-    protected $signature = 'azguard:list-scoped-roles
+    protected $signature = 'guard:list-scoped-roles
                             {user : User ID or email}
                             {--entity= : Filter by entity type (FQCN, e.g. App\\Models\\Project)}
                             {--model=  : User model FQCN (defaults to auth.providers.users.model)}';
@@ -33,11 +33,13 @@ class ListScopedRolesCommand extends Command
     public function handle(): int
     {
         $userModelClass = $this->resolveUserModelClass();
-        $identifier = $this->argument('user');
+        $identifier = (string) $this->argument('user');
 
-        $user = is_numeric($identifier)
-            ? $userModelClass::find((int) $identifier)
-            : $userModelClass::where('email', $identifier)->first();
+        // Resolve by email when the identifier looks like one, otherwise by
+        // primary key — works for int, ULID and UUID keys alike.
+        $user = str_contains($identifier, '@')
+            ? $userModelClass::where('email', $identifier)->first()
+            : $userModelClass::find($identifier);
 
         if ($user === null) {
             $this->error("Пользователь [{$identifier}] не найден.");

@@ -44,21 +44,26 @@ $user->hasPermission(DocumentsPermission::View);
 
 This rule applies **everywhere** — not just `hasPermission()`. See the section below.
 
-## Enum constants in Gate and Blade
+## Permission keys in Gate and Blade
 
-Pass enum cases directly to `Gate::allows()`, `Gate::authorize()`, and `$this->authorize()`. Laravel calls `->value` automatically on `BackedEnum`.
+`Gate::allows()`, `Gate::authorize()`, and `$this->authorize()` match against the
+**full, panel-prefixed** permission key (e.g. `app.documents.edit`). A bare enum
+case only carries its unscoped `->value`, so derive the full key from the enum with
+`AzGuard::permission($panelId, $case)` to stay type-safe and typo-proof.
 
 ```php
-// ✅ Controller / service / job
-Gate::allows(DocumentsPermission::Edit, $document);
-$this->authorize(DocumentsPermission::Delete, $document);
+use AzGuard\Facades\AzGuard;
 
-if (! Gate::allows(DocumentsPermission::Edit, $document)) {
+// ✅ Controller / service / job — full key from the enum, no string literals
+Gate::allows(AzGuard::permission('app', DocumentsPermission::Edit), $document);
+$this->authorize(AzGuard::permission('app', DocumentsPermission::Delete), $document);
+
+if (! Gate::allows(AzGuard::permission('app', DocumentsPermission::Edit), $document)) {
     abort(403);
 }
 
-// ❌ Raw string — typo won't be caught by IDE or Larastan
-Gate::allows('app.documents.edti', $document);
+// ✅ Or the plain full key string when readability matters
+Gate::allows('app.documents.edit', $document);
 ```
 
 In **Blade templates** (no `use` statements), use one of two patterns:
@@ -70,8 +75,8 @@ public function show(Document $document): Response
     return view('documents.show', [
         'document' => $document,
         'can' => [
-            'edit'   => Gate::allows(DocumentsPermission::Edit,   $document),
-            'delete' => Gate::allows(DocumentsPermission::Delete, $document),
+            'edit'   => Gate::allows(AzGuard::permission('app', DocumentsPermission::Edit),   $document),
+            'delete' => Gate::allows(AzGuard::permission('app', DocumentsPermission::Delete), $document),
         ],
     ]);
 }
@@ -83,21 +88,16 @@ public function show(Document $document): Response
     <button>Edit</button>
 @endif
 
-{{-- ✅ Option 2: FQCN with ->value when a variable isn't available --}}
-@can(\App\AzGuard\App\Permissions\DocumentsPermission::Edit->value)
-    <button>Edit</button>
-@endcan
-
-{{-- ❌ Raw string — avoid --}}
+{{-- ✅ Option 2: the full, panel-prefixed key --}}
 @can('app.documents.edit')
     <button>Edit</button>
 @endcan
 ```
 
-::: tip Route middleware — the one exception
-`Route::middleware('can:...')` requires a string. Derive it from the enum:
+::: tip Route middleware
+`Route::middleware('can:...')` requires the full key string:
 ```php
-->middleware('can:' . DocumentsPermission::Edit->value . ',document')
+->middleware('can:app.documents.edit,document')
 ```
 :::
 
@@ -114,14 +114,14 @@ Static PHP roles are version-controlled. Use DB roles only when end-users need t
 ## Direct grants for exceptions, not new roles
 
 ```php
-// ✅ Temporary exception via grant
-(new GrantBuilder($user))
+// ✅ Temporary exception via grant (TTL in seconds; one week)
+AzGuard::forUser($user)
     ->on('app')
-    ->grant(DocumentsPermission::Delete)
-    ->until(now()->addWeek());
+    ->ttl(7 * 24 * 3600)
+    ->grant(DocumentsPermission::Delete);
 
 // ❌ Role created just for one person
-$role = DynamicRole::create(['name' => 'john-can-delete', ...]);
+$role = Role::create(['name' => 'john-can-delete', 'level' => 1]);
 ```
 
 ## Model Policies

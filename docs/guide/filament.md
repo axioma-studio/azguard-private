@@ -47,14 +47,14 @@ what is generated:
   authorization enforces them and the runtime gate steps aside.
 
   ```bash
-  php artisan azguard:filament:generate --source=enum
-  php artisan azguard:filament:generate --source=policy
+  php artisan guard:filament:generate --source=enum
+  php artisan guard:filament:generate --source=policy
   ```
 
 Preview without writing anything:
 
 ```bash
-php artisan azguard:filament:generate --dry-run
+php artisan guard:filament:generate --dry-run
 ```
 
 ### Enforcement
@@ -82,7 +82,7 @@ optional expiry) and revoke.
 
 ### Doctor page
 
-The **AzGuard Doctor** page is the GUI equivalent of `php artisan azguard:doctor`:
+The **AzGuard Doctor** page is the GUI equivalent of `php artisan guard:doctor`:
 it surfaces catalog conflicts, roles referencing unknown permissions, and the
 panel → ability → handler map. The navigation badge turns red on errors and
 yellow on warnings.

@@ -1,0 +1,49 @@
+name: Split packages
+
+# Publishes the monorepo's packages to their standalone, read-only repositories
+# on every release tag. Packagist watches those repos (via webhook) and picks up
+# the new version automatically. The split repos are what users `composer require`.
+#
+# One-time setup (see RELEASING.md):
+#   1. Create the three target repos under the org (azguard-core/-filament/-context).
+#   2. Add a MONOREPO_SPLIT_TOKEN secret with push access to them.
+#   3. Submit each split repo to Packagist and enable the GitHub webhook.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: read
+
+jobs:
+  split:
+    name: Split ${{ matrix.package.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - { dir: core, name: azguard-core }
+          - { dir: filament, name: azguard-filament }
+          - { dir: context, name: azguard-context }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Split packages/${{ matrix.package.dir }} -> ${{ matrix.package.name }}
+        uses: symplify/monorepo-split-github-action@v2.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
+        with:
+          tag: ${{ github.ref_name }}
+          package_directory: packages/${{ matrix.package.dir }}
+          repository_organization: axioma-studio
+          repository_name: ${{ matrix.package.name }}
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'

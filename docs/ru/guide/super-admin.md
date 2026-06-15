@@ -4,21 +4,24 @@
 
 ## Настройка
 
-### Через роль (c SuperAdminInterface)
+### Через роль с wildcard
+
+Класс-роль возвращает `['*']` из `permissions()` — AzGuard трактует это как «все права»:
 
 ```php
 // app/AzGuard/App/Roles/SuperAdminRole.php
-use AzGuard\Contracts\RoleInterface;
-use AzGuard\Contracts\SuperAdminInterface;
+use AzGuard\Roles\BaseRole;
 
-class SuperAdminRole implements RoleInterface, SuperAdminInterface
+class SuperAdminRole extends BaseRole
 {
     public function permissions(): array
     {
-        return [];  // игнорируется: super-admin проходит любую проверку
+        return ['*']; // wildcard: проходит любую проверку
     }
 }
 ```
+
+Имя такой роли — `super-admin` (выводится из имени класса).
 
 ### Через Gate::before()
 
@@ -29,33 +32,33 @@ use Illuminate\Support\Facades\Gate;
 public function boot(): void
 {
     Gate::before(function ($user, $ability) {
-        if ($user->hasRole(SuperAdminRole::class)) {
+        if ($user->hasRole('super-admin')) {
             return true;  // пропустить любой Gate-чек
         }
     });
 }
 ```
 
-::: warning
-Используйте `SuperAdminInterface`, если хотите чтобы AzGuard-события и `azguard:doctor` распознавали роль супер-админа.
+::: tip
+Wildcard-роль работает и для `hasPermission()`, и для `Gate::allows()` (AzGuard регистрируется через `Gate::before`), поэтому отдельный хук обычно не нужен.
 :::
 
 ## Назначение
 
 ```php
-$user->assignRole(SuperAdminRole::class);
+$user->assignRole('super-admin');
 ```
 
 ## Blade
 
 ```blade
-@role(SuperAdminRole::class)
+@azrole('super-admin')
     <a href="/admin/danger-zone">Опасная зона</a>
-@endrole
+@endazrole
 ```
 
 ::: tip
-Рекомендуется использовать `SuperAdminInterface` вместо `Gate::before()`, чтобы логика супер-админа была инкапсулирована в пакете.
+`guard:doctor` поможет проверить, что роль `super-admin` зарегистрирована и синхронизирована с БД.
 :::
 
 → [Рецепт: super-admin wildcard](/ru/guide/recipes/super-admin-wildcard)

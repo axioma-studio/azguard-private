@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Sources;
 
-use AzGuard\Concerns\HasAzGuard;
+use AzGuard\Concerns\HasRoles;
+use AzGuard\Contracts\RoleInterface;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
@@ -23,7 +24,10 @@ final class ClassRoleGrantSource implements GrantSource
     #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
-        if (! in_array(HasAzGuard::class, class_uses_recursive($user), strict: true)) {
+        // Gate on HasRoles (the trait that actually provides $user->roles), so
+        // a user that uses HasRoles directly — not only the HasAzGuard composite
+        // — still resolves its class roles.
+        if (! in_array(HasRoles::class, class_uses_recursive($user), strict: true)) {
             return PermissionSet::empty();
         }
 
@@ -31,16 +35,12 @@ final class ClassRoleGrantSource implements GrantSource
             ->filter(fn ($role): bool => $role->class_name !== null)
             ->map(fn ($role) => $role->getRoleLogic())
             ->filter()
-            ->flatMap(function ($roleLogic) use ($panelId): array {
-                $permissions = $roleLogic->permissions();
-                $all = is_array($permissions) ? $permissions : [];
-
+            ->flatMap(
                 // Keep '*' (wildcard) and permissions prefixed with the current panel ID.
-                return array_filter(
-                    $all,
+                fn (RoleInterface $roleLogic): array => array_filter(
+                    $roleLogic->permissions(),
                     static fn (string $p): bool => $p === '*' || str_starts_with($p, $panelId.'.'),
-                );
-            })
+                ))
             ->unique()
             ->values()
             ->all();
@@ -53,8 +53,8 @@ final class ClassRoleGrantSource implements GrantSource
     }
 
     #[Override]
-    public function priority(): GrantPriority
+    public function priority(): int
     {
-        return GrantPriority::ClassRole;
+        return GrantPriority::ClassRole->value;
     }
 }

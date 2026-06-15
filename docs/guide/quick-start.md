@@ -16,7 +16,7 @@ php artisan vendor:publish --tag=az-guard-config
 php artisan migrate
 ```
 
-The migration creates four tables: `roles`, `model_has_roles`, `model_has_scopes`, and `az_direct_grants`.
+The migration creates these tables: `roles`, `model_has_roles`, `model_has_scopes`, `az_guard_role_permissions`, and `az_direct_grants`.
 
 ## 2. Add the trait to your User model
 
@@ -29,7 +29,7 @@ class User extends Authenticatable
 }
 ```
 
-The trait adds `hasPermission()`, `checkPermission()`, `assignRole()`, `removeRole()`, `syncRoles()`, and `flushPermissions()`.
+The trait composes `HasRoles` and `HasPermissions`, adding `hasPermission()`, `checkPermission()`, `assignRole()`, `removeRole()`, `syncRoles()`, and `flushPermissions()`.
 
 ## 3. Register a panel
 
@@ -70,86 +70,77 @@ class AppPanelProvider extends PanelProvider
 ## 4. Create a permission enum
 
 ```bash
-php artisan make:guard-permission App DocumentsPermission
+php artisan make:guard-permission App Documents
 ```
 
 ```php
 // app/AzGuard/App/Permissions/DocumentsPermission.php
 namespace App\AzGuard\App\Permissions;
 
-use AzGuard\Contracts\PermissionInterface;
-use AzGuard\Attributes\GateAbility;
-
-enum DocumentsPermission: string implements PermissionInterface
+enum DocumentsPermission: string
 {
-    #[GateAbility]  // registers Gate ability 'app.documents.view'
     case View   = 'documents.view';
-    #[GateAbility]
     case Create = 'documents.create';
-    #[GateAbility]
     case Edit   = 'documents.edit';
-    #[GateAbility]
     case Delete = 'documents.delete';
 }
 ```
 
-The full Gate key is `{panel}.{permission_value}` → `app.documents.view`.
+Enum values are unscoped; the panel prefixes them. The full Gate key is `{panel}.{permission_value}` → `app.documents.view`.
 
 ## 5. Create a role
 
 ```bash
-php artisan make:guard-role App EditorRole
+php artisan make:guard-role
 ```
 
 ```php
 // app/AzGuard/App/Roles/EditorRole.php
 namespace App\AzGuard\App\Roles;
 
-use AzGuard\Contracts\RoleInterface;
-use App\AzGuard\App\Permissions\DocumentsPermission;
+use AzGuard\Roles\BaseRole;
 
-class EditorRole implements RoleInterface
+class EditorRole extends BaseRole
 {
-    public function getName(): string  { return 'editor'; }
-    public function getPanel(): string { return 'app'; }
-    public function getLevel(): int    { return 10; }
+    public function getLevel(): int { return 10; }
 
     public function permissions(): array
     {
         return [
-            DocumentsPermission::View,
-            DocumentsPermission::Create,
-            DocumentsPermission::Edit,
+            'app.documents.view',
+            'app.documents.create',
+            'app.documents.edit',
         ];
     }
 }
 ```
 
+`BaseRole` derives the role name from the class name (`EditorRole` → `editor`). `permissions()` returns full panel-prefixed keys.
+
 ## 6. Assign and check
 
 ```php
 // Assign
-$user->assignRole('editor');                 // by name, panel auto-resolved
+$user->assignRole('editor');                 // by name
 $user->assignRole(EditorRole::class);        // by class (preferred)
-$user->assignRole(EditorRole::class, panel: 'app');  // explicit panel
 
-// ✅ Check — always use enum constants
+// ✅ Check with an enum — scoped to the panel automatically
 $user->hasPermission(DocumentsPermission::View);   // true
-Gate::allows(DocumentsPermission::View);           // true (Gate facade)
-request()->user()->can(DocumentsPermission::View); // true (Auth helper)
+Gate::allows('app.documents.view');                // true (Gate facade)
+request()->user()->can('app.documents.view');      // true (Auth helper)
 
-// ⚠️  String form — accepted for backward compatibility, but not recommended
-// $user->hasPermission('app.documents.view');     // works, but avoid
+// String form — the full panel-prefixed key
+$user->hasPermission('app.documents.view');        // true
 ```
 
-::: tip Use enum constants everywhere
-Raw strings like `'app.documents.view'` are accepted but not recommended — a typo is a silent security hole that no IDE or static analyser will catch. Always use the enum case: `DocumentsPermission::View`.
+::: tip Enum cases vs. string keys
+An enum case (`DocumentsPermission::View`) is scoped to the panel automatically and is refactor-safe. A string must be the full panel-prefixed key (`'app.documents.view'`). Laravel's Gate (`Gate::allows()`, `$user->can()`) works with the full string key.
 :::
 
 ## Verify the setup
 
 ```bash
-php artisan azguard:doctor
+php artisan guard:doctor
 ```
 
 The doctor checks:

@@ -8,18 +8,28 @@ use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Источник grants для пользователя в рамках панели.
+ * A source of granted permissions for a user within a panel.
  *
- * Фаза 1: ClassRoleGrantSource (PHP role classes).
- * Фаза 3: DatabaseRoleGrantSource, DirectGrantSource.
- * Фаза 4: ContextualRoleGrantSource.
+ * Built-in sources: ClassRoleGrantSource, DatabaseRoleGrantSource and
+ * DirectGrantSource. Implement this interface and register it (see
+ * AzGuard::registerGrantSource()) to add your own. The context package layers
+ * its workspace permissions on top via a PermissionLayer, not a GrantSource.
  */
 interface GrantSource
 {
     /**
-     * Вернуть PermissionSet для пользователя в данной панели.
+     * Return the PermissionSet granted to the user in the given panel.
      */
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet;
 
-    public function priority(): GrantPriority;
+    /**
+     * Resolution order: sources are evaluated highest-priority first, which
+     * lets a higher source short-circuit the chain by returning a wildcard.
+     * It is NOT deny-precedence — the resolver merges (unions) all sources, so
+     * a lower-priority source can never revoke a higher one's grants.
+     *
+     * Built-in sources return a {@see GrantPriority} value; custom sources may
+     * return any int to slot between them (e.g. 85 to sit below DatabaseRole).
+     */
+    public function priority(): int;
 }

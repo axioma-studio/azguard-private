@@ -28,7 +28,6 @@ final class DatabaseRoleGrantSource implements GrantSource
         $userId = $user->getAuthIdentifier();
         $userClass = $user::class;
 
-        Config::rolesTable();
         $pivotTable = Config::modelHasRolesTable();
         $permTable = Config::rolePermissionsTable();
 
@@ -52,8 +51,8 @@ final class DatabaseRoleGrantSource implements GrantSource
     }
 
     #[Override]
-    public function priority(): GrantPriority
+    public function priority(): int
     {
-        return GrantPriority::DatabaseRole;
+        return GrantPriority::DatabaseRole->value;
     }
 }

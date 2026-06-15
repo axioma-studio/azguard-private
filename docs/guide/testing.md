@@ -59,29 +59,22 @@ public function test_editor_permissions(): void
     $this->assertTrue($user->hasPermission(DocumentsPermission::Edit));
     $this->assertFalse($user->hasPermission(DocumentsPermission::Delete));
 
-    // hasAnyPermission / hasAllPermissions
-    $this->assertTrue($user->hasAnyPermission([
-        DocumentsPermission::Edit,
-        DocumentsPermission::Delete,
-    ]));
-
-    $this->assertFalse($user->hasAllPermissions([
-        DocumentsPermission::Edit,
-        DocumentsPermission::Delete,  // editor doesn't have Delete
-    ]));
+    // Check each permission individually
+    $this->assertTrue($user->hasPermission(DocumentsPermission::Edit));
+    $this->assertFalse($user->hasPermission(DocumentsPermission::Delete)); // editor doesn't have Delete
 }
 ```
 
 ## Testing direct grants
 
 ```php
-use AzGuard\Grants\GrantBuilder;
+use AzGuard\Facades\AzGuard;
 
 public function test_user_with_direct_grant_can_access(): void
 {
     $user = User::factory()->create();
 
-    (new GrantBuilder($user))
+    AzGuard::forUser($user)
         ->on('app')
         ->grant(DocumentsPermission::View);
 
@@ -92,10 +85,8 @@ public function test_expired_grant_is_denied(): void
 {
     $user = User::factory()->create();
 
-    (new GrantBuilder($user))
-        ->on('app')
-        ->grant(DocumentsPermission::View)
-        ->until(now()->subMinute());   // already expired
+    // Pass an explicit past expiry to the grant() method
+    $user->grant(DocumentsPermission::View, 'app', now()->subMinute()); // already expired
 
     $user->flushPermissions();         // clear in-memory cache
 
@@ -106,9 +97,9 @@ public function test_grant_with_ttl_is_active(): void
 {
     $user = User::factory()->create();
 
-    (new GrantBuilder($user))
+    AzGuard::forUser($user)
         ->on('app')
-        ->ttl(3600)                    // 1 hour from now
+        ->ttl(3600)                    // 1 hour from now, in seconds
         ->grant(DocumentsPermission::Export);
 
     $this->assertTrue($user->hasPermission(DocumentsPermission::Export));
@@ -125,10 +116,10 @@ public function test_gate_allows_editor(): void
 
     $this->actingAs($user);
 
-    // ✅ Always use enum constants in Gate assertions
-    $this->assertTrue(Gate::allows(DocumentsPermission::View));
-    $this->assertTrue(Gate::allows(DocumentsPermission::Edit));
-    $this->assertFalse(Gate::allows(DocumentsPermission::Delete));
+    // ✅ Gate uses the full, panel-prefixed permission key
+    $this->assertTrue(Gate::allows('app.documents.view'));
+    $this->assertTrue(Gate::allows('app.documents.edit'));
+    $this->assertFalse(Gate::allows('app.documents.delete'));
 }
 
 public function test_gate_with_model(): void
@@ -140,32 +131,23 @@ public function test_gate_with_model(): void
     $this->actingAs($user);
 
     // Routes through DocumentPolicy::update() if registered
-    $this->assertTrue(Gate::allows(DocumentsPermission::Edit, $document));
+    $this->assertTrue(Gate::allows('app.documents.edit', $document));
 }
 ```
 
-## Mocking / faking the resolver
+## Testing services that check permissions
 
-For unit tests where you don't want a real database:
+AzGuard has no fake/mock layer — test against the real resolver. Keep the cache
+store on `'array'` (the default) so nothing leaks between tests, then assign roles
+or grants and assert through `hasPermission()` / `Gate::allows()`:
 
 ```php
-use AzGuard\Testing\AzGuardFake;
-
-protected function setUp(): void
-{
-    parent::setUp();
-
-    // Replace the real resolver with an in-memory fake
-    AzGuardFake::install();
-}
-
 public function test_service_checks_permission(): void
 {
-    $user = User::factory()->make(['id' => 1]);
+    $user = User::factory()->create();
 
-    // Grant in-memory — no DB writes; use enum
-    AzGuardFake::grantPermission($user, DocumentsPermission::View);
-    AzGuardFake::grantRole($user, 'editor');
+    // Real grant — cache store='array' keeps it request-scoped
+    $user->grant(DocumentsPermission::View, 'app');
 
     $result = app(DocumentService::class)->canView($user, $document);
 
@@ -174,7 +156,7 @@ public function test_service_checks_permission(): void
 
 public function test_service_denies_without_permission(): void
 {
-    $user = User::factory()->make(['id' => 2]);
+    $user = User::factory()->create();
     // No permissions granted
 
     $this->assertFalse(
@@ -217,14 +199,14 @@ Define factory states so tests stay readable:
 public function editor(): static
 {
     return $this->afterCreating(fn (User $user) =>
-        $user->assignRole('editor', panel: 'app')
+        $user->assignRole('editor')
     );
 }
 
 public function admin(): static
 {
     return $this->afterCreating(fn (User $user) =>
-        $user->assignRole('super-admin', panel: 'admin')
+        $user->assignRole('super-admin')
     );
 }
 ```
@@ -258,4 +240,4 @@ $this->actingAs(User::factory()->editor()->create())
 - **Flush the permission cache between state changes** in a single test: `$user->flushPermissions()`.
 - **Use `assertForbidden()` not `assertStatus(403)`** for readable test output.
 - **Test both sides.** For every permission you assert as `true`, also test what a user *without* it sees.
-- **Disable persistent cache in tests** — add `'cache' => ['enabled' => false]` to your `config/az-guard.php` test override.
+- **Keep the array cache store in tests** — leave `cache.store` as `'array'` (the default) in `config/az-guard.php` so resolved permissions never cross request/test boundaries.

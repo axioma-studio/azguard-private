@@ -1,44 +1,67 @@
 # Entity Scopes
 
-Entity Scopes позволяют ограничивать права конкретными экземплярами модели — например, пользователь может редактировать только **свои** посты.
+Entity Scopes позволяют ограничивать права конкретными экземплярами модели — например, пользователь может редактировать только посты **своего** проекта.
 
-## Определение scope
+## Подключение
+
+Добавьте трейт `HasScopedRoles` к модели пользователя (в дополнение к `HasAzGuard`):
 
 ```php
-use AzGuard\Contracts\EntityScopeInterface;
+use AzGuard\Concerns\HasAzGuard;
+use AzGuard\Concerns\HasScopedRoles;
 
-class OwnedByUserScope implements EntityScopeInterface
+class User extends Authenticatable
 {
-    public function check(Authenticatable $user, Model $entity): bool
-    {
-        return $entity->user_id === $user->getAuthIdentifier();
-    }
+    use HasAzGuard;
+    use HasScopedRoles;
 }
 ```
 
-## Применение в политике
+## Назначение роли в рамках сущности
+
+```php
+// Роль editor только в пределах конкретного проекта
+$user->assignScopedRole('editor', $project);
+
+$user->hasScopedRole('editor', $project);   // true
+$user->removeScopedRole('editor', $project);
+```
+
+## Проверка права в рамках сущности
 
 ```php
 class PostPolicy
 {
     public function update(User $user, Post $post): bool
     {
-        return $user->hasPermission(PostsPermission::Edit)
-            && app(OwnedByUserScope::class)->check($user, $post);
+        // Право, выданное scoped-ролью в пределах проекта поста
+        return $user->hasScopedPermission(PostsPermission::Edit, $post->project);
     }
 }
 ```
 
-## В атрибуте
+Со строковым ключом панель берётся из первого сегмента (`app.posts.edit` → `app`).
+Для enum-прав передавайте панель явно:
 
 ```php
-#[CheckPermission(
-    permission: PostsPermission::Edit,
-    scope: OwnedByUserScope::class,
-    arguments: ['post']
-)]
-public function update(Request $request, Post $post): Response
+$user->hasScopedPermission(PostsPermission::Edit, $project, 'app');
+```
+
+## Кастомный scope для фильтрации запросов
+
+`ScopeInterface` применяется к Eloquent-запросу и ограничивает выборку
+сущностями, к которым у пользователя есть доступ:
+
+```php
+use AzGuard\Contracts\ScopeInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+
+class OwnedByUserScope implements ScopeInterface
 {
-    // Scope проверен автоматически
+    public function apply(Builder $builder, Model $user, ?Model $entity): void
+    {
+        $builder->where('user_id', $user->getKey());
+    }
 }
 ```

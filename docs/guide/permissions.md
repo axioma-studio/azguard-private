@@ -18,47 +18,41 @@ The panel prefix (`app.`) is added automatically by AzGuard based on the panel t
 ## Defining permissions
 
 ```php
-use AzGuard\Contracts\PermissionInterface;
-use AzGuard\Attributes\GateAbility;
 use AzGuard\Attributes\RoleOnly;
 
-enum DocumentsPermission: string implements PermissionInterface
+enum DocumentsPermission: string
 {
-    // Registered with Laravel Gate — usable via Gate::allows(), @can, policies
-    #[GateAbility]
     case View   = 'documents.view';
 
-    #[GateAbility]
     case Create = 'documents.create';
 
-    #[GateAbility]
     case Edit   = 'documents.edit';
 
-    // Not registered with Gate — checked only via hasPermission()
-    // Use for internal checks that should not be exposed through Gate
+    // Assignable to roles, but excluded from Gate / frontend ability export
     #[RoleOnly]
     case Delete = 'documents.delete';
 }
 ```
 
+The enum is a plain backed enum — it implements no interface. Register it on a panel with `Panel::permissionEnums([DocumentsPermission::class])`; the panel prefixes each value.
+
 ## Attributes
 
 | Attribute | Effect |
 |---|---|
-| `#[GateAbility]` | Registers the permission with Laravel Gate as `{panel}.{value}` |
-| `#[RoleOnly]` | Permission exists in the catalog but is **not** registered with Gate |
-| _(none)_ | Same as `#[GateAbility]` — explicit is always better |
+| `#[RoleOnly]` | The case is a valid permission for roles, but is omitted from the generated frontend abilities / Gate-facing surface |
+| _(none)_ | Normal permission — resolvable everywhere |
 
 ## Generate via Artisan
 
 ```bash
-php artisan azguard:make-permission {Panel} {ClassName}
+php artisan make:guard-permission {Panel} {Domain} {Case?}
 
-php artisan azguard:make-permission App DocumentsPermission
-php artisan azguard:make-permission Admin UsersPermission
+php artisan make:guard-permission App Documents
+php artisan make:guard-permission Admin Users
 ```
 
-The command creates the file in `app/AzGuard/{Panel}/Permissions/` and reminds you to register it in your panel provider.
+The command creates (or adds a case to) `{Domain}Permission` under the panel's `Permissions/` directory. Pass an optional case name to append a single case; omit it to scaffold the enum. Register the enum in your panel provider via `permissionEnums([...])`.
 
 ## Checking permissions
 
@@ -68,27 +62,25 @@ AzGuard provides several methods for checking permissions. Use the right one for
 // ── On the User model (via HasAzGuard) ────────────────────────────────────
 
 // Returns true/false — the everyday check
-$user->hasPermission(DocumentsPermission::View);
+$user->hasPermission(DocumentsPermission::View);    // enum — scoped to its panel
 $user->hasPermission('app.documents.view');         // full string key also works
 
-// Returns true if the user has ANY of the listed permissions
-$user->hasAnyPermission([
-    DocumentsPermission::Edit,
-    DocumentsPermission::Delete,
-]);
+// Check several yourself
+$hasAny = $user->hasPermission(DocumentsPermission::Edit)
+    || $user->hasPermission(DocumentsPermission::Delete);
 
-// Returns true only if the user has ALL listed permissions
-$user->hasAllPermissions([
-    DocumentsPermission::View,
-    DocumentsPermission::Edit,
-]);
+$hasAll = $user->hasPermission(DocumentsPermission::View)
+    && $user->hasPermission(DocumentsPermission::Edit);
+
+// All resolved keys for a panel (collection of strings)
+$user->permissions('app');     // Collection<int, string>
 
 // Silent check — never throws, returns false on missing or expired grants
 $user->checkPermission(DocumentsPermission::View);
 ```
 
 ```php
-// ── Via Laravel Gate (requires #[GateAbility]) ────────────────────────────
+// ── Via Laravel Gate (registered automatically via Gate::before) ──────────
 
 Gate::allows('app.documents.view');          // bool
 Gate::check('app.documents.view');           // alias
@@ -116,17 +108,17 @@ $this->authorize('app.documents.edit', $document);
 @endcanany
 ```
 
-::: tip must-party permissions
-When a feature requires **multiple permissions simultaneously** (e.g., both `View` and `Export`), use `hasAllPermissions()` rather than chaining two `hasPermission()` calls. It reads more clearly and short-circuits on the first miss.
+::: tip Checking several permissions
+There is no `hasAny`/`hasAll` helper — combine `hasPermission()` calls with `&&` / `||`. Each call short-circuits, so order the cheapest or most-likely-to-fail check first.
 
 ```php
-// ✅ Clear intent — user must have BOTH
-if ($user->hasAllPermissions([ReportsPermission::View, ReportsPermission::Export])) {
+// ✅ User must have BOTH
+if ($user->hasPermission(ReportsPermission::View) && $user->hasPermission(ReportsPermission::Export)) {
     return $this->buildReport();
 }
 
-// ✅ At least one of these — "must party" style access
-if ($user->hasAnyPermission([DocumentsPermission::Edit, DocumentsPermission::Delete])) {
+// ✅ At least one of these
+if ($user->hasPermission(DocumentsPermission::Edit) || $user->hasPermission(DocumentsPermission::Delete)) {
     // show edit actions toolbar
 }
 ```
@@ -135,20 +127,17 @@ if ($user->hasAnyPermission([DocumentsPermission::Edit, DocumentsPermission::Del
 ## Inspecting what a user has
 
 ```php
-// All permissions (roles + direct grants combined)
-$user->getAllPermissions();           // Collection<string>
+// All resolved permission keys for a panel (roles + direct grants combined)
+$user->permissions('app');            // Collection<int, string>
 
-// Only permissions from roles (no direct grants)
-$user->getPermissionsViaRoles();      // Collection<string>
+// The underlying PermissionSet (supports wildcard matching)
+$user->permissionSet('app');          // PermissionSet
 
-// Only direct grants
-$user->getDirectPermissions();        // Collection (requires HasDirectGrants)
-
-// Permission keys as plain strings
-$user->getPermissionNames();          // Collection<string>
+// Direct grants only (requires HasDirectGrants)
+$user->grants('app');                 // Collection<DirectGrant>
 
 // Check containment
-$user->getAllPermissions()->contains('app.documents.view');
+$user->permissions('app')->contains('app.documents.view');
 ```
 
 ## All permission-check methods at a glance
@@ -156,82 +145,59 @@ $user->getAllPermissions()->contains('app.documents.view');
 | Method | Returns | Throws? | Gate? |
 |---|---|---|---|
 | `hasPermission($perm)` | `bool` | No | No |
-| `hasAnyPermission(array)` | `bool` | No | No |
-| `hasAllPermissions(array)` | `bool` | No | No |
 | `checkPermission($perm)` | `bool` | No | No |
+| `permissions($panelId)` | `Collection<int,string>` | No | No |
 | `Gate::allows($key)` | `bool` | No | Yes |
 | `$this->authorize($key)` | `void` | Yes (403) | Yes |
 | `Gate::authorize($key)` | `void` | Yes (403) | Yes |
 
 ## Assigning permissions to a role
 
-In static roles, permissions are declared directly in code:
+In static roles, permissions are declared directly in code as full panel-prefixed keys:
 
 ```php
 public function permissions(): array
 {
     return [
-        DocumentsPermission::View,
-        DocumentsPermission::Create,
-        DocumentsPermission::Edit,
+        'app.documents.view',
+        'app.documents.create',
+        'app.documents.edit',
     ];
 }
 ```
 
-For dynamic (DB-backed) roles, use the model API:
-
-```php
-use AzGuard\Models\DynamicRole;
-
-$role = DynamicRole::where('name', 'editor')->first();
-
-// Add permissions
-$role->givePermissions([
-    DocumentsPermission::View,
-    DocumentsPermission::Create,
-]);
-
-// Sync permissions (replaces the full list)
-$role->syncPermissions([
-    DocumentsPermission::View,
-    DocumentsPermission::Edit,
-]);
-
-// Remove a single permission
-$role->revokePermission(DocumentsPermission::Create);
-
-// Get all permissions on this role
-$role->getPermissions();   // Collection
-```
-
-## TypeScript export
-
-AzGuard exports all registered permissions to a TypeScript constants file for your frontend:
+For DB-backed roles, manage permission keys with the `guard:role-permissions` command:
 
 ```bash
-php artisan azguard:export-ts
-# outputs: resources/js/permissions.ts
+# Add a key
+php artisan guard:role-permissions add editor app.documents.view --panel=app
+
+# Replace the full list
+php artisan guard:role-permissions sync editor --panel=app --keys=app.documents.view,app.documents.edit
+
+# Remove one
+php artisan guard:role-permissions remove editor app.documents.create --panel=app
+
+# List
+php artisan guard:role-permissions list editor --panel=app
 ```
 
-```typescript
-// resources/js/permissions.ts (auto-generated, do not edit)
-export const Permissions = {
-  app: {
-    documents: {
-      view:   'app.documents.view',
-      create: 'app.documents.create',
-      edit:   'app.documents.edit',
-      delete: 'app.documents.delete',
-    },
-  },
-} as const;
+## Frontend abilities
 
-// Usage in Vue / React
-import { Permissions } from '@/permissions';
+To expose a resource's resolved permissions to the frontend, generate an **Abilities DTO** for a domain:
 
-if (page.props.can[Permissions.app.documents.edit]) {
-    // show edit button
-}
+```bash
+php artisan make:guard-abilities App Documents
+```
+
+This creates `{Domain}Abilities` (extending `AzGuard\Abilities\AbilitiesDto`) under the panel's `Abilities/` directory. The DTO exposes boolean flags (`viewAny`, `view`, `create`, `update`, `delete`) mapped to the panel-resolved permission keys, evaluated against `Gate`. Serialize it into your Inertia/JSON props with `toArray()`:
+
+```php
+$abilities = new DocumentsAbilities(/* ...resolved flags... */);
+
+return inertia('Documents/Index', [
+    'can' => $abilities->toArray(),  // ['viewAny' => true, 'view' => true, ...]
+]);
 ```
 
 See [Frontend Abilities](./abilities-frontend.md) for Inertia / Vue / React integration.
@@ -240,20 +206,17 @@ See [Frontend Abilities](./abilities-frontend.md) for Inertia / Vue / React inte
 
 ```bash
 # All permissions across all panels
-php artisan azguard:list-permissions
+php artisan guard:list-permissions
 
-# Filter by panel
-php artisan azguard:list-permissions --panel=app
-
-# Show which roles carry each permission
-php artisan azguard:list-permissions --with-roles
+# Filter by panel (positional argument)
+php artisan guard:list-permissions app
 ```
 
 ## Gotchas
 
 **Permission keys are panel-scoped.** `documents.view` and `app.documents.view` are the same permission if the enum is registered under the `app` panel. Using the string form requires the full key including the panel prefix.
 
-**`#[RoleOnly]` permissions don't work with `Gate::allows()`.** They are only resolvable via `$user->hasPermission(...)`. Using them in a policy or `@can` will always return false.
+**`#[RoleOnly]` permissions are excluded from the Gate-facing surface.** They are meant to be assigned to roles and checked via `$user->hasPermission(...)`; `guard:doctor` will not flag them for a missing policy method, and they are omitted from generated abilities.
 
 **Don't mix string keys and enum cases carelessly.** Always use enum cases in PHP code (`DocumentsPermission::View`). Reserve string keys for places where enums aren't available (config files, migrations, Artisan commands).
 
@@ -261,6 +224,6 @@ php artisan azguard:list-permissions --with-roles
 
 - **One enum per resource.** `DocumentsPermission`, `UsersPermission`, `ReportsPermission` — not one giant `AppPermission` enum.
 - **CRUD as the default set.** `view`, `create`, `edit`, `delete`. Add extras as needed: `export`, `publish`, `approve`.
-- **Always use `#[GateAbility]` explicitly**, even though it's the default. It makes intent clear during code review.
+- **Mark internal-only cases with `#[RoleOnly]`** when they should be assignable to roles but kept out of the generated frontend abilities.
 - **Never hardcode string keys in PHP.** Always reference enum cases.
 - **Keep enum cases descriptive but terse.** `case Export` is fine; `case ExportToCsvForExternalTeams` is not.

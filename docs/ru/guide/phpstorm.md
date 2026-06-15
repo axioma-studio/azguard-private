@@ -2,26 +2,28 @@
 
 ## Автодополнение enum
 
-PhpStorm автоматически понимает `PermissionInterface` — IDE предлагает enum-кейсы при вводе `hasPermission(`.
+PhpStorm автоматически понимает backed-enum'ы прав — IDE предлагает enum-кейсы при вводе `hasPermission(`.
 
 ## Laravel Idea
 
 Плагин [Laravel Idea](https://laravel-idea.com/) добавляет:
-- Автодополнение для `assignRole()` — предлагает зарегистрированные классы ролей
+- Автодополнение для `assignRole()` — предлагает зарегистрированные имена ролей
 - Навигацию по ролям: `Ctrl+Click` на имя роли
 - Инспекции для проверки существования ролей
 
 ## .phpstorm.meta.php
 
+`assignRole()` принимает **имя** роли (строку), поэтому подсказываем именно имена:
+
 ```php
 // .phpstorm.meta.php
 namespace PHPSTORM_META {
     expectedArguments(
-        \AzGuard\Concerns\HasAzGuard::assignRole(),
+        \AzGuard\Concerns\HasRoles::assignRole(),
         0,
-        \App\AzGuard\App\Roles\EditorRole::class,
-        \App\AzGuard\App\Roles\ViewerRole::class,
-        \App\AzGuard\Admin\Roles\AdminRole::class,
+        'editor',
+        'viewer',
+        'admin',
     );
 }
 ```

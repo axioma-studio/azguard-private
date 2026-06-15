@@ -45,12 +45,13 @@ return [
     |--------------------------------------------------------------------------
     | Column Names
     |--------------------------------------------------------------------------
-    | Customize column names (e.g. for UUID instead of auto-increment keys).
-    | Set 'role_pivot_key' to 'uuid' to enable UUID support.
+    | morph_type sets the key type for the polymorphic columns of
+    | model_has_roles, model_has_scopes and az_direct_grants: 'int' (default),
+    | 'ulid' or 'uuid'. Set it to match the primary-key type of the models that
+    | get roles/scopes/grants (e.g. 'ulid' for ULID-keyed User/entities).
     */
     'column_names' => [
-        'role_pivot_key' => null,      // null = auto (id)
-        'model_morph_key' => 'model_id',
+        'morph_type' => env('AZ_GUARD_MORPH_TYPE', 'int'),
     ],
 
     /*
@@ -60,6 +61,18 @@ return [
     | AzGuard panel providers. Each entry is the FQCN of a class extending PanelProvider.
     */
     'panels' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Panel
+    |--------------------------------------------------------------------------
+    | Panel id used for authorization and permission resolution when no panel
+    | is active on the current request (e.g. console commands, queued jobs, or
+    | routes without the azguard.panel middleware). Leave null to refuse to
+    | guess: with no active panel and more than one registered panel, checks
+    | deny (fail-closed) rather than evaluate against an arbitrary panel.
+    */
+    'default_panel' => null,
 
     /*
     |--------------------------------------------------------------------------
@@ -112,6 +125,18 @@ return [
     | Recommended: true in tests, false in production.
     */
     'fail_on_source_exception' => false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prune Expired Direct Grants
+    |--------------------------------------------------------------------------
+    | When true, AzGuard registers a daily scheduled task that runs
+    | `guard:prune-grants` to delete expired direct grants. Off by default —
+    | schedule the command yourself if you prefer explicit control. Expired
+    | grants are never honoured regardless (the active() scope filters them);
+    | pruning only keeps the table tidy.
+    */
+    'prune_expired_daily' => false,
 
     /*
     |--------------------------------------------------------------------------

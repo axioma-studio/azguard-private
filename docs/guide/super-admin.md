@@ -34,14 +34,12 @@ public function isSuperAdmin(): bool
 Create a role that grants the wildcard permission set:
 
 ```php
-use AzGuard\Contracts\RoleInterface;
-use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Roles\BaseRole;
 
-class SuperAdminRole implements RoleInterface
+class SuperAdminRole extends BaseRole
 {
-    public function getName(): string  { return 'super-admin'; }
-    public function getPanel(): string { return 'app'; }  // or whichever panel
-    public function getLevel(): int    { return 999; }
+    public function getName(): string { return 'super-admin'; }
+    public function getLevel(): int   { return 999; }
 
     public function permissions(): array
     {
@@ -49,6 +47,8 @@ class SuperAdminRole implements RoleInterface
     }
 }
 ```
+
+Register it on the panel via `roleClasses([SuperAdminRole::class])` in your panel provider.
 
 Then assign the role to the user as normal:
 
@@ -62,13 +62,13 @@ $user->hasPermission('app.anything.at.all');  // true
 ## Option 3: Direct wildcard grant
 
 ```php
-use AzGuard\Grants\GrantBuilder;
+use AzGuard\Facades\AzGuard;
 
-// Grant superadmin access for 24 hours
-(new GrantBuilder($user))
+// Grant superadmin access for 24 hours (TTL in seconds)
+AzGuard::forUser($user)
     ->on('app')
-    ->grant('*')
-    ->until(now()->addDay());
+    ->ttl(86400)
+    ->grant('*');
 ```
 
 ## Checking in tests
@@ -83,13 +83,13 @@ $this->get('/admin/users')->assertOk();
 
 ## Scope of wildcard
 
-Wildcard access applies **per panel**. A super-admin in `app` does not automatically have access to `admin`:
+Wildcard access applies **per panel** — a role's wildcard only covers the panel that registered the role class. A super-admin role registered on `app` does not automatically have access to `admin`:
 
 ```php
-$user->assignRole('super-admin', panel: 'app');
+$user->assignRole('super-admin');  // role registered on the 'app' panel
 
 $user->hasPermission('app.documents.delete');  // true
 $user->hasPermission('admin.users.delete');    // false — different panel
 ```
 
-To grant access across all panels, assign a wildcard role in each panel, or use the Gate before-hook approach which runs before panel resolution.
+To grant access across all panels, register a wildcard role on each panel, or use the Gate before-hook approach which runs before panel resolution.

@@ -78,7 +78,6 @@ class AzGuardDiagnostics
             // Discover permission enums once per panel — shared by three checks below.
             $enumClasses = $this->discoverPermissionEnums(basePath: $basePath, baseNamespace: $baseNamespace);
 
-            $this->checkDuplicateAbilities();
             $this->checkEnumsAgainstPolicies(
                 enumClasses: $enumClasses,
                 panel: $panel,
@@ -138,11 +137,6 @@ class AzGuardDiagnostics
         }
 
         return $abilities;
-    }
-
-    private function checkDuplicateAbilities(): void
-    {
-        // Duplicates are already detected in collectRegisteredAbilities.
     }
 
     /**

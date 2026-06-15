@@ -13,12 +13,15 @@ app(GrantTemporaryAccess::class)->execute(
 );
 
 // Сервис
+use UnitEnum;
+
 class GrantTemporaryAccess
 {
-    public function execute(User $user, PermissionInterface $permission, int $hours): void
+    public function execute(User $user, string|UnitEnum $permission, int $hours): void
     {
-        $user->grantPermission(
+        $user->grant(
             $permission,
+            'app',
             expiresAt: Carbon::now()->addHours($hours)
         );
 

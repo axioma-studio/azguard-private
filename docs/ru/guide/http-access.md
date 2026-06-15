@@ -4,19 +4,21 @@
 
 | Middleware | Описание |
 |---|---|
-| `azguard.permission` | Проверка одного права |
-| `azguard.role` | Проверка одной роли |
 | `azguard.panel` | Устанавливает активную панель для запроса |
+| `azguard.panel_check:panel,permission` | Устанавливает панель и проверяет одно право |
+| `azguard.check` | Проверяет атрибуты `#[CheckPermission]` на методе контроллера |
+| `azguard.grant` | Проверяет прямой грант |
+| `azguard.roles` | Загружает роли пользователя в запрос |
 
 ## Примеры применения
 
 ```php
 // routes/web.php
 Route::get('/reports/export', [ReportController::class, 'export'])
-    ->middleware('azguard.permission:app.reports.export');
+    ->middleware('azguard.panel_check:app,app.reports.export');
 
 Route::get('/admin', [AdminController::class, 'index'])
-    ->middleware(['auth', 'azguard.role:' . AdminRole::class]);
+    ->middleware(['auth', 'azguard.panel:admin']);
 
 // Группа роутов с общим middleware
 Route::middleware(['auth', 'azguard.panel:admin'])->group(function () {
@@ -24,7 +26,9 @@ Route::middleware(['auth', 'azguard.panel:admin'])->group(function () {
 });
 ```
 
-## Атрибут `#[CheckPermission]` вс контроллере
+## Атрибут `#[CheckPermission]` в контроллере
+
+Применяйте middleware `azguard.check` к роуту, чтобы атрибуты на методе проверялись автоматически.
 
 ```php
 class PostController extends Controller
@@ -46,20 +50,20 @@ class PostController extends Controller
 
 ## Обработка 403
 
+Middleware и атрибуты используют стандартный `abort(403)` Laravel. Перехватить ответ можно через рендеринг `HttpException`:
+
 ```php
-// app/Exceptions/Handler.php
-public function register(): void
-{
-    $this->renderable(function (PermissionDeniedException $e, Request $request) {
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Доступ запрещён.',
-                'required' => $e->getPermission(),
-            ], 403);
-        }
-        return redirect()->route('home')->with('error', 'Недостаточно прав.');
-    });
-}
+// bootstrap/app.php — withExceptions()
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+$exceptions->renderable(function (HttpException $e, Request $request) {
+    if ($e->getStatusCode() === 403 && $request->expectsJson()) {
+        return response()->json([
+            'message' => 'Доступ запрещён.',
+        ], 403);
+    }
+});
 ```
 
 → [Исключения](/ru/guide/exceptions) · [Несколько Guards](/ru/guide/multiple-guards)

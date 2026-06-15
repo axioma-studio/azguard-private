@@ -9,6 +9,7 @@ use AzGuard\Context\Contracts\ResolvesContext;
 use AzGuard\Context\Middleware\SetAuthorizationContext;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
 use AzGuard\Contracts\ContextGuard as ContextGuardContract;
+use AzGuard\Contracts\PermissionLayer;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -33,8 +34,9 @@ final class AzGuardContextServiceProvider extends ServiceProvider
             'az-guard-context',
         );
 
-        // Singleton менеджера — живёт весь request
-        $this->app->singleton(AuthorizationContextManager::class);
+        // Scoped — живёт один request. Под Octane singleton протёк бы контекстом
+        // одного тенанта в следующий запрос на том же воркере.
+        $this->app->scoped(AuthorizationContextManager::class);
 
         // Стратегия — конфигурируется в az-guard-context.php
         $this->app->bind(MergeStrategy::class, function (Application $app): MergeStrategy {
@@ -54,17 +56,19 @@ final class AzGuardContextServiceProvider extends ServiceProvider
             resolvers: $app->tagged(ResolvesContext::class),
         ));
 
-        // ContextualRoleGrantSource
-        $this->app->singleton(ContextualRoleGrantSource::class, fn (Application $app): ContextualRoleGrantSource => new ContextualRoleGrantSource(
+        // ContextPermissionLayer — scoped: применяет merge-стратегию к глобальному
+        // набору прав ПОСЛЕ агрегации всех источников в EffectivePermissionResolver,
+        // поэтому ContextOnly/DenyWithoutContext могут ограничивать, а не только
+        // добавлять. Держит scoped-менеджер — делит его per-request жизненный цикл.
+        $this->app->scoped(PermissionLayer::class, fn (Application $app): ContextPermissionLayer => new ContextPermissionLayer(
             manager: $app->make(AuthorizationContextManager::class),
             strategy: $app->make(MergeStrategy::class),
         ));
 
-        $this->app->tag([ContextualRoleGrantSource::class], 'azguard.grant_sources');
-
         // ContextGuard — реализация core-контракта для one-off контекстных проверок
         // ($user->hasPermissionIn(...) / hasPermission(..., $context)).
-        $this->app->singleton(ContextGuardContract::class, ContextGuard::class);
+        // Scoped — инжектит scoped-менеджер и резолвер, должен делить их инстансы.
+        $this->app->scoped(ContextGuardContract::class, ContextGuard::class);
     }
 
     public function boot(): void

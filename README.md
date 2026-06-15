@@ -48,10 +48,11 @@ class User extends Authenticatable
 ### 2. Создайте роль
 
 ```bash
-php artisan azguard:make-role Admin --panel=app
+php artisan make:guard-role
 ```
 
-Это создаст `app/Guards/App/Roles/AdminRole.php`:
+Команда интерактивная: выберите панель и введите имя роли. Это создаст
+`app/Guards/App/Roles/AdminRole.php`:
 
 ```php
 class AdminRole extends BaseRole
@@ -59,8 +60,8 @@ class AdminRole extends BaseRole
     public function permissions(): array
     {
         return [
-            AppPermission::UsersView->value,
-            AppPermission::UsersCreate->value,
+            'app.users.view',
+            'app.users.create',
         ];
     }
 }
@@ -69,14 +70,13 @@ class AdminRole extends BaseRole
 ### 3. Создайте панель
 
 ```bash
-php artisan azguard:make-panel App
+php artisan make:guard-panel
 ```
 
 ### 4. Назначьте роль пользователю
 
 ```php
-$role = Role::where('name', 'admin')->first();
-$user->roles()->attach($role);
+$user->assignRole('admin');
 ```
 
 ### 5. Проверяйте права
@@ -104,13 +104,13 @@ Gate::allows('app.users.create');
 
 | Команда | Описание |
 |---|---|
-| `azguard:doctor` | Диагностика конфигурации |
-| `azguard:list-permissions {panel?}` | Список всех зарегистрированных прав |
-| `azguard:cache-reset` | Сброс кэша прав |
-| `azguard:make-panel {name}` | Создать панель |
-| `azguard:make-role {name} --panel=` | Создать роль |
-| `azguard:make-permission {name} --panel=` | Создать enum разрешений |
-| `azguard:make-policy {name} --panel=` | Создать политику |
+| `guard:doctor` | Диагностика конфигурации |
+| `guard:list-permissions {panel?}` | Список всех зарегистрированных прав |
+| `guard:cache-reset` | Сброс кэша прав |
+| `make:guard-panel` | Создать панель |
+| `make:guard-role` | Создать роль |
+| `make:guard-permission` | Создать enum разрешений |
+| `make:guard-policy` | Создать политику |
 
 ---
 
@@ -128,7 +128,7 @@ Gate::allows('app.users.create');
 ],
 ```
 
-Для сброса кэша: `php artisan azguard:cache-reset`
+Для сброса кэша: `php artisan guard:cache-reset`
 
 ---
 

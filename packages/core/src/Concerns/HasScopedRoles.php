@@ -7,10 +7,13 @@ namespace AzGuard\Concerns;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
 use AzGuard\Support\Config;
+use AzGuard\Support\PanelResolver;
+use AzGuard\Support\PermissionName;
 use AzGuard\Support\ScopedRoleCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
 
 /**
  * Adds entity-scoped role support to Eloquent models.
@@ -54,6 +57,7 @@ trait HasScopedRoles
                 $user->getAuthIdentifier().'|'.static::class,
                 fn () => $user->scopes()
                     ->where('scope_entity_type', static::class)
+                    ->with('scopeEntity') // eager-load to avoid a query per scope row below
                     ->get(),
             );
 
@@ -145,19 +149,29 @@ trait HasScopedRoles
      * Check if user has a permission within a specific entity scope.
      *
      *   $user->hasScopedPermission('app.projects.edit', $project);
+     *   $user->hasScopedPermission(ProjectPermission::Edit, $project, 'app');
      *
      * Resolution order:
      *   1. SuperAdmin global wildcard (*) — always granted via hasPermission()
      *   2. Scoped roles for the given entity
+     *
+     * Panel resolution: an explicit $panelId always wins. Otherwise the panel is
+     * taken from a scoped string key's first segment ("app.projects.edit" -> "app",
+     * the standard convention), falling back to az-guard.default_panel. Pass
+     * $panelId explicitly for enum permissions or scopedByPanelId(false) panels.
      */
-    public function hasScopedPermission(string $permission, Model $entity): bool
+    public function hasScopedPermission(string|UnitEnum $permission, Model $entity, ?string $panelId = null): bool
     {
-        if (method_exists($this, 'hasPermission')) {
-            $panelId = str_contains($permission, '.') ? explode('.', $permission)[0] : 'app';
+        if ($panelId === null) {
+            $panelId = is_string($permission) && str_contains($permission, '.')
+                ? explode('.', $permission)[0]
+                : PanelResolver::resolveDefault(null);
+        }
 
-            if ($this->hasPermission($permission, $panelId)) {
-                return true;
-            }
+        $key = PermissionName::resolve($permission, $panelId);
+
+        if (method_exists($this, 'hasPermission') && $this->hasPermission($key, $panelId)) {
+            return true;
         }
 
         $scopedRoleIds = ModelHasScope::query()
@@ -186,7 +200,7 @@ trait HasScopedRoles
 
             $permissions = $logic->permissions();
 
-            if (in_array('*', $permissions, true) || in_array($permission, $permissions, true)) {
+            if (in_array('*', $permissions, true) || in_array($key, $permissions, true)) {
                 return true;
             }
         }

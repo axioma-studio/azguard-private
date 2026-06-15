@@ -2,58 +2,58 @@
 
 AzGuard предоставляет несколько Artisan-команд для синхронизации, диагностики и обслуживания.
 
-## `azguard:sync-roles`
+## `guard:sync-roles`
 
 Синхронизирует PHP-классы ролей с таблицей `roles` в БД.
 
 ```bash
-php artisan azguard:sync-roles
+php artisan guard:sync-roles
 
 # С выводом деталей
-php artisan azguard:sync-roles --verbose
+php artisan guard:sync-roles --verbose
 ```
 
 Запускайте при деплое или в миграциях.
 
-## `azguard:doctor`
+## `guard:doctor`
 
 Проверяет и сообщает о проблемах конфигурации:
 
 ```bash
-php artisan azguard:doctor
+php artisan guard:doctor
 ```
 
 Что проверяет:
 - Осиротевшие записи user → role (роль удалена из кода)
 - Несоответствие namespace панелей
 - Истёкшие прямые гранты
-- Enum-кейсы, не реализующие `PermissionInterface`
+- Enum-кейсы, не зарегистрированные на панели
 
-## `azguard:cache-clear`
+## `guard:cache-reset`
 
 ```bash
-php artisan azguard:cache-clear
+php artisan guard:cache-reset
 
-# Сброс кэша конкретного пользователя
-php artisan azguard:cache-clear --user=42
+# Без запроса подтверждения
+php artisan guard:cache-reset --force
 ```
 
-## `azguard:purge-expired-grants`
+## `guard:prune-grants`
 
 ```bash
-php artisan azguard:purge-expired-grants
+php artisan guard:prune-grants
 ```
 
 Удаляет истёкшие прямые гранты из таблицы. Добавьте в расписание:
 
 ```php
-$schedule->command('azguard:purge-expired-grants')->hourly();
+$schedule->command('guard:prune-grants')->hourly();
 ```
 
-## `azguard:list-roles`
+## `guard:list-permissions`
 
 ```bash
-php artisan azguard:list-roles
+php artisan guard:list-permissions
 ```
 
-Выводит таблицу всех зарегистрированных ролей с количеством пользователей и списком прав.
+Выводит таблицу всех зарегистрированных прав по панелям.

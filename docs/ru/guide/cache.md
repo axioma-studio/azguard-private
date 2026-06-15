@@ -1,47 +1,48 @@
 # Кеш
 
-AzGuard использует двухуровневое кеширование: **in-memory** (на время запроса) и опциональный **persistent cache** (Redis/Memcached).
+AzGuard кеширует эффективный набор прав пользователя. По умолчанию используется in-memory стор `array` (на время запроса); для кеширования между запросами выберите persistent-стор (Redis/Memcached).
 
 ## Конфигурация
 
 ```php
-// config/azguard.php
+// config/az-guard.php
 'cache' => [
-    'enabled' => true,
-    'store'   => env('AZGUARD_CACHE_STORE', 'redis'),
-    'ttl'     => env('AZGUARD_CACHE_TTL', 300), // секунд
-    'prefix'  => 'azguard_',
+    'store'           => 'array',                 // 'array' | 'redis' | 'memcached' | 'file' | 'default'
+    'expiration_time' => 3600,                     // TTL в секундах; null = без истечения
+    'key'             => 'azguard.permissions',    // префикс ключа
 ],
 ```
 
+`store => 'array'` отключает кросс-реквест кеш (только in-memory) — удобно для тестов.
+
 ## Сброс кеша
 
-```php
-// Сброс для конкретного пользователя
-AzGuard::clearCache($user);
+```bash
+# Сброс всего кеша прав
+php artisan guard:cache-reset
 
-// Сброс всего кеша
-AzGuard::clearAllCache();
-
-// Через Artisan
-php artisan azguard:clear-cache
-php artisan azguard:clear-cache --user=42
+# Без подтверждения
+php artisan guard:cache-reset --force
 ```
 
 ## Автоматический сброс
 
-Кеш автоматически сбрасывается при:
-- `assignRole()` / `revokeRole()`
-- `grantPermission()` / `revokeedPermission()`
+Кеш сбрасывается автоматически при изменении ролей и грантов — отдельный слушатель регистрировать не нужно. Это происходит при:
+
+- `assignRole()` / `removeRole()` / `syncRoles()`
+- `grant()` / `revoke()`
+
+а также по соответствующим событиям `RoleAttached`, `RoleDetached`, `GrantGiven`, `GrantRevoked`.
 
 ## Кеш в Octane
 
-In-memory кеш AzGuard **не** переживает между запросами в Octane — это ожидаемое поведение. Persistent cache (Redis) сохраняется.
+AzGuard биндит свои per-request сервисы как `scoped` и сбрасывает их между запросами — он Octane-safe. In-memory часть кеша не переживает между запросами; persistent-стор (Redis) сохраняется.
 
 ```php
-// Для Octane: используйте короткий TTL
+// Для Octane: persistent-стор с коротким TTL
 'cache' => [
-    'store' => 'redis',
-    'ttl'   => 60, // 1 минута достаточно при Octane
+    'store'           => 'redis',
+    'expiration_time' => 60, // 1 минута достаточно при Octane
+    'key'             => 'azguard.permissions',
 ],
 ```

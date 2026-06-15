@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Create GitHub Release
+  validate:
+    name: Validate before release
     runs-on: ubuntu-latest
 
     steps:
@@ -30,11 +30,44 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Run tests before release
+      - name: Validate every package manifest
+        run: |
+          composer validate --strict --no-check-version
+          for pkg in packages/core packages/filament packages/context; do
+            echo "::group::composer validate $pkg"
+            composer validate --strict --no-check-version --no-check-lock --working-dir="$pkg"
+            echo "::endgroup::"
+          done
+
+      - name: Fail if satellites still pin core with a wildcard
+        run: |
+          if grep -REn '"axioma-studio/azguard-core"[[:space:]]*:[[:space:]]*"\*"' packages/*/composer.json; then
+            echo "::error::A satellite still requires azguard-core with '*'. Pin it to a real constraint (e.g. ^1.0)."
+            exit 1
+          fi
+
+      - name: Static analysis
+        run: composer analyse
+
+      - name: Code style
+        run: composer lint:check
+
+      - name: Tests
         run: vendor/bin/pest --ci
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
+
+  release:
+    name: Create GitHub Release
+    needs: validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Generate CHANGELOG for this release
         id: changelog

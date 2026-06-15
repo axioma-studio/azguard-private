@@ -12,7 +12,7 @@ public function handle(Request $request, Closure $next): Response
         Inertia::share([
             'auth' => [
                 'user'        => $user->only('id', 'name', 'email'),
-                'permissions' => $user->getPermissionKeys(),
+                'permissions' => $user->permissions('app')->values(),
                 'roles'       => $user->getRoleNames(),
             ],
         ]);

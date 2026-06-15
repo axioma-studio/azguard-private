@@ -11,9 +11,9 @@ Sending `abilities: { canEdit: true, canDelete: false }` in Inertia props is exp
 ```php
 namespace App\Guards\App\Documents\Abilities;
 
-use AzGuard\Concerns\ResolvesGateAbilities;
+use AzGuard\Support\ResolvesGateAbilities;
 use App\Models\Documents\Document;
-use App\Guards\App\Permissions\DocumentsPermission;
+use Illuminate\Support\Facades\Gate;
 
 final class DocumentsAbilities
 {

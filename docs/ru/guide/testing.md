@@ -2,22 +2,15 @@
 
 ## Настройка
 
-AzGuard предоставляет вспомогательные трейты для тестов:
+В тестах AzGuard удобно отключить кросс-реквест кеш, выставив `array`-стор:
 
 ```php
-use AzGuard\Testing\WithAzGuard;
-
-class PostControllerTest extends TestCase
-{
-    use WithAzGuard;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->setUpAzGuard(); // применяет миграции и чистит кеш
-    }
-}
+// config/az-guard.php (или в TestCase через config())
+config(['az-guard.cache.store' => 'array']);
 ```
+
+`array`-стор — это и есть значение по умолчанию: кеш живёт только в рамках одного
+запроса и автоматически сбрасывается между тестами.
 
 ## Пользователи с ролями
 
@@ -25,7 +18,7 @@ class PostControllerTest extends TestCase
 public function test_editor_can_edit_posts(): void
 {
     $user = User::factory()->create();
-    $user->assignRole(EditorRole::class);
+    $user->assignRole('editor');
 
     $post = Post::factory()->create();
 
@@ -37,7 +30,7 @@ public function test_editor_can_edit_posts(): void
 public function test_viewer_cannot_edit_posts(): void
 {
     $user = User::factory()->create();
-    $user->assignRole(ViewerRole::class);
+    $user->assignRole('viewer');
 
     $post = Post::factory()->create();
 
@@ -47,34 +40,34 @@ public function test_viewer_cannot_edit_posts(): void
 }
 ```
 
-## Хелперы withRole и withPermission
+## Пользователь с прямым грантом
 
 ```php
-// Быстрое создание пользователя с ролью
-$editor = $this->userWithRole(EditorRole::class);
-
-// Пользователь с прямым грантом
-$user = $this->userWithPermission(ReportsPermission::Export);
-
-// Пользователь без прав (по умолчанию)
-$guest = User::factory()->create();
-```
-
-## Мокирование AzGuard
-
-```php
-public function test_without_real_db_permissions(): void
+public function test_user_with_direct_grant(): void
 {
     $user = User::factory()->create();
 
-    // Мокируем через Gate
-    Gate::shouldReceive('allows')
-        ->with('app.posts.edit')
-        ->andReturn(true);
+    // Выдаём право напрямую на панель 'app'
+    $user->grant(ReportsPermission::Export, 'app');
 
-    $this->actingAs($user)
-         ->put('/posts/1', ['title' => 'Test'])
-         ->assertOk();
+    $this->assertTrue($user->hasPermission(ReportsPermission::Export));
+}
+```
+
+## Проверка прав без HTTP
+
+```php
+public function test_without_http_request(): void
+{
+    $user = User::factory()->create();
+    $user->assignRole('editor');
+
+    // Прямая проверка
+    $this->assertTrue($user->hasPermission('app.posts.edit'));
+
+    // Через Gate
+    $this->actingAs($user);
+    $this->assertTrue(Gate::allows('app.posts.edit'));
 }
 ```
 
@@ -84,7 +77,7 @@ public function test_without_real_db_permissions(): void
 public function test_blade_shows_edit_button_for_editor(): void
 {
     $user = User::factory()->create();
-    $user->assignRole(EditorRole::class);
+    $user->assignRole('editor');
 
     $html = $this->actingAs($user)
                  ->get('/posts/1')

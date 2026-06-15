@@ -1,58 +1,87 @@
 # Контекст (опциональный)
 
-Контекст позволяет проверять права с учётом дополнительного условия — например, tenant, команды или проекта.
+Пакет `axioma-studio/azguard-context` позволяет проверять права с учётом
+дополнительной сущности — например, workspace, команды или проекта.
 
-## Включение контекста
+```bash
+composer require axioma-studio/azguard-context
+```
+
+## Конфигурация
 
 ```php
-// config/azguard.php
-'context' => [
-    'enabled'  => true,
-    'resolver' => App\AzGuard\Context\TenantContextResolver::class,
-],
+// config/az-guard-context.php
+use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
+
+return [
+    // Стратегия слияния глобальных и контекстных прав.
+    'merge_strategy' => GlobalPlusContextStrategy::class,
+
+    // Список FQCN-резолверов, реализующих ResolvesContext.
+    'resolvers' => [
+        App\AzGuard\WorkspaceContextResolver::class,
+    ],
+];
 ```
+
+Встроенные стратегии: `GlobalPlusContextStrategy` (по умолчанию, `global ∪ context`),
+`ContextOnlyStrategy` (только контекст), `DenyWithoutContextStrategy` (без контекста — пустой набор).
 
 ## Resolver
 
 ```php
-use AzGuard\Contracts\ContextResolverInterface;
+use AzGuard\Context\AuthorizationContext;
+use AzGuard\Context\Contracts\ResolvesContext;
+use Illuminate\Http\Request;
 
-class TenantContextResolver implements ContextResolverInterface
+class WorkspaceContextResolver implements ResolvesContext
 {
-    public function resolve(Request $request): ?string
+    public function resolve(Request $request): ?AuthorizationContext
     {
-        // Возвращаем строковый ключ контекста или null
-        return $request->header('X-Tenant-ID')
-            ?? auth()->user()?->tenant_id;
+        $id = $request->route('workspace');
+
+        return $id
+            ? new AuthorizationContext('app', 'workspace', $id)
+            : null;
+    }
+
+    public function panelId(): string
+    {
+        return 'app';
     }
 }
 ```
 
-## Использование
+## Проверка в контексте
 
 ```php
-// AzGuard автоматически добавляет контекст к каждой проверке
-$user->hasPermission(ProjectsPermission::Edit); // учитывает текущий tenant
-
-// Явное указание контекста
-AzGuard::withContext('tenant-42')
-    ->hasPermission($user, ProjectsPermission::Edit);
-
-// Без контекста
-AzGuard::withoutContext()
-    ->hasPermission($user, ProjectsPermission::Edit);
+// Разовая проверка в контексте без изменения глобального состояния
+$user->hasPermissionIn('workspace', 42, ProjectsPermission::Edit);        // панель по умолчанию
+$user->hasPermissionIn('workspace', 42, 'app.projects.edit', 'app');      // явная панель
 ```
 
-## Назначение ролей с контекстом
+## Scoped-роли (entity scopes)
+
+Для привязки роли к конкретной сущности используйте трейт `HasScopedRoles`:
 
 ```php
-// Роль только в рамках конкретного tenant
-$user->assignRole(EditorRole::class, context: 'tenant-42');
+use AzGuard\Concerns\HasAzGuard;
+use AzGuard\Concerns\HasScopedRoles;
 
-// Проверка с тем же контекстом
-AzGuard::withContext('tenant-42')
-    ->hasPermission($user, PostsPermission::Edit); // true
+class User extends Authenticatable
+{
+    use HasAzGuard, HasScopedRoles;
+}
+```
 
-AzGuard::withContext('tenant-99')
-    ->hasPermission($user, PostsPermission::Edit); // false
+```php
+// Назначить роль в рамках конкретной сущности
+$user->assignScopedRole('editor', $workspace);
+
+// Проверить роль в этой сущности
+$user->hasScopedRole('editor', $workspace);          // true
+
+// Проверить право в этой сущности
+$user->hasScopedPermission(PostsPermission::Edit, $workspace); // true
+$user->hasScopedPermission(PostsPermission::Edit, $otherWorkspace); // false
 ```

@@ -29,7 +29,7 @@ final class WorkspaceContextResolver implements ResolvesContext
             : null;
     }
 
-    public function panel(): string { return 'app'; }
+    public function panelId(): string { return 'app'; }
 }
 ```
 

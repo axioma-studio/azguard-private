@@ -14,7 +14,7 @@ $user->hasPermission(DocumentsPermission::); // ← PhpStorm lists View, Create,
 
 If you use [Laravel Idea](https://plugins.jetbrains.com/plugin/13441-laravel-idea) or the free [Laravel](https://plugins.jetbrains.com/plugin/7532-laravel) plugin, `@can`, `Gate::allows()`, and `can:` middleware string arguments are resolved against registered Gate abilities.
 
-AzGuard registers all `#[GateAbility]`-decorated enum cases on boot, so these strings are recognized:
+AzGuard registers every permission key from its catalog as a Gate ability on boot, so these strings are recognized:
 
 ```php
 // Laravel Idea resolves 'app.documents.view' to DocumentsPermission::View
@@ -29,7 +29,7 @@ If you are not using a plugin, add a meta file to help PhpStorm infer `hasPermis
 // .phpstorm.meta.php
 <?php
 namespace PHPSTORM_META {
-    override(\AzGuard\Traits\HasAzGuard::hasPermission(0), type(0));
+    override(\AzGuard\Concerns\HasPermissions::hasPermission(0), type(0));
 }
 ```
 
@@ -41,4 +41,4 @@ PhpStorm's **Enum cases** inspection catches typos in enum case usage at edit ti
 
 ## Xdebug step-through
 
-The `Gate::before()` callback registered by AzGuard is a standard PHP closure. You can place a breakpoint inside `AzGuard\Providers\AzGuardServiceProvider` → `registerGateCallback()` to step through the full permission resolution flow.
+The `Gate::before()` callback registered by AzGuard is a standard PHP closure. You can place a breakpoint inside `AzGuard\AzGuardServiceProvider::boot()` (where `Gate::before(...)` is registered) to step through the full permission resolution flow.

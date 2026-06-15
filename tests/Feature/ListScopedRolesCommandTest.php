@@ -7,12 +7,12 @@ use AzGuard\Tests\Stubs\Project;
 use AzGuard\Tests\Stubs\Roles\ProjectEditorRole;
 use AzGuard\Tests\Stubs\User;
 
-describe('azguard:list-scoped-roles command', function (): void {
+describe('guard:list-scoped-roles command', function (): void {
 
     it('shows warning when user has no scoped roles', function (): void {
         $user = User::factory()->create();
 
-        $this->artisan('azguard:list-scoped-roles', ['user' => $user->id])
+        $this->artisan('guard:list-scoped-roles', ['user' => $user->id])
             ->expectsOutputToContain('нет scoped-ролей')
             ->assertExitCode(0);
     });
@@ -29,7 +29,7 @@ describe('azguard:list-scoped-roles command', function (): void {
 
         $user->assignScopedRole($role, $project);
 
-        $this->artisan('azguard:list-scoped-roles', ['user' => $user->id])
+        $this->artisan('guard:list-scoped-roles', ['user' => $user->id])
             ->expectsOutputToContain('project-editor')
             ->expectsOutputToContain('Project')
             ->assertExitCode(0);
@@ -47,13 +47,13 @@ describe('azguard:list-scoped-roles command', function (): void {
 
         $user->assignScopedRole($role, $project);
 
-        $this->artisan('azguard:list-scoped-roles', ['user' => 'editor@example.com'])
+        $this->artisan('guard:list-scoped-roles', ['user' => 'editor@example.com'])
             ->expectsOutputToContain('project-editor-email')
             ->assertExitCode(0);
     });
 
     it('returns failure for unknown user', function (): void {
-        $this->artisan('azguard:list-scoped-roles', ['user' => '99999'])
+        $this->artisan('guard:list-scoped-roles', ['user' => '99999'])
             ->expectsOutputToContain('не найден')
             ->assertExitCode(1);
     });
@@ -71,7 +71,7 @@ describe('azguard:list-scoped-roles command', function (): void {
         $user->assignScopedRole($role, $project);
 
         // Filter matches — should show the role
-        $this->artisan('azguard:list-scoped-roles', [
+        $this->artisan('guard:list-scoped-roles', [
             'user' => $user->id,
             '--entity' => Project::class,
         ])
@@ -79,7 +79,7 @@ describe('azguard:list-scoped-roles command', function (): void {
             ->assertExitCode(0);
 
         // Filter does NOT match — should warn no scoped roles
-        $this->artisan('azguard:list-scoped-roles', [
+        $this->artisan('guard:list-scoped-roles', [
             'user' => $user->id,
             '--entity' => 'App\\Models\\Team',
         ])

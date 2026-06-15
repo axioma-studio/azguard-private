@@ -7,6 +7,7 @@ namespace AzGuard;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
+use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Support\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,6 +17,12 @@ use UnitEnum;
 
 final class AzGuardManager implements AzGuardManagerInterface
 {
+    /**
+     * Container tag collected by EffectivePermissionResolver. Bind and tag a
+     * custom GrantSource with this to plug it into the resolution chain.
+     */
+    public const string GRANT_SOURCES_TAG = 'azguard.grant_sources';
+
     /** @var array<string, Panel> */
     protected array $panels = [];
 
@@ -77,6 +84,27 @@ final class AzGuardManager implements AzGuardManagerInterface
         return $panel?->resolvePermission(permission: $permission);
     }
 
+    // ─── Extensions ───────────────────────────────────────────────────────────
+
+    /**
+     * Register a custom GrantSource. Bind it (singleton/scoped) if it is not
+     * already bound, then tag it so EffectivePermissionResolver picks it up.
+     *
+     * Call this from a service provider's register() method:
+     *   AzGuard::registerGrantSource(MyGrantSource::class);
+     *
+     * @param  class-string<GrantSource>  $sourceClass
+     */
+    #[Override]
+    public function registerGrantSource(string $sourceClass): void
+    {
+        if (! app()->bound($sourceClass)) {
+            app()->scoped($sourceClass);
+        }
+
+        app()->tag([$sourceClass], self::GRANT_SOURCES_TAG);
+    }
+
     // ─── Grants API ─────────────────────────────────────────────────────────
 
     /**
@@ -99,7 +127,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     #[Override]
     public function grant(
         Authenticatable $user,
-        string $permissionKey,
+        string|UnitEnum $permissionKey,
         string $panelId = 'app',
         ?int $ttl = null,
     ): DirectGrant {
@@ -114,7 +142,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     #[Override]
     public function revoke(
         Authenticatable $user,
-        string $permissionKey,
+        string|UnitEnum $permissionKey,
         string $panelId = 'app',
     ): int {
         return $this->forUser($user)->on($panelId)->revoke($permissionKey);

@@ -1,6 +1,6 @@
 # Blade-директивы
 
-AzGuard работает со всеми стандартными Blade-директивами Laravel и добавляет собственные для работы с ролями.
+AzGuard работает со всеми стандартными Blade-директивами Laravel Gate и добавляет собственные `@az*`-директивы.
 
 ## Стандартные директивы Laravel Gate
 
@@ -14,33 +14,57 @@ AzGuard работает со всеми стандартными Blade-дире
 @endcannot
 
 @canany(['app.posts.edit', 'app.posts.delete'])
-    <div класс="действия">…</div>
+    <div class="actions">…</div>
 @endcanany
 ```
 
-## Директивы AzGuard для ролей
+## Директивы AzGuard
+
+### Проверка права — `@azcan`
 
 ```blade
-@role(EditorRole::class)
-    <nav>Меню редактора</nav>
-@endrole
+@azcan('app.documents.view')
+    {{ $doc->title }}
+@elseazcan('app.documents.preview')
+    {{ Str::limit($doc->title, 20) }}
+@endazcan
 
-@hasrole(AdminRole::class)
-    <a href="/admin">Панель администратора</a>
-@endhasrole
-
-@unlessrole(AdminRole::class)
-    <p>Обычный пользовательский интерфейс</p>
-@endunlessrole
+@unlessazcan('app.posts.delete')
+    <p>Удаление недоступно</p>
+@endunlessazcan
 ```
 
-## Использование с enum-классами
+### Проверка роли — `@azrole`
+
+`@azrole` принимает имя роли (строку). Имя выводится из класса роли:
+`EditorRole` → `editor`, `AdminRole` → `admin`.
 
 ```blade
-{{-- Передавайте полный ключ Gate или enum-кейс в @can --}}
-@can('app.documents.view')
+@azrole('editor')
+    <nav>Меню редактора</nav>
+@endazrole
+
+@azrole('admin')
+    <a href="/admin">Панель администратора</a>
+@endazrole
+```
+
+### Проверка прямого гранта — `@azdirect`
+
+```blade
+@azdirect('app.reports.export')
+    <button>Экспорт</button>
+@endazdirect
+```
+
+## Использование с enum-кейсами
+
+В `@azcan` можно передавать enum-кейс — панель подставит префикс автоматически:
+
+```blade
+@azcan(DocumentsPermission::View)
     {{ $doc->title }}
-@endcan
+@endazcan
 
 {{-- Для компонентов Livewire --}}
 @php($canEdit = auth()->user()?->hasPermission(DocumentsPermission::Edit))
@@ -51,7 +75,7 @@ AzGuard работает со всеми стандартными Blade-дире
 
 ```blade
 @can('update', $post)
-    <button тип="submit">Сохранить</button>
+    <button type="submit">Сохранить</button>
 @endcan
 ```
 

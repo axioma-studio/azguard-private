@@ -27,7 +27,7 @@ final class CatalogListCommand extends Command
 
     protected $description = 'List all permissions from PermissionCatalog';
 
-    protected $aliases = ['az-guard:catalog'];
+    protected $aliases = ['guard:catalog'];
 
     public function handle(PermissionCatalog $catalog): int
     {

@@ -3,7 +3,7 @@
 AzGuard integrates with Laravel's native Gate layer, which means **all standard Laravel Blade directives work out of the box** — no additional setup required.
 
 ::: tip Permission-first
-Always prefer **permission directives** (`@can`, `@cannot`, `@canany`, `@haspermission`) over role directives (`@role`, `@hasrole`). Permissions are stable; roles change. Code that checks permissions stays valid even when you rename or restructure roles.
+Always prefer **permission directives** (`@can`, `@cannot`, `@canany`, `@azcan`) over the role directive (`@azrole`). Permissions are stable; roles change. Code that checks permissions stays valid even when you rename or restructure roles.
 :::
 
 ## Passing permissions from the controller
@@ -76,21 +76,28 @@ Passes if the user has **at least one** of the listed permissions:
 @endcanany
 ```
 
-There is no `@canall` directive. To check for all permissions, chain multiple `@can` blocks or use `$user->hasAllPermissions()` in a condition.
+There is no `@canall` directive. To check for all permissions, chain multiple `@can` blocks or combine `hasPermission()` calls in a condition.
 
-### `@haspermission`
+### `@azcan`
 
-An alias for `@can` specific to AzGuard permission strings:
+AzGuard's own permission directive. It calls `$user->hasPermission()` directly, so you pass the **full panel-prefixed key** (or an enum case):
 
 ```blade
-@haspermission(\App\AzGuard\App\Permissions\DocumentsPermission::View->value)
+@azcan('app.documents.view')
     <a href="/documents">Documents</a>
-@endhaspermission
+@endazcan
 
-{{-- With explicit guard --}}
-@haspermission(\App\AzGuard\App\Permissions\DocumentsPermission::View->value, 'web')
-    <a href="/documents">Documents</a>
-@endhaspermission
+{{-- With an else branch --}}
+@azcan('app.documents.create')
+    <a href="{{ route('documents.create') }}">New document</a>
+@elseazcan('app.documents.view')
+    <span class="text-muted">Read-only access</span>
+@endazcan
+
+{{-- Inverse check --}}
+@unlessazcan('app.documents.delete')
+    <p class="text-muted">You don't have permission to delete documents.</p>
+@endunlessazcan
 ```
 
 ### With model arguments (Policy-style)
@@ -119,93 +126,29 @@ Role checks in templates create tight coupling between your UI and your role str
 The only legitimate use of role directives is displaying role-specific UI chrome (e.g. "Admin Panel" link in the nav) where the *concept of a role* is what matters, not a specific capability.
 :::
 
-### `@role` / `@hasrole`
+### `@azrole`
 
-Check for a single role. Both directives are identical:
+AzGuard's role directive. It calls `$user->hasRole()`, so pass a single role name:
 
 ```blade
-@role('admin')
+@azrole('admin')
     <a href="/admin">Admin panel</a>
-@else
-    <span>Not an admin</span>
-@endrole
-
-{{-- identical --}}
-@hasrole('admin')
-    <a href="/admin">Admin panel</a>
-@else
-    <span>Not an admin</span>
-@endhasrole
+@endazrole
 ```
 
-With an explicit guard:
+To check for one of several roles, combine conditions in PHP and expose a boolean, or chain checks:
 
 ```blade
-@role('admin', 'web')
-    ...
-@endrole
-```
-
-### `@hasanyrole`
-
-Passes if the user has **at least one** of the listed roles. You can pass a pipe-separated string or a collection:
-
-```blade
-@hasanyrole('editor|admin')
+@if(auth()->user()?->hasRole('editor') || auth()->user()?->hasRole('admin'))
     <div class="editor-toolbar">...</div>
 @else
     <div class="read-only">...</div>
-@endhasanyrole
-
-{{-- With a collection --}}
-@hasanyrole($roles)
-    I have one or more of these roles!
-@endhasanyrole
+@endif
 ```
 
-### `@hasallroles`
-
-Passes only if the user has **every** listed role:
-
-```blade
-@hasallroles('editor|moderator')
-    <span>Full access granted</span>
-@else
-    <span>Missing at least one required role</span>
-@endhasallroles
-
-{{-- With a collection --}}
-@hasallroles($collectionOfRoles)
-    All matched.
-@endhasallroles
-```
-
-### `@unlessrole`
-
-The inverse of `@role` — passes when the user does **not** have the role:
-
-```blade
-@unlessrole('admin')
-    <p>You are viewing the standard interface.</p>
-@else
-    <p>You are viewing the admin interface.</p>
-@endunlessrole
-```
-
-### `@hasexactroles`
-
-Passes only if the user has **exactly** the listed roles — no more, no less:
-
-```blade
-@hasexactroles('editor|moderator')
-    {{-- user has editor AND moderator, and NO other roles --}}
-    <span>Exactly editor + moderator</span>
-@else
-    <span>Different role set</span>
-@endhasexactroles
-```
-
-This is useful when the exact role combination matters, e.g. to prevent an admin from seeing a limited-access UI.
+::: tip
+There is no built-in "any role" / "all roles" / "exact roles" directive. Resolve those conditions in the component or controller (see below) and pass a boolean to the view — it keeps templates clean and the logic testable.
+:::
 
 ## In Livewire components
 

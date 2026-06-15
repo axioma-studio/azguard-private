@@ -2,49 +2,48 @@
 
 Панель — это изолированное пространство имён для разрешений и ролей. Типичное приложение имеет три панели: `app`, `admin`, `api`.
 
-## Класс панели
+## Provider панели
+
+Панель описывается классом-провайдером, наследующим `AzGuard\PanelProvider`.
+Метод `panel()` собирает панель через fluent-API.
 
 ```php
-// app/AzGuard/App/AppPanel.php
+// app/AzGuard/App/AppPanelProvider.php
 namespace App\AzGuard\App;
 
-use AzGuard\Contracts\PanelInterface;
+use AzGuard\PanelProvider;
+use AzGuard\Support\Panel;
 
-class AppPanel implements PanelInterface
+class AppPanelProvider extends PanelProvider
 {
-    public function getName(): string
+    public function panel(Panel $panel): Panel
     {
-        return 'app'; // префикс для всех прав: app.posts.view
-    }
-
-    public function getPermissions(): array
-    {
-        return [
-            Permissions\PostsPermission::class,
-            Permissions\CommentsPermission::class,
-            Permissions\ReportsPermission::class,
-        ];
-    }
-
-    public function getRoles(): array
-    {
-        return [
-            Roles\EditorRole::class,
-            Roles\ViewerRole::class,
-            Roles\ModeratorRole::class,
-        ];
+        return $panel
+            ->id('app') // префикс для всех прав: app.posts.view
+            ->permissionEnums([
+                Permissions\PostsPermission::class,
+                Permissions\CommentsPermission::class,
+                Permissions\ReportsPermission::class,
+            ])
+            ->roleClasses([
+                Roles\EditorRole::class,
+                Roles\ViewerRole::class,
+                Roles\ModeratorRole::class,
+            ]);
     }
 }
 ```
 
 ## Регистрация в конфиге
 
+В `panels` перечисляются FQCN провайдеров панелей:
+
 ```php
-// config/azguard.php
+// config/az-guard.php
 'panels' => [
-    'app'   => App\AzGuard\App\AppPanel::class,
-    'admin' => App\AzGuard\Admin\AdminPanel::class,
-    'api'   => App\AzGuard\Api\ApiPanel::class,
+    App\AzGuard\App\AppPanelProvider::class,
+    App\AzGuard\Admin\AdminPanelProvider::class,
+    App\AzGuard\Api\ApiPanelProvider::class,
 ],
 ```
 

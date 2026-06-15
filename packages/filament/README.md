@@ -44,20 +44,20 @@ what, if anything, is generated:
   gate-enforced):
 
   ```bash
-  php artisan azguard:filament:generate --source=enum
+  php artisan guard:filament:generate --source=enum
   ```
 - **`policy`** — generate a Laravel policy per resource; Filament's native
   authorization enforces them (and `Gate::authorize()` works outside Filament
   too). The runtime gate steps aside.
 
   ```bash
-  php artisan azguard:filament:generate --source=policy
+  php artisan guard:filament:generate --source=policy
   ```
 
 Preview the schema (or the database keys) without writing anything:
 
 ```bash
-php artisan azguard:filament:generate --dry-run
+php artisan guard:filament:generate --dry-run
 ```
 
 ### Enforcement

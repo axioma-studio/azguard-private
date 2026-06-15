@@ -14,16 +14,16 @@ use Illuminate\Contracts\Auth\Authenticatable;
  *
  * @example
  *   # revoke a specific grant
- *   php artisan az-guard:revoke-grant 42 app.documents.export app
+ *   php artisan guard:revoke-grant 42 app.documents.export app
  *
  *   # revoke all grants for a panel
- *   php artisan az-guard:revoke-grant 42 -- app --all
+ *   php artisan guard:revoke-grant 42 -- app --all
  */
 final class RevokeGrantCommand extends Command
 {
     use ResolvesUserModel;
 
-    protected $signature = 'az-guard:revoke-grant
+    protected $signature = 'guard:revoke-grant
         {user-id        : User ID}
         {permission     : Permission key (ignored with --all)}
         {panel          : Panel ID}

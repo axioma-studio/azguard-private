@@ -15,7 +15,7 @@ namespace AzGuard\Filament\Permissions;
 final class FilamentActions
 {
     /** @var array<string, string> */
-    public const MAP = [
+    public const array MAP = [
         'viewAny' => 'view_any',
         'view' => 'view',
         'create' => 'create',

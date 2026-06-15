@@ -2,35 +2,73 @@
 
 ## AzGuardException
 
-Базовый класс всех исключений AzGuard.
+Базовый класс доменных исключений AzGuard (наследует `RuntimeException`).
 
 ```php
 use AzGuard\Exceptions\AzGuardException;
 
 try {
-    $user->assignRole('NonExistentRole');
+    AzGuard::permission('app', 'app.unknown.key');
 } catch (AzGuardException $e) {
     Log::error('AzGuard error: ' . $e->getMessage());
 }
 ```
 
-## PermissionDeniedException
+## PanelNotFoundException
 
-Бросается при отказе в доступе через middleware или `#[CheckPermission]`:
+Бросается, когда запрошенная панель не зарегистрирована:
 
 ```php
-use AzGuard\Exceptions\PermissionDeniedException;
+use AzGuard\Exceptions\PanelNotFoundException;
 
-// Перехват в Handler.php
+try {
+    AzGuard::permission('ghost-panel', SomePermission::View);
+} catch (PanelNotFoundException $e) {
+    Log::warning("Неизвестная панель: {$e->panelId}");
+}
+```
+
+## PanelNotSetException
+
+Бросается, когда панель не указана явно и нет текущей панели (не отработал
+`SetCurrentPanel` middleware и не вызван `->on('panel-id')`).
+
+```php
+use AzGuard\Exceptions\PanelNotSetException;
+```
+
+## InvalidPermissionKeyException
+
+Бросается, когда ключ права отсутствует в каталоге панели:
+
+```php
+use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
+
+try {
+    AzGuard::permission('app', 'app.posts.flyToMoon');
+} catch (InvalidPermissionKeyException $e) {
+    // Ключ не зарегистрирован в каталоге панели
+    Log::warning($e->getMessage());
+}
+```
+
+## Отказ в доступе через middleware / `#[CheckPermission]`
+
+Атрибут `#[CheckPermission]` и middleware вызывают `abort_if()` при отсутствии
+права — это стандартный `Symfony\Component\HttpKernel\Exception\HttpException`
+с кодом 403, который Laravel рендерит как обычный HTTP-ответ:
+
+```php
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+// app/Exceptions/Handler.php
 public function render($request, Throwable $e): Response
 {
-    if ($e instanceof PermissionDeniedException) {
+    if ($e instanceof HttpException && $e->getStatusCode() === 403) {
         if ($request->expectsJson()) {
-            return response()->json([
-                'message'    => 'Доступ запрещён.',
-                'permission' => $e->getPermission(),
-            ], 403);
+            return response()->json(['message' => 'Доступ запрещён.'], 403);
         }
+
         return redirect()->route('home')
             ->with('error', 'У вас нет доступа к этому разделу.');
     }
@@ -39,24 +77,11 @@ public function render($request, Throwable $e): Response
 }
 ```
 
-## RoleNotFoundException
-
-```php
-use AzGuard\Exceptions\RoleNotFoundException;
-
-try {
-    $user->assignRole('ghost-role');
-} catch (RoleNotFoundException $e) {
-    // Роль не зарегистрирована в конфиге
-    Log::warning("Попытка назначить несуществующую роль: {$e->getRoleName()}");
-}
-```
-
 ## Типичные ошибки
 
 | Ошибка | Причина | Решение |
 |---|---|---|
-| `PermissionDeniedException` | Пользователь не имеет права | Назначьте роль или грант |
-| `RoleNotFoundException` | Роль не зарегистрирована в Panel | Добавьте класс в `getRoles()` |
-| `MigrationNotRunException` | Миграции не выполнены | `php artisan migrate` |
-| `TraitNotUsedException` | Нет `HasAzGuard` на модели | Подключите трейт |
+| `HttpException` (403) | Пользователь не имеет права | Назначьте роль или грант |
+| `InvalidPermissionKeyException` | Право не в каталоге панели | Добавьте enum в `permissionEnums()` панели |
+| `PanelNotSetException` | Не задана текущая панель | `SetCurrentPanel` middleware или `->on('app')` |
+| `PanelNotFoundException` | Панель не зарегистрирована | Добавьте провайдер в `az-guard.panels` |

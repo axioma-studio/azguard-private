@@ -35,7 +35,7 @@ final class CatalogValidateCommand extends Command
 
     protected $description = 'Validate consistency between PermissionCatalog, policies, and enums';
 
-    protected $aliases = ['az-guard:catalog:validate'];
+    protected $aliases = ['guard:catalog:validate'];
 
     /** @var list<string> */
     private array $errors = [];

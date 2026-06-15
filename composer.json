@@ -12,9 +12,9 @@
     ],
     "require": {
         "php": "^8.3",
-        "axioma-studio/azguard-core": "@dev",
-        "axioma-studio/azguard-filament": "@dev",
-        "axioma-studio/azguard-context": "@dev"
+        "axioma-studio/azguard-core": "^1.0",
+        "axioma-studio/azguard-filament": "^1.0",
+        "axioma-studio/azguard-context": "^1.0"
     },
     "require-dev": {
         "laravel/pint": "^1.13",
@@ -34,7 +34,14 @@
     "repositories": [
         {
             "type": "path",
-            "url": "packages/*"
+            "url": "packages/*",
+            "options": {
+                "versions": {
+                    "axioma-studio/azguard-core": "1.0.0",
+                    "axioma-studio/azguard-filament": "1.0.0",
+                    "axioma-studio/azguard-context": "1.0.0"
+                }
+            }
         }
     ],
     "minimum-stability": "dev",

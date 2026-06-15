@@ -6,7 +6,7 @@ AzGuard works with both integer primary keys (default) and string-based keys suc
 
 ```php
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use AzGuard\Traits\HasAzGuard;
+use AzGuard\Concerns\HasAzGuard;
 
 class User extends Authenticatable
 {
@@ -21,7 +21,7 @@ AzGuard stores role assignments using the model's `getKey()` method, which retur
 
 ```php
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use AzGuard\Traits\HasAzGuard;
+use AzGuard\Concerns\HasAzGuard;
 
 class User extends Authenticatable
 {
@@ -32,20 +32,24 @@ class User extends Authenticatable
 
 ## Migration considerations
 
-When using UUID or ULID keys the `model_has_roles` pivot table's foreign key column must match:
-
-```php
-// In the published migration, change:
-$table->unsignedBigInteger('user_id');
-// to:
-$table->uuid('user_id');   // or ulid()
-```
-
-AzGuard does not publish migrations separately. To change the column type, publish the config and add a custom migration after `az_guard` migrations run:
+When using UUID or ULID keys, tell AzGuard which morph-key type to use so its
+migrations create the right column types for `model_has_roles`, `model_has_scopes`,
+and `az_direct_grants`. Publish the config and set `column_names.morph_type`:
 
 ```bash
 php artisan vendor:publish --tag=az-guard-config
 ```
+
+```php
+// config/az-guard.php
+'column_names' => [
+    'morph_type' => 'ulid',   // 'int' (default), 'ulid', or 'uuid'
+],
+```
+
+You can also set it via the `AZ_GUARD_MORPH_TYPE` environment variable. AzGuard's
+migrations read this value and create the morph-id columns accordingly — no manual
+migration editing required.
 
 ::: warning
 If you change key types on an existing installation, you must migrate the data in `model_has_roles` manually.

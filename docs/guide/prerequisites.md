@@ -87,11 +87,15 @@ $table->string('guard_name', 25);
 
 ## UUID / ULID primary keys
 
-AzGuard's default migrations assume an **auto-incrementing integer** primary key on your `User` model. If your application uses UUIDs, ULIDs, or any non-integer PK:
+AzGuard's default migrations assume an **auto-incrementing integer** primary key on your `User` model. If your application uses UUIDs, ULIDs, or any non-integer PK, set the morph key type in `config/az-guard.php` **before** running migrations:
 
-1. Publish the migrations: `php artisan vendor:publish --tag=az-guard-migrations`
-2. Edit the pivot tables to use `uuid` / `ulid` column types instead of `unsignedBigInteger`
-3. Update `config/az-guard.php` → `model_morph_key_type` to `'uuid'` or `'ulid'`
+```php
+'column_names' => [
+    'morph_type' => 'ulid', // or 'uuid' — default is 'int'
+],
+```
+
+The migrations read this value and create the polymorphic columns with the matching type. (You can also set the `AZ_GUARD_MORPH_TYPE` environment variable.)
 
 See [UUID / ULID](/guide/uuid-ulid) for the complete walkthrough.
 
@@ -104,7 +108,7 @@ If your database engine does **not** support foreign keys (e.g. older MyISAM tab
 - Switch to InnoDB / WAL mode, or
 - Publish the migrations and remove the `->foreign()` calls before migrating
 
-As long as you only manage assignments through AzGuard's own methods (`assignRole`, `removeRole`, `giveDirectGrant`, etc.), data integrity is maintained even without FK constraints — the package handles pivot cleanup in PHP.
+As long as you only manage assignments through AzGuard's own methods (`assignRole`, `removeRole`, `grant`, `revoke`, etc.), data integrity is maintained even without FK constraints — the package handles pivot cleanup in PHP.
 
 ## Multi-guard apps
 

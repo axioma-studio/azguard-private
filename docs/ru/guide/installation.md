@@ -11,27 +11,29 @@
 ## Установка через Composer
 
 ```bash
-composer require axioma-studio/azguard
+composer require axioma-studio/azguard-core
 ```
 
 ## Публикация конфигурации
 
 ```bash
-php artisan vendor:publish --tag=azguard-config
+php artisan vendor:publish --tag=az-guard-config
 ```
 
-Это создаст `config/azguard.php`.
+Это создаст `config/az-guard.php`.
 
-## Публикация и запуск миграций
+## Запуск миграций
+
+Миграции AzGuard загружаются автоматически — публиковать их не нужно:
 
 ```bash
-php artisan vendor:publish --tag=azguard-migrations
 php artisan migrate
 ```
 
 Миграции создадут таблицы:
-- `azguard_user_roles` — связки user → role
-- `azguard_direct_grants` — прямые гранты с TTL
+- `roles` — каталог ролей
+- `model_has_roles` — связки model → role
+- `az_direct_grants` — прямые гранты с TTL
 
 ## Добавление трейта
 
@@ -48,14 +50,14 @@ class User extends Authenticatable
 
 ## Конфигурация панелей
 
-В `config/azguard.php` укажите панели вашего приложения:
+В `config/az-guard.php` укажите PanelProvider'ы вашего приложения (FQCN классов, расширяющих `AzGuard\PanelProvider`):
 
 ```php
 return [
     'panels' => [
-        'app'   => App\AzGuard\App\AppPanel::class,
-        'admin' => App\AzGuard\Admin\AdminPanel::class,
-        'api'   => App\AzGuard\Api\ApiPanel::class,
+        App\AzGuard\App\AppPanelProvider::class,
+        App\AzGuard\Admin\AdminPanelProvider::class,
+        App\AzGuard\Api\ApiPanelProvider::class,
     ],
 ];
 ```

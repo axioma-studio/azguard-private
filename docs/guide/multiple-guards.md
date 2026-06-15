@@ -13,31 +13,23 @@ admin guard → Admin panel → admin.users.ban, admin.roles.manage …
 
 ## Configuration
 
-Define a separate panel per guard in your `config/azguard.php`:
+Register one panel provider per area in your `config/az-guard.php`. Each panel's `id()` becomes its permission prefix:
 
 ```php
 'panels' => [
-    'app' => [
-        'guard'    => 'web',
-        'prefix'   => 'app',
-        'roles_path' => app_path('AzGuard/App/Roles'),
-    ],
-    'admin' => [
-        'guard'    => 'admin',
-        'prefix'   => 'admin',
-        'roles_path' => app_path('AzGuard/Admin/Roles'),
-    ],
+    \App\AzGuard\Panels\AppPanelProvider::class,    // id('app')   → app.*
+    \App\AzGuard\Panels\AdminPanelProvider::class,  // id('admin') → admin.*
 ],
 ```
 
-## Checking permissions for a specific guard
+## Checking permissions for a specific panel
 
 ```php
-// Default: checks the authenticated user's active guard
+// Default: resolves against the current panel (set by the azguard.panel middleware)
 $user->hasPermission(DocumentsPermission::View);
 
-// Explicit guard override
-$user->forGuard('admin')->hasPermission(AdminUsersPermission::Ban);
+// Explicit panel override — pass the panel id as the second argument
+$user->hasPermission(AdminUsersPermission::Ban, 'admin');
 ```
 
 ## Middleware with guards
@@ -58,7 +50,7 @@ Route::middleware(['auth:admin', 'can:admin.users.ban'])
 @endcan
 ```
 
-Blade uses the currently authenticated guard automatically. If you need to check against a different guard, use the `@guard` helper or check in the controller.
+Blade `@can` resolves against the current panel automatically. To check a different panel, resolve the boolean in the controller with `$user->hasPermission($permission, $panelId)` and pass it to the view.
 
 ::: tip
 See [Panels](./panels.md) for the full panel configuration reference.

@@ -1,6 +1,6 @@
 # Конфигурация
 
-После публикации конфигурации (`vendor:publish --tag=azguard-config`) файл `config/azguard.php` содержит:
+После публикации конфигурации (`vendor:publish --tag=az-guard-config`) файл `config/az-guard.php` содержит:
 
 ```php
 return [
@@ -9,43 +9,54 @@ return [
     |--------------------------------------------------------------------------
     | Панели
     |--------------------------------------------------------------------------
-    | Каждая панель — это изолированное пространство имён для прав и ролей.
+    | FQCN классов PanelProvider. Каждая панель — изолированное
+    | пространство имён для прав и ролей.
     */
     'panels' => [
-        'app'   => App\AzGuard\App\AppPanel::class,
-        'admin' => App\AzGuard\Admin\AdminPanel::class,
-        'api'   => App\AzGuard\Api\ApiPanel::class,
+        // App\AzGuard\App\AppPanelProvider::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Панель по умолчанию
+    |--------------------------------------------------------------------------
+    | ID панели для проверок вне HTTP-запроса (консоль, очереди). null —
+    | не угадывать: при >1 панели проверки fail-closed.
+    */
+    'default_panel' => null,
 
     /*
     |--------------------------------------------------------------------------
     | Кеш
     |--------------------------------------------------------------------------
+    | store: 'default' | 'redis' | 'memcached' | 'file' | 'array'.
+    | 'array' отключает межзапросное кеширование (по умолчанию).
+    | expiration_time: TTL в секундах (null — без срока).
     */
     'cache' => [
-        'enabled' => env('AZGUARD_CACHE_ENABLED', true),
-        'store'   => env('AZGUARD_CACHE_STORE', 'redis'),
-        'ttl'     => env('AZGUARD_CACHE_TTL', 300),
-        'prefix'  => 'azguard_',
+        'store'           => 'array',
+        'expiration_time' => 3600,
+        'key'             => 'azguard.permissions',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Контекст (опционально)
+    | Источники грантов
     |--------------------------------------------------------------------------
+    | null — все встроенные источники активны и отсортированы по приоритету.
     */
-    'context' => [
-        'enabled'  => env('AZGUARD_CONTEXT_ENABLED', false),
-        'resolver' => null, // App\AzGuard\Context\TenantContextResolver::class
-    ],
+    'grant_sources' => null,
 
     /*
     |--------------------------------------------------------------------------
-    | Исключения
+    | Фича-флаги
     |--------------------------------------------------------------------------
     */
-    'exceptions' => [
-        'throw_on_denied' => env('AZGUARD_THROW_ON_DENIED', true),
+    'features' => [
+        'wildcard_permission' => false,
+        'teams'               => false,
+        'audit_log'           => false,
+        'direct_grants'       => true,
     ],
 
 ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Filament\Resources\RoleResource\RelationManagers;
 
 use AzGuard\AzGuardManager;
+use AzGuard\Models\Role;
 use AzGuard\Models\RolePermission;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use Filament\Actions\Action;
@@ -198,6 +199,17 @@ final class RolePermissionsRelationManager extends RelationManager
 
         if ($rows !== []) {
             RolePermission::insert($rows);
+        }
+
+        // Raw delete()/insert() bypasses model events, and editing a role's
+        // permissions affects every holder — flush each user's cached set so the
+        // change is effective immediately even with a persistent cache store.
+        if ($role instanceof Role) {
+            $role->users()->cursor()->each(static function (Model $user): void {
+                if (method_exists($user, 'flushPermissions')) {
+                    $user->flushPermissions();
+                }
+            });
         }
     }
 }

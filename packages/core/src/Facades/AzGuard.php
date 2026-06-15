@@ -7,6 +7,7 @@ namespace AzGuard\Facades;
 use AzGuard\AzGuardManager;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
+use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Support\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,11 +23,12 @@ use UnitEnum;
  * @method static void setCurrentPanel(?Panel $panel)
  * @method static string permission(string $panelId, (string | UnitEnum) $permission)
  * @method static string|null tryPermission(string $panelId, (string | UnitEnum) $permission)
+ * @method static void registerGrantSource(class-string<GrantSource> $sourceClass)
  *
- * --- Grants API (Phase 5–8) ---
+ * --- Grants API ---
  * @method static GrantBuilder forUser(Authenticatable $user)
- * @method static DirectGrant grant(Authenticatable $user, string $permissionKey, string $panelId = 'app', ?int $ttl = null)
- * @method static int revoke(Authenticatable $user, string $permissionKey, string $panelId = 'app')
+ * @method static DirectGrant grant(Authenticatable $user, (string | UnitEnum) $permissionKey, string $panelId = 'app', ?int $ttl = null)
+ * @method static int revoke(Authenticatable $user, (string | UnitEnum) $permissionKey, string $panelId = 'app')
  * @method static Collection<int, DirectGrant> grants(Authenticatable $user, string $panelId = 'app')
  *
  * @see AzGuardManager

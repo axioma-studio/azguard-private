@@ -9,10 +9,12 @@ use AzGuard\Events\GrantRevoked;
 use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Support\PanelResolver;
+use AzGuard\Support\PermissionName;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use UnitEnum;
 
 /**
  * Fluent builder for working with Direct Grants.
@@ -59,9 +61,10 @@ final class GrantBuilder
      *
      * @throws PanelNotSetException
      */
-    public function grant(string $permissionKey): DirectGrant
+    public function grant(string|UnitEnum $permission): DirectGrant
     {
         $panel = PanelResolver::resolveOrFail($this->panelId);
+        $permissionKey = PermissionName::resolve($permission, $panel);
 
         $expiresAt = $this->ttlSeconds !== null
             ? Carbon::now()->addSeconds($this->ttlSeconds)
@@ -95,9 +98,10 @@ final class GrantBuilder
      *
      * @throws PanelNotSetException
      */
-    public function revoke(string $permissionKey): int
+    public function revoke(string|UnitEnum $permission): int
     {
         $panel = PanelResolver::resolveOrFail($this->panelId);
+        $permissionKey = PermissionName::resolve($permission, $panel);
         $deleted = $this->baseQuery($panel)
             ->where('permission_key', $permissionKey)
             ->delete();

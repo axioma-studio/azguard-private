@@ -64,9 +64,9 @@ function makeGrantSource(PermissionSet $set, GrantPriority $priority = GrantPrio
             return $this->s;
         }
 
-        public function priority(): GrantPriority
+        public function priority(): int
         {
-            return $this->p;
+            return $this->p->value;
         }
     };
 }
@@ -205,9 +205,9 @@ describe('EffectivePermissionResolver', function () {
                 return PermissionSet::fromKeys(['app.posts.view']);
             }
 
-            public function priority(): GrantPriority
+            public function priority(): int
             {
-                return GrantPriority::ClassRole;
+                return GrantPriority::ClassRole->value;
             }
         };
 
@@ -243,9 +243,9 @@ describe('EffectivePermissionResolver', function () {
                     return PermissionSet::fromKeys([$this->k]);
                 }
 
-                public function priority(): GrantPriority
+                public function priority(): int
                 {
-                    return $this->p;
+                    return $this->p->value;
                 }
             };
         };
@@ -263,5 +263,101 @@ describe('EffectivePermissionResolver', function () {
         $resolver->forUser(makeUser(1), 'app');
 
         expect($order)->toBe([100, 90, 80]);
+    });
+
+    it('skips a throwing source by default and merges the rest', function () {
+        $throwing = new class implements GrantSource
+        {
+            public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
+            {
+                throw new RuntimeException('boom');
+            }
+
+            public function priority(): int
+            {
+                return 100;
+            }
+        };
+
+        config()->set('az-guard.fail_on_source_exception', false);
+
+        $resolver = new EffectivePermissionResolver(
+            catalog: makeCatalog(['app.posts.view']),
+            sources: [$throwing, makeGrantSource(PermissionSet::fromKeys(['app.posts.view']), GrantPriority::DatabaseRole)],
+            cache: new PermissionCache,
+        );
+
+        expect($resolver->forUser(makeUser(1), 'app')->grants('app.posts.view'))->toBeTrue();
+    });
+
+    it('propagates a source exception when fail_on_source_exception is true', function () {
+        $throwing = new class implements GrantSource
+        {
+            public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
+            {
+                throw new RuntimeException('boom');
+            }
+
+            public function priority(): int
+            {
+                return 100;
+            }
+        };
+
+        config()->set('az-guard.fail_on_source_exception', true);
+
+        $resolver = new EffectivePermissionResolver(
+            catalog: makeCatalog(['app.posts.view']),
+            sources: [$throwing],
+            cache: new PermissionCache,
+        );
+
+        expect(fn () => $resolver->forUser(makeUser(1), 'app'))->toThrow(RuntimeException::class);
+    });
+
+    it('unions sources additively — a lower-priority source never removes a higher grant', function () {
+        $resolver = new EffectivePermissionResolver(
+            catalog: makeCatalog(['app.a', 'app.b']),
+            sources: [
+                makeGrantSource(PermissionSet::fromKeys(['app.a']), GrantPriority::ClassRole),
+                makeGrantSource(PermissionSet::fromKeys(['app.b']), GrantPriority::DirectGrant),
+            ],
+            cache: new PermissionCache,
+        );
+
+        $set = $resolver->forUser(makeUser(1), 'app');
+
+        expect($set->grants('app.a'))->toBeTrue()
+            ->and($set->grants('app.b'))->toBeTrue();
+    });
+
+    it('short-circuits on a higher-priority wildcard before lower sources run', function () {
+        $lower = new class implements GrantSource
+        {
+            public bool $ran = false;
+
+            public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
+            {
+                $this->ran = true;
+
+                return PermissionSet::empty();
+            }
+
+            public function priority(): int
+            {
+                return 80;
+            }
+        };
+
+        $resolver = new EffectivePermissionResolver(
+            catalog: makeCatalog(['app.a']),
+            sources: [makeGrantSource(PermissionSet::wildcard(), GrantPriority::ClassRole), $lower],
+            cache: new PermissionCache,
+        );
+
+        $set = $resolver->forUser(makeUser(1), 'app');
+
+        expect($set->isWildcard())->toBeTrue()
+            ->and($lower->ran)->toBeFalse();
     });
 });

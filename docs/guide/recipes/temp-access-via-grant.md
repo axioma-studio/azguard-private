@@ -11,29 +11,30 @@ Direct grants let you give a user a single permission for a fixed period without
 ## Creating the grant
 
 ```php
-use AzGuard\Models\AzDirectGrant;
-use App\Guards\App\AppGuard;
+use AzGuard\Facades\AzGuard;
 use App\Guards\App\Permissions\DocumentsPermission;
 
-AzDirectGrant::create([
-    'user_id'    => $contractor->id,
-    'panel'      => 'app',
-    'permission' => AppGuard::permission(DocumentsPermission::View),
-    'granted_by' => auth()->id(),
-    'expires_at' => now()->addWeeks(2),
-    'reason'     => 'Audit review — ticket #4821',
-]);
+// Fluent builder — ttl() takes seconds (two weeks)
+AzGuard::forUser($contractor)
+    ->on('app')
+    ->ttl(14 * 24 * 3600)
+    ->grant(DocumentsPermission::View);
+
+// Or pass an explicit expiry to the model method:
+$contractor->grant(DocumentsPermission::View, 'app', now()->addWeeks(2));
 ```
 
 ## Revoking early
 
 ```php
-// Soft-delete (revoke) a specific grant
-$grant = AzDirectGrant::where('user_id', $contractor->id)
-    ->where('permission', AppGuard::permission(DocumentsPermission::View))
-    ->first();
+use AzGuard\Facades\AzGuard;
 
-$grant->revoke(); // sets revoked_at, clears user cache
+// Revoke a specific grant (deletes the row, flushes the user's cache)
+AzGuard::revoke($contractor, DocumentsPermission::View, 'app');
+
+// Or via the model / builder:
+$contractor->revoke(DocumentsPermission::View, 'app');
+AzGuard::forUser($contractor)->on('app')->revoke(DocumentsPermission::View);
 ```
 
 ## Via Filament
@@ -45,7 +46,8 @@ To revoke: find the grant in the list and click **Revoke**.
 ## Via artisan (dev / seeding)
 
 ```bash
-php artisan azguard:grant --user=42 --permission=app.documents.view --expires=2026-06-30 --reason="Audit"
+# guard:grant {user-id} {permission} {panel} [--ttl=<seconds>]
+php artisan guard:grant 42 app.documents.view app --ttl=1209600
 ```
 
 ## Cache invalidation

@@ -4,13 +4,15 @@ AzGuard resolves permissions at runtime from in-memory role class definitions, w
 
 ## Enable the permission cache
 
-AzGuard ships with an optional Redis/database cache for resolved permission sets. Enable it in `config/azguard.php`:
+AzGuard ships with an optional Redis/database cache for resolved permission sets. By
+default `cache.store` is `'array'` (request-scoped). Point it at a persistent store in
+`config/az-guard.php`:
 
 ```php
 'cache' => [
-    'enabled' => true,
-    'store'   => 'redis',        // any configured cache store
-    'ttl'     => 3600,           // seconds
+    'store'           => 'redis',  // any configured cache store; 'array' = request-scoped
+    'expiration_time' => 3600,     // seconds
+    'key'             => 'az_guard',
 ],
 ```
 
@@ -41,15 +43,16 @@ $user->hasPermission(DocumentsPermission::View);
 Gate::allows('app.documents.view');
 ```
 
-## Permission catalog warm-up
+## Validate the catalog at deploy time
 
-If you use the [Permission Catalog](./permission-catalog.md), warm it up during deployment rather than on the first request:
+Validate the [Permission Catalog](./permission-catalog.md) during deployment so
+misconfigurations surface in CI rather than at runtime:
 
 ```bash
-php artisan azguard:cache:warm
+php artisan guard:catalog:validate
 ```
 
-Add this to your `php artisan deploy` or Forge/Envoyer deploy hook.
+Add this to your deploy or Forge/Envoyer deploy hook.
 
 ## Octane users: no extra configuration needed
 

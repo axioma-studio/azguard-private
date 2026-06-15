@@ -1,6 +1,6 @@
 # Интеграция с Filament
 
-AzGuard предоставляет первоклассную интеграцию с [Filament v3](https://filamentphp.com).
+AzGuard предоставляет первоклассную интеграцию с [Filament v5](https://filamentphp.com).
 
 ## Установка
 
@@ -12,7 +12,7 @@ composer require axioma-studio/azguard-filament
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
-use AzGuard\Filament\AzGuardFilamentPlugin;
+use AzGuard\Filament\AzGuardPlugin;
 
 public function panel(Panel $panel): Panel
 {
@@ -21,39 +21,50 @@ public function panel(Panel $panel): Panel
         ->path('admin')
         ->authGuard('admin')
         ->plugin(
-            AzGuardFilamentPlugin::make()
-                ->panel('admin')  // соответствует панели AzGuard
+            AzGuardPlugin::make()
+                ->forPanel('admin')  // id панели AzGuard из каталога прав
         );
 }
 ```
 
-## Resources и проверка прав
+Плагин добавляет ресурсы управления ролями и прямыми грантами, а также страницу
+диагностики (`DoctorPage`).
+
+## Авторизация без кода
+
+При `enforce => true` (по умолчанию) плагин авторизует **каждый** обнаруженный
+ресурс по сгенерированному праву — никакого кода в самих ресурсах не требуется.
+AzGuard отключает «shortcut» Filament по наличию политики и отвечает на проверки
+Gate из прав пользователя AzGuard.
 
 ```php
-use AzGuard\Filament\Concerns\HasAzGuardPolicy;
+// config/az-guard-filament.php
+return [
+    'panel'   => 'admin',     // панель AzGuard, питающая каталог прав
+    'enforce' => true,        // авторизовать ресурсы автоматически
+    'source'  => 'database',  // 'database' | 'enum' | 'policy'
+];
+```
 
-class PostResource extends Resource
-{
-    use HasAzGuardPolicy;
+- `database` — права проверяет рантайм-gate, ничего не генерируется;
+- `enum` — `guard:filament:generate` пишет enum прав на каждый ресурс;
+- `policy` — `guard:filament:generate` пишет Laravel-политику на каждый ресурс.
 
-    // Опционально: сопоставление действий Filament с enum-кейсами
-    protected static array $permissionMap = [
-        'viewAny' => PostsPermission::View,
-        'create'  => PostsPermission::Create,
-        'update'  => PostsPermission::Edit,
-        'delete'  => PostsPermission::Delete,
-    ];
-}
+## Генерация enum / политик
+
+```bash
+php artisan guard:filament:generate
+php artisan guard:filament:generate --source=enum --panel=admin --dry-run
 ```
 
 ## Навигация с учётом прав
 
 ```php
-// Пункты меню автоматически скрываются при отсутствии прав на viewAny
+// Пункты меню скрываются при отсутствии прав
 NavigationItem::make()
     ->label('Пользователи')
     ->url('/admin/users')
-    ->visible(fn() => auth()->user()?->hasPermission(UsersPermission::View))
+    ->visible(fn () => auth()->user()?->hasPermission(UsersPermission::View, 'admin'))
 ```
 
 → [Несколько Guards](/ru/guide/multiple-guards)

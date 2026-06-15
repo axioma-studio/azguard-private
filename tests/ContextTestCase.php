@@ -9,7 +9,7 @@ use AzGuard\Context\AzGuardContextServiceProvider;
 /**
  * TestCase с подключённым пакетом azguard/context.
  * Используется в тестах, которым нужен AuthorizationContextManager,
- * ContextualRoleGrantSource и миграция az_guard_context_roles.
+ * ContextPermissionLayer и миграция az_guard_context_roles.
  */
 class ContextTestCase extends TestCase
 {

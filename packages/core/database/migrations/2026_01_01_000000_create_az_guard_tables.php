@@ -1,5 +1,6 @@
 <?php
 
+use AzGuard\Support\Schema\MorphColumns;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -18,12 +19,12 @@ return new class extends Migration
         });
         Schema::create($t['model_has_roles'], function (Blueprint $table) use ($t) {
             $table->foreignId('role_id')->constrained($t['roles'])->cascadeOnDelete();
-            $table->morphs('model');
+            MorphColumns::add($table, 'model');
         });
         Schema::create($t['model_has_scopes'], function (Blueprint $table) {
             $table->id();
-            $table->morphs('model');
-            $table->nullableMorphs('scope_entity');
+            MorphColumns::add($table, 'model');
+            MorphColumns::add($table, 'scope_entity', nullable: true);
             $table->string('scope_class');
             $table->timestamps();
         });

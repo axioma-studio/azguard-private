@@ -6,6 +6,7 @@ namespace AzGuard\Guard;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Support\Config;
 use AzGuard\Support\Panel;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -19,8 +20,10 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * 3) Checks the specific $ability via PermissionSet::grants() (exact + wildcard).
  * 4) Returns null (pass-through) if the user does not implement Authenticatable.
  *
- * Panel is resolved from the current request (SetCurrentPanel middleware);
- * falls back to the first registered panel.
+ * Panel resolution order: the current request panel (SetCurrentPanel
+ * middleware), else az-guard.default_panel, else the sole registered panel.
+ * With no active panel AND more than one registered panel it returns null
+ * (deny pass-through) rather than evaluate against an arbitrary panel.
  */
 final readonly class Authorizer
 {
@@ -60,6 +63,16 @@ final readonly class Authorizer
 
         $panels = $this->manager->getPanels();
 
-        return $panels === [] ? null : array_key_first($panels);
+        // Explicit default wins when it is actually registered.
+        $default = Config::defaultPanel();
+
+        if ($default !== null && isset($panels[$default])) {
+            return $default;
+        }
+
+        // A single registered panel is unambiguous; with several, refuse to
+        // guess — returning null lets the Gate deny instead of evaluating the
+        // ability against an arbitrary panel.
+        return count($panels) === 1 ? array_key_first($panels) : null;
     }
 }

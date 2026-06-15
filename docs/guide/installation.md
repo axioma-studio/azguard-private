@@ -28,13 +28,14 @@ This creates `config/az-guard.php`. See the [Configuration reference](/guide/con
 php artisan migrate
 ```
 
-Four tables are created (names match `config/az-guard.php` defaults):
+These tables are created (names match `config/az-guard.php` defaults):
 
 | Table | Purpose |
 |---|---|
 | `roles` | Dynamic role definitions |
 | `model_has_roles` | User → role assignments |
 | `model_has_scopes` | User → scoped role assignments |
+| `az_guard_role_permissions` | Dynamic role → permission keys |
 | `az_direct_grants` | Per-user direct permission grants |
 
 ## Add the trait
@@ -61,7 +62,7 @@ php artisan migrate
 ## Verify installation
 
 ```bash
-php artisan azguard:doctor
+php artisan guard:doctor
 ```
 
 Expected output on a fresh install:
@@ -78,16 +79,15 @@ AzGuard is Octane-safe. The permission resolver uses per-request state and does 
 
 ## Testing environment
 
-When running tests, use `RefreshDatabase` or the `AzGuardFake` helper:
+When running tests, use `RefreshDatabase` and keep the permission cache in-memory by setting `cache.store` to `'array'` (the default). Then assert against the real API:
 
 ```php
-use AzGuard\Testing\AzGuardFake;
+$user->assignRole('editor');
 
-protected function setUp(): void
-{
-    parent::setUp();
-    AzGuardFake::install();  // replaces resolver with an in-memory fake
-}
+expect($user->hasPermission('app.documents.view'))->toBeTrue();
+expect(Gate::forUser($user)->allows('app.documents.view'))->toBeTrue();
 ```
+
+With `cache.store = 'array'` no permission state leaks between test cases.
 
 See [Testing](/guide/testing) for the full guide.
