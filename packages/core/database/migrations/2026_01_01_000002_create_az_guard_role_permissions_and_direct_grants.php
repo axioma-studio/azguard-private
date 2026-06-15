@@ -44,7 +44,9 @@ return new class extends Migration
                 ['grantable_type', 'grantable_id', 'permission_key', 'panel_id'],
                 'az_direct_grant_unique',
             );
-            $table->index(['grantable_type', 'grantable_id', 'panel_id'], 'az_direct_grant_lookup');
+            // expires_at trails the lookup keys so DirectGrantSource's active()
+            // range scan stays within this index for a user+panel slice.
+            $table->index(['grantable_type', 'grantable_id', 'panel_id', 'expires_at'], 'az_direct_grant_lookup');
         });
     }
 

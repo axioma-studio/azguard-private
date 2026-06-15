@@ -13,7 +13,7 @@ namespace AzGuard\Filament\Permissions;
 final readonly class PolicyGenerator
 {
     /** Policy methods that receive the record instance (vs. collection-level). */
-    private const RECORD_LEVEL = ['view', 'update', 'delete', 'restore', 'forceDelete', 'replicate'];
+    private const array RECORD_LEVEL = ['view', 'update', 'delete', 'restore', 'forceDelete', 'replicate'];
 
     public function className(PermissionSubject $subject): string
     {

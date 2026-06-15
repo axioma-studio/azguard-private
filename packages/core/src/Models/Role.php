@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Contracts\RoleInterface;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -48,10 +49,14 @@ class Role extends Model
 
     /**
      * Instantiate the role logic class (e.g. SuperAdminRole).
+     *
+     * Returns null when class_name is unset, missing, or does not implement
+     * RoleInterface — so callers can rely on the contract without a fatal on a
+     * stale/invalid class_name.
      */
-    public function getRoleLogic(): ?object
+    public function getRoleLogic(): ?RoleInterface
     {
-        if (! is_string($this->class_name) || ! class_exists($this->class_name)) {
+        if (! is_string($this->class_name) || ! is_subclass_of($this->class_name, RoleInterface::class)) {
             return null;
         }
 

@@ -6,20 +6,15 @@ namespace AzGuard\Events;
 
 use AzGuard\Models\Role;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Событие: роль отозвана у пользователя (или другой модели).
+ * Fired when a role is detached from a model (usually a user).
  *
- * Используется для:
- * - автоматической очистки кэша прав
- * - audit-лога (если features.audit_log = true)
- * - уведомлений
+ * Listeners may flush permission caches, write an audit log, or notify.
  */
 final readonly class RoleDetached
 {
-    use Dispatchable;
     use SerializesModels;
 
     public function __construct(

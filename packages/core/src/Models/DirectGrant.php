@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Models;
 
+use AzGuard\Registry\Resolver\PermissionCache;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,24 @@ class DirectGrant extends Model
     protected $casts = [
         'expires_at' => 'datetime',
     ];
+
+    /**
+     * Flush the grantable's cached permissions whenever a grant is written or
+     * deleted — covers the Filament resource, raw model saves/deletes, and any
+     * other model-event path. The grantable_id is the cache user id, so no model
+     * load is needed. (GrantBuilder's bulk revoke fires GrantRevoked instead.)
+     */
+    #[Override]
+    protected static function booted(): void
+    {
+        $flush = static function (self $grant): void {
+            app(PermissionCache::class)->forgetForUser($grant->grantable_id, $grant->panel_id);
+        };
+
+        static::created($flush);
+        static::updated($flush);
+        static::deleted($flush);
+    }
 
     #[Override]
     public function getTable(): string

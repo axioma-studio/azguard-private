@@ -9,29 +9,38 @@ use AzGuard\Contracts\ContextGuard;
 use AzGuard\Contracts\PermissionContext;
 use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\PanelResolver;
+use AzGuard\Support\PermissionName;
 use Illuminate\Support\Collection;
 use Throwable;
+use UnitEnum;
 
 trait HasPermissions
 {
     /**
      * Check if the user has a permission on a panel.
      *
+     * $permission may be a fully-qualified key string ("app.posts.edit") or a
+     * permission enum case, which is scoped to the panel automatically.
+     *
      * Optional $context allows a one-off contextual check without changing
      * global state. Use hasPermissionIn() as a more readable alternative.
      */
-    public function hasPermission(string $permission, string $panelId = 'app', ?PermissionContext $context = null): bool
+    public function hasPermission(string|UnitEnum $permission, ?string $panelId = null, ?PermissionContext $context = null): bool
     {
+        $panelId = PanelResolver::resolveDefault($panelId);
+        $key = PermissionName::resolve($permission, $panelId);
+
         if ($context instanceof PermissionContext) {
             $guard = $this->contextGuard();
 
             // No context package installed — fall back to a global check.
             return $guard === null
-                ? $this->permissionSet($panelId)->grants($permission)
-                : $guard->checkInContext($this, $context->contextType(), $context->contextId(), $permission, $panelId);
+                ? $this->permissionSet($panelId)->grants($key)
+                : $guard->checkInContext($this, $context->contextType(), $context->contextId(), $key, $panelId);
         }
 
-        return $this->permissionSet($panelId)->grants($permission);
+        return $this->permissionSet($panelId)->grants($key);
     }
 
     /**
@@ -43,14 +52,16 @@ trait HasPermissions
     public function hasPermissionIn(
         string $contextType,
         int|string $contextId,
-        string $permission,
-        string $panelId = 'app',
+        string|UnitEnum $permission,
+        ?string $panelId = null,
     ): bool {
+        $panelId = PanelResolver::resolveDefault($panelId);
+
         return $this->contextGuard()?->checkInContext(
             $this,
             $contextType,
             $contextId,
-            $permission,
+            PermissionName::resolve($permission, $panelId),
             $panelId,
         ) ?? false;
     }
@@ -69,7 +80,7 @@ trait HasPermissions
     /**
      * Silent version: never throws. Use in Blade / UI.
      */
-    public function checkPermission(string $permission, string $panelId = 'app', ?PermissionContext $context = null): bool
+    public function checkPermission(string|UnitEnum $permission, ?string $panelId = null, ?PermissionContext $context = null): bool
     {
         try {
             return $this->hasPermission($permission, $panelId, $context);
@@ -82,9 +93,9 @@ trait HasPermissions
      * Get the PermissionSet for a panel.
      * All caching is delegated to EffectivePermissionResolver.
      */
-    public function permissionSet(string $panelId = 'app'): PermissionSet
+    public function permissionSet(?string $panelId = null): PermissionSet
     {
-        return $this->permissionResolver()->forUser($this, $panelId);
+        return $this->permissionResolver()->forUser($this, PanelResolver::resolveDefault($panelId));
     }
 
     /**
@@ -92,7 +103,7 @@ trait HasPermissions
      *
      * @return Collection<int, string>
      */
-    public function permissions(string $panelId = 'app'): Collection
+    public function permissions(?string $panelId = null): Collection
     {
         return collect($this->permissionSet($panelId)->keys());
     }

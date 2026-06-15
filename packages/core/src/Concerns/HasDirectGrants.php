@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\DirectGrant;
+use AzGuard\Support\PermissionName;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use UnitEnum;
 
 /**
  * Adds direct-grant support to a User model.
@@ -45,11 +47,13 @@ trait HasDirectGrants
 
     /**
      * Check whether this model has a specific active direct grant for a panel.
+     *
+     * $permission may be a key string or a permission enum (scoped to $panelId).
      */
-    public function hasGrant(string $permission, ?string $panelId = null): bool
+    public function hasGrant(string|UnitEnum $permission, ?string $panelId = null): bool
     {
         $query = $this->directGrants()
-            ->where('permission_key', $permission)
+            ->where('permission_key', PermissionName::resolve($permission, $panelId ?? ''))
             ->active();
 
         if ($panelId !== null) {
@@ -61,12 +65,15 @@ trait HasDirectGrants
 
     /**
      * Assign a direct grant for the given permission in a panel.
-     * Silently ignores duplicates via firstOrCreate.
+     *
+     * Idempotent: an existing grant has its expires_at updated (so a permanent
+     * grant can be given a TTL and vice-versa). $permission may be a key string
+     * or a permission enum (scoped to $panelId).
      */
-    public function grant(string $permission, string $panelId, ?DateTimeInterface $expiresAt = null): static
+    public function grant(string|UnitEnum $permission, string $panelId, ?DateTimeInterface $expiresAt = null): static
     {
-        $this->directGrants()->firstOrCreate(
-            ['panel_id' => $panelId, 'permission_key' => $permission],
+        $this->directGrants()->updateOrCreate(
+            ['panel_id' => $panelId, 'permission_key' => PermissionName::resolve($permission, $panelId)],
             ['expires_at' => $expiresAt],
         );
 
@@ -79,12 +86,14 @@ trait HasDirectGrants
 
     /**
      * Revoke a direct grant for the given permission in a panel.
+     *
+     * $permission may be a key string or a permission enum (scoped to $panelId).
      */
-    public function revoke(string $permission, string $panelId): static
+    public function revoke(string|UnitEnum $permission, string $panelId): static
     {
         $this->directGrants()
             ->where('panel_id', $panelId)
-            ->where('permission_key', $permission)
+            ->where('permission_key', PermissionName::resolve($permission, $panelId))
             ->delete();
 
         if (method_exists($this, 'flushPermissions')) {

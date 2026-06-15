@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Trait AzGuard\\Abilities\\InteractsWithAbilitiesCache is used zero times and is not analysed\.$#'
-			identifier: trait.unused
-			count: 1
-			path: packages/core/src/Abilities/InteractsWithAbilitiesCache.php
-
-		-
 			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1

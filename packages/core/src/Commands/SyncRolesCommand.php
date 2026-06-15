@@ -9,7 +9,7 @@ use AzGuard\Models\Role;
 use Illuminate\Console\Command;
 
 /**
- * Command azguard:sync-roles
+ * Command guard:sync-roles
  *
  * Syncs PHP role classes with the roles table in the database.
  * Uses class_name registered via PanelProviders.
@@ -20,7 +20,7 @@ use Illuminate\Console\Command;
  */
 final class SyncRolesCommand extends Command
 {
-    protected $signature = 'azguard:sync-roles
+    protected $signature = 'guard:sync-roles
                             {--panel= : Sync only the given panel ID (optional)}
                             {--dry-run : Preview changes without writing to the database}';
 

@@ -15,15 +15,15 @@ use Illuminate\Filesystem\Filesystem;
 /**
  * Generates the permission schema for a Filament panel from config.
  *
- *   php artisan azguard:filament:generate
- *   php artisan azguard:filament:generate --source=enum --panel=admin --dry-run
+ *   php artisan guard:filament:generate
+ *   php artisan guard:filament:generate --source=enum --panel=admin --dry-run
  *
  * `database` source just reports the keys (registered at runtime); `enum`
  * writes one backed permission enum per resource into the configured path.
  */
 final class GenerateFilamentPermissionsCommand extends Command
 {
-    protected $signature = 'azguard:filament:generate
+    protected $signature = 'guard:filament:generate
         {--source= : Override the configured source (database|enum|policy)}
         {--panel= : Override the configured AzGuard panel id}
         {--dry-run : Show what would be written without touching the filesystem}';

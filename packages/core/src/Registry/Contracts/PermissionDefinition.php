@@ -36,7 +36,7 @@ interface PermissionDefinition
     public function meta(): PermissionMeta;
 
     /**
-     * Динамические паттерны (фаза 5): app.team.{id}.admin
+     * Whether the key is a dynamic pattern such as app.team.{id}.admin.
      */
     public function isDynamic(): bool;
 }

@@ -40,9 +40,9 @@ return [
     | the Role UI and can be granted). The source decides how access is
     | *enforced* and what code, if any, is generated:
     |   'database' — the runtime gate enforces; nothing is generated.
-    |   'enum'     — `azguard:filament:generate` writes a permission enum per
+    |   'enum'     — `guard:filament:generate` writes a permission enum per
     |                resource (typed, IDE-friendly), still enforced by the gate.
-    |   'policy'   — `azguard:filament:generate` writes a Laravel policy per
+    |   'policy'   — `guard:filament:generate` writes a Laravel policy per
     |                resource; Filament's native authorization enforces them and
     |                the runtime gate steps aside.
     |

@@ -11,7 +11,7 @@ use Override;
  * Разрешение '*' даёт доступ ко всему через Gate::before().
  *
  * Использование:
- *   php artisan azguard:sync-roles
+ *   php artisan guard:sync-roles
  *   $user->assignRole('super-admin');
  */
 final class SuperAdminRole extends BaseRole

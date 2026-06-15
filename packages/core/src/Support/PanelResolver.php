@@ -14,9 +14,23 @@ use AzGuard\Facades\AzGuard;
  * Usage:
  *   PanelResolver::resolve($panelId)          // returns string|null
  *   PanelResolver::resolveOrFail($panelId)    // throws PanelNotSetException
+ *   PanelResolver::resolveDefault($panelId)   // explicit ?? config default ?? 'app'
  */
 final class PanelResolver
 {
+    /**
+     * Default panel for the model permission APIs ($user->hasPermission(), …).
+     *
+     * The explicit panel wins; otherwise az-guard.default_panel, otherwise the
+     * built-in 'app' fallback. The single place the 'app' literal lives — set
+     * az-guard.default_panel to change it project-wide. Does not consult the
+     * current request panel (that is the Authorizer's job).
+     */
+    public static function resolveDefault(?string $panelId): string
+    {
+        return $panelId ?? Config::defaultPanel() ?? 'app';
+    }
+
     /**
      * Return the explicit panel ID, or fall back to the current AzGuard panel.
      * Returns null when neither is available.

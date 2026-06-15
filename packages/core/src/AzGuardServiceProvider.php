@@ -24,7 +24,12 @@ use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Contracts\PermissionLayer;
 use AzGuard\Contracts\PermissionResolverInterface;
+use AzGuard\Events\GrantGiven;
+use AzGuard\Events\GrantRevoked;
+use AzGuard\Events\RoleAttached;
+use AzGuard\Events\RoleDetached;
 use AzGuard\Guard\Authorizer;
 use AzGuard\Guard\AzGuardDiagnostics;
 use AzGuard\Http\Middleware\CheckAccess;
@@ -41,9 +46,11 @@ use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use AzGuard\Support\Config;
 use AzGuard\Support\ScopedRoleCache;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -75,15 +82,20 @@ final class AzGuardServiceProvider extends ServiceProvider
             ClassRoleGrantSource::class,
             DatabaseRoleGrantSource::class,
             DirectGrantSource::class,
-        ], 'azguard.grant_sources');
+        ], AzGuardManager::GRANT_SOURCES_TAG);
 
-        $this->app->singleton(PermissionCache::class);
+        // Scoped, not singleton: PermissionCache holds per-request resolved
+        // permission sets. Under Octane a singleton would bleed one user's
+        // permissions into the next request on the same worker.
+        $this->app->scoped(PermissionCache::class);
 
         // Reset per request (Octane-safe) — caches scoped-role rows for HasScopedRoles.
         $this->app->scoped(ScopedRoleCache::class);
 
-        $this->app->singleton(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
-            $allSources = iterator_to_array($this->app->tagged('azguard.grant_sources'), preserve_keys: false);
+        // Scoped as well: the resolver captures the PermissionCache instance at
+        // construction, so it must share the cache's per-request lifecycle.
+        $this->app->scoped(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
+            $allSources = iterator_to_array($this->app->tagged(AzGuardManager::GRANT_SOURCES_TAG), preserve_keys: false);
             $allowlist = Config::grantSources();
 
             $sources = $allowlist !== null
@@ -94,6 +106,9 @@ final class AzGuardServiceProvider extends ServiceProvider
                 catalog: $this->app->make(PermissionCatalog::class),
                 sources: $sources,
                 cache: $this->app->make(PermissionCache::class),
+                layer: $this->app->bound(PermissionLayer::class)
+                    ? $this->app->make(PermissionLayer::class)
+                    : null,
             );
         });
 
@@ -133,6 +148,23 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         Gate::define('direct-grant', [DirectGrantPolicy::class, 'check']);
 
+        // AzGuardManager is a singleton (it holds boot-time panel registrations),
+        // but currentPanel is per-request state. Reset it between Octane requests
+        // so a stale panel from a previous request cannot leak. No-op without Octane.
+        Event::listen('Laravel\Octane\Events\RequestReceived', function (): void {
+            if ($this->app->resolved(AzGuardManager::class)) {
+                $this->app->make(AzGuardManager::class)->setCurrentPanel(null);
+            }
+        });
+
+        $this->registerCacheInvalidation();
+
+        if (Config::pruneExpiredDaily()) {
+            $this->callAfterResolving(Schedule::class, static function (Schedule $schedule): void {
+                $schedule->command('guard:prune-grants')->daily();
+            });
+        }
+
         $this->registerMiddlewareAliases();
         $this->registerBladeDirectives();
 
@@ -161,6 +193,33 @@ final class AzGuardServiceProvider extends ServiceProvider
                 PruneGrantsCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Flush the permission cache whenever grants or roles change through ANY
+     * path — the fluent GrantBuilder, the AzGuard facade, console commands, or
+     * any code that dispatches these events. The model-trait helpers also flush
+     * inline; these listeners cover the paths that previously did not (notably
+     * GrantBuilder, which only fired the events). Without this a revoked grant
+     * could stay live until TTL when a persistent cache store is used.
+     */
+    protected function registerCacheInvalidation(): void
+    {
+        Event::listen(
+            [GrantGiven::class, GrantRevoked::class],
+            static function (GrantGiven|GrantRevoked $event): void {
+                app(PermissionResolverInterface::class)->forgetForUser($event->user, $event->panelId);
+            },
+        );
+
+        Event::listen(
+            [RoleAttached::class, RoleDetached::class],
+            static function (RoleAttached|RoleDetached $event): void {
+                if (method_exists($event->model, 'flushPermissions')) {
+                    $event->model->flushPermissions();
+                }
+            },
+        );
     }
 
     protected function registerMiddlewareAliases(): void

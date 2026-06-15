@@ -36,8 +36,8 @@ final class DirectGrantSource implements GrantSource
     }
 
     #[Override]
-    public function priority(): GrantPriority
+    public function priority(): int
     {
-        return GrantPriority::DirectGrant;
+        return GrantPriority::DirectGrant->value;
     }
 }

@@ -6,6 +6,7 @@ namespace AzGuard\Contracts;
 
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
+use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Support\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
@@ -60,6 +61,16 @@ interface AzGuardManagerInterface
      */
     public function tryPermission(string $panelId, string|UnitEnum $permission): ?string;
 
+    // ─── Extensions ─────────────────────────────────────────────────────────────
+
+    /**
+     * Регистрирует кастомный GrantSource (биндит при необходимости и тегирует),
+     * чтобы EffectivePermissionResolver подхватил его в цепочку разрешения.
+     *
+     * @param  class-string<GrantSource>  $sourceClass
+     */
+    public function registerGrantSource(string $sourceClass): void;
+
     // ─── Grants API ───────────────────────────────────────────────────────────
 
     /**
@@ -76,9 +87,9 @@ interface AzGuardManagerInterface
      */
     public function grant(
         Authenticatable $user,
-        string $permissionKey,
-        string $panelId,
-        ?int $ttl,
+        string|UnitEnum $permissionKey,
+        string $panelId = 'app',
+        ?int $ttl = null,
     ): DirectGrant;
 
     /**
@@ -88,8 +99,8 @@ interface AzGuardManagerInterface
      */
     public function revoke(
         Authenticatable $user,
-        string $permissionKey,
-        string $panelId,
+        string|UnitEnum $permissionKey,
+        string $panelId = 'app',
     ): int;
 
     /**
@@ -99,6 +110,6 @@ interface AzGuardManagerInterface
      */
     public function grants(
         Authenticatable $user,
-        string $panelId,
+        string $panelId = 'app',
     ): Collection;
 }

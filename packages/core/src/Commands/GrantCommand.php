@@ -14,14 +14,14 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Artisan command to issue a direct grant to a user.
  *
  * @example
- *   php artisan az-guard:grant 42 app.documents.export app --ttl=3600
- *   php artisan az-guard:grant 42 app.documents.export app --model=App\\Models\\Admin
+ *   php artisan guard:grant 42 app.documents.export app --ttl=3600
+ *   php artisan guard:grant 42 app.documents.export app --model=App\\Models\\Admin
  */
 final class GrantCommand extends Command
 {
     use ResolvesUserModel;
 
-    protected $signature = 'az-guard:grant
+    protected $signature = 'guard:grant
         {user-id        : User ID}
         {permission     : Permission key (e.g. app.documents.export)}
         {panel          : Panel ID}

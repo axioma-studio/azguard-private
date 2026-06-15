@@ -13,15 +13,15 @@ use Illuminate\Console\Command;
  * Suitable for use with Laravel Scheduler:
  *
  *   // bootstrap/app.php or Console/Kernel.php
- *   Schedule::command('az-guard:prune-grants')->daily();
+ *   Schedule::command('guard:prune-grants')->daily();
  *
  * @example
- *   php artisan az-guard:prune-grants
- *   php artisan az-guard:prune-grants --panel=app
+ *   php artisan guard:prune-grants
+ *   php artisan guard:prune-grants --panel=app
  */
 final class PruneGrantsCommand extends Command
 {
-    protected $signature = 'az-guard:prune-grants
+    protected $signature = 'guard:prune-grants
         {--panel= : Restrict to a specific panel}';
 
     protected $description = 'Delete all expired direct grants';

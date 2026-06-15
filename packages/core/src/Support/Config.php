@@ -7,7 +7,6 @@ namespace AzGuard\Support;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
-use AzGuard\Models\RolePermission;
 
 /**
  * Centralised config accessor for AzGuard.
@@ -42,11 +41,6 @@ final class Config
     public static function directGrantModel(): string
     {
         return (string) config('az-guard.models.direct_grant', DirectGrant::class);
-    }
-
-    public static function rolePermissionModel(): string
-    {
-        return (string) config('az-guard.models.role_permission', RolePermission::class);
     }
 
     public static function modelsNamespace(): string
@@ -88,18 +82,6 @@ final class Config
     }
 
     // ─── Columns ───────────────────────────────────────────────────────────
-
-    public static function rolePivotKey(): ?string
-    {
-        $value = config('az-guard.column_names.role_pivot_key');
-
-        return $value !== null ? (string) $value : null;
-    }
-
-    public static function modelMorphKey(): string
-    {
-        return (string) config('az-guard.column_names.model_morph_key', 'model_id');
-    }
 
     /**
      * Morph key type for polymorphic tables (model_has_roles, model_has_scopes,
@@ -159,19 +141,12 @@ final class Config
 
     /**
      * Cache TTL in seconds. Returns null for infinite cache.
-     * Alias: cacheExpiration() — both names are supported.
      */
     public static function cacheTtl(): ?int
     {
         $value = config('az-guard.cache.expiration_time', 3600);
 
         return $value !== null ? (int) $value : null;
-    }
-
-    /** @alias cacheTtl() */
-    public static function cacheExpiration(): ?int
-    {
-        return self::cacheTtl();
     }
 
     public static function cacheKey(): string
@@ -194,6 +169,17 @@ final class Config
         return (array) config('az-guard.panels', []);
     }
 
+    /**
+     * Panel id to use when no panel is active on the current request.
+     * Null means "do not guess" — authorization refuses to pick a panel.
+     */
+    public static function defaultPanel(): ?string
+    {
+        $value = config('az-guard.default_panel');
+
+        return $value !== null ? (string) $value : null;
+    }
+
     // ─── Grant Sources ────────────────────────────────────────────────────
 
     /**
@@ -211,5 +197,10 @@ final class Config
     public static function failOnSourceException(): bool
     {
         return (bool) config('az-guard.fail_on_source_exception', false);
+    }
+
+    public static function pruneExpiredDaily(): bool
+    {
+        return (bool) config('az-guard.prune_expired_daily', false);
     }
 }

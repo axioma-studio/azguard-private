@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AzGuard\Support\Schema\MorphColumns;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -19,9 +20,8 @@ return new class extends Migration
         Schema::create('az_guard_context_roles', function (Blueprint $table): void {
             $table->id();
 
-            // Пользователь (polymorphic)
-            $table->string('model_type');
-            $table->unsignedBigInteger('model_id');
+            // Пользователь (polymorphic) — тип ключа следует az-guard.column_names.morph_type
+            MorphColumns::add($table, 'model');
 
             // Контекст
             $table->string('context_type');  // 'workspace', 'project', ...
