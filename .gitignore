@@ -24,3 +24,10 @@ docs/.vuepress/.cache/
 storage/*.log
 .env
 tests/temp/
+
+# Локальные/персональные оверрайды Claude Code (не в общий репозиторий)
+.claude/settings.local.json.bak
+.claude/auto-approve.env.ini
+.claude/auto-approve.config.json
+.claude/memory.env.ini
+.claude/memory.config.json
