@@ -24,7 +24,7 @@
     },
     "require": {
         "php": "^8.3",
-        "axioma-studio/azguard-core": "*",
+        "axioma-studio/azguard-core": "^1.0",
         "illuminate/contracts": "^11.0|^12.0",
         "illuminate/http": "^11.0|^12.0",
         "illuminate/support": "^11.0|^12.0"
@@ -40,7 +40,5 @@
                 "AzGuard\\Context\\AzGuardContextServiceProvider"
             ]
         }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    }
 }
