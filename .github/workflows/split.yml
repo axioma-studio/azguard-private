@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
 
       - name: Split packages/${{ matrix.package.dir }} -> ${{ matrix.package.name }}
-        uses: symplify/monorepo-split-github-action@v2.3.0
+        uses: symplify/monorepo-split-github-action@v2.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.MONOREPO_SPLIT_TOKEN }}
         with:
