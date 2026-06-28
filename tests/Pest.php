@@ -19,6 +19,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/AuthorizerTest.php',
         'Feature/CacheResetCommandTest.php',
         'Feature/CheckAccessMiddlewareTest.php',
+        'Feature/ClassPermissionTest.php',
         'Feature/CrossRequestCacheInvalidationTest.php',
         'Feature/CustomGrantSourceTest.php',
         'Feature/DatabaseRoleGrantSourceTest.php',
