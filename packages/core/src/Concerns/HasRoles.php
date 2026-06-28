@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Concerns;
 
+use AzGuard\Contracts\RoleInterface;
 use AzGuard\Events\RoleAttached;
 use AzGuard\Events\RoleDetached;
 use AzGuard\Models\Role;
@@ -30,9 +31,36 @@ trait HasRoles
         return $this->morphMany(Config::scopeModel(), 'model');
     }
 
-    public function hasRole(string $name): bool
+    /**
+     * Check whether the user has a role.
+     *
+     * Accepts a role class-string (preferred — refactor-safe), a RoleInterface
+     * instance, or a plain role name.
+     *
+     * @param  string|RoleInterface|class-string<RoleInterface>  $role
+     */
+    public function hasRole(string|RoleInterface $role): bool
     {
-        return $this->roles->contains('name', $name);
+        return $this->roles->contains('name', $this->roleNameFor($role));
+    }
+
+    /**
+     * Resolve a role name from a class-string, a RoleInterface instance, or a
+     * plain name string.
+     *
+     * @param  string|RoleInterface|class-string<RoleInterface>  $role
+     */
+    private function roleNameFor(string|RoleInterface $role): string
+    {
+        if ($role instanceof RoleInterface) {
+            return $role->getName();
+        }
+
+        if (is_subclass_of($role, RoleInterface::class)) {
+            return (new $role)->getName();
+        }
+
+        return $role;
     }
 
     public function assignRole(string|Role ...$roles): static

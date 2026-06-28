@@ -12,6 +12,7 @@ use AzGuard\Commands\CatalogValidateCommand;
 use AzGuard\Commands\DoctorCommand;
 use AzGuard\Commands\GrantCommand;
 use AzGuard\Commands\GrantsListCommand;
+use AzGuard\Commands\InstallCommand;
 use AzGuard\Commands\ListPermissionsCommand;
 use AzGuard\Commands\ListScopedRolesCommand;
 use AzGuard\Commands\MakeGuardAbilitiesCommand;
@@ -22,6 +23,7 @@ use AzGuard\Commands\MakeGuardRoleCommand;
 use AzGuard\Commands\PruneGrantsCommand;
 use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
+use AzGuard\Commands\SuperAdminCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\PermissionLayer;
@@ -46,8 +48,10 @@ use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use AzGuard\Support\Config;
 use AzGuard\Support\ScopedRoleCache;
+use Composer\InstalledVersions;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -167,6 +171,7 @@ final class AzGuardServiceProvider extends ServiceProvider
 
         $this->registerMiddlewareAliases();
         $this->registerBladeDirectives();
+        $this->registerAbout();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -174,6 +179,7 @@ final class AzGuardServiceProvider extends ServiceProvider
             ], 'az-guard-config');
 
             $this->commands([
+                InstallCommand::class,
                 DoctorCommand::class,
                 CatalogListCommand::class,
                 CatalogValidateCommand::class,
@@ -191,8 +197,38 @@ final class AzGuardServiceProvider extends ServiceProvider
                 GrantCommand::class,
                 RevokeGrantCommand::class,
                 PruneGrantsCommand::class,
+                SuperAdminCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Surface AzGuard's state in `php artisan about` — version, registered
+     * panels, default panel, cache store and the direct-grants feature flag.
+     */
+    protected function registerAbout(): void
+    {
+        if (! class_exists(AboutCommand::class)) {
+            return;
+        }
+
+        AboutCommand::add('AzGuard', static function (): array {
+            /** @var AzGuardManager $manager */
+            $manager = app(AzGuardManager::class);
+            $panels = array_keys($manager->getPanels());
+
+            $version = class_exists(InstalledVersions::class)
+                ? (InstalledVersions::getPrettyVersion('axioma-studio/azguard-core') ?? 'dev-main')
+                : 'dev-main';
+
+            return [
+                'Version' => $version,
+                'Panels' => $panels === [] ? '—' : implode(', ', $panels),
+                'Default Panel' => Config::defaultPanel() ?? '—',
+                'Cache Store' => (string) config('az-guard.cache.store', 'array'),
+                'Direct Grants' => (bool) config('az-guard.features.direct_grants', true) ? 'enabled' : 'disabled',
+            ];
+        });
     }
 
     /**

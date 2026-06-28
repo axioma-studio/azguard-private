@@ -1,59 +1,50 @@
-# Руководство по разработке AzGuard
+# AzGuard — Development
 
-## 🛠 Локальная разработка
+## Local development
 
-### Подключение к тестовому проекту
-
-Симлинк (пример CRM):
-
-```bash
-ln -sfn ../../../packages/azguard /path/to/laravel/packages/azguard
-```
-
-`composer.json` Laravel-проекта:
+Test the package against a real Laravel app via a path repository.
 
 ```json
+// the consuming app's composer.json
 "repositories": [
     {
         "type": "path",
-        "url": "packages/azguard/packages/core",
+        "url": "../azguard/packages/core",
         "options": { "symlink": true }
     }
 ],
 "require": {
-    "azguard/azguard": "@dev"
+    "axioma-studio/azguard-core": "@dev"
 }
 ```
 
-### Docker (пример axioma-studio/crm)
+Mount or symlink the package directory into the app, then `composer update`.
 
-- Volume: `../../packages/azguard:/var/www/html/packages/azguard:ro`
-- Запуск: `docker compose --env-file .env --env-file .env.local up -d`
-- Postgres на хосте: `PGSQL_PORT=15433` в `.env.local` (не 5432)
+## Quality commands
 
-### Контракт роли
+| Command | Tool | Description |
+|---|---|---|
+| `composer test` | Pest | Run the test suite |
+| `composer test:types` | Pest | Type-coverage gate (min 98%) |
+| `composer analyse` | PHPStan / Larastan | Static analysis (level 6) |
+| `composer lint` / `lint:check` | Pint | Fix / check code style |
+| `composer refactor` / `refactor:check` | Rector | Apply / preview refactorings |
+| `composer mutate` | Infection | Mutation testing |
+| `composer check` | — | Run every CI gate (style + analysis + refactor + types + tests) |
+| `composer fix` | — | Auto-fix style and apply refactorings |
 
-| Поле | Значение |
-|------|----------|
-| `roles.name` | slug: `admin`, `member` |
-| `roles.class_name` | FQCN класса роли: `App\Guards\App\Roles\AdminRole` |
+Feature tests use an in-memory SQLite database, so the `pdo_sqlite` /
+`sqlite3` PHP extensions must be enabled.
 
-### Middleware
+## Conventions
 
-- Alias: `azguard.roles` — eager load `roles` для auth user
-- В Laravel 11+: `$middleware->alias(['azguard.roles' => \AzGuard\Http\Middleware\LoadAzGuardRoles::class])` или alias из провайдера пакета
+- `declare(strict_types=1)` in every PHP file; PHPStan level 6; Pest 4.
+- Permissions and roles are referenced by **enums and classes**, never magic
+  strings (see the docs).
+- Role contract: `roles.name` holds a slug (`admin`), `roles.class_name` holds
+  the FQCN of the PHP role class (`App\Guards\App\Roles\AdminRole`).
 
-## 🌿 Git Workflow
-1. Создайте ветку `feature/` или `fix/` от `develop`.
-2. Напишите код и тесты.
-3. Запустите `composer lint` для очистки стиля.
-4. Создайте Pull Request в `develop`.
+## Git workflow
 
-## 🧪 Команды качества
-| Команда | Инструмент | Описание |
-|---------|------------|----------|
-| `composer lint` | Pint | Исправляет стиль кода по стандартам Laravel |
-| `composer refactor` | Rector | Автоматический рефакторинг и апгрейд PHP |
-| `composer test` | Pest | Запуск всех тестов проекта |
-
-Для интеграционных тестов (Feature) нужен PHP-драйвер SQLite: установите пакет `php-sqlite3` (или включите расширение в `php.ini`).
+Branch from `main` (`feat/…`, `fix/…`), keep the suite green (`composer check`),
+and open a Pull Request to `main`. Commits follow Conventional Commits.

@@ -11,9 +11,9 @@
     ],
     "require": {
         "php": "^8.3",
-        "axioma-studio/azguard-core": "^1.0",
-        "axioma-studio/azguard-filament": "^1.0",
-        "axioma-studio/azguard-context": "^1.0"
+        "axioma-studio/azguard-core": "^0.1",
+        "axioma-studio/azguard-filament": "^0.1",
+        "axioma-studio/azguard-context": "^0.1"
     },
     "require-dev": {
         "laravel/pint": "^1.13",
@@ -22,7 +22,8 @@
         "orchestra/testbench": "^9.0|^10.0|^11.0",
         "phpstan/phpstan": "^2.0",
         "larastan/larastan": "^3.0",
-        "infection/infection": "^0.33"
+        "infection/infection": "^0.33",
+        "pestphp/pest-plugin-type-coverage": "^4.0"
     },
     "autoload-dev": {
         "psr-4": {
@@ -36,9 +37,9 @@
             "url": "packages/*",
             "options": {
                 "versions": {
-                    "axioma-studio/azguard-core": "1.0.0",
-                    "axioma-studio/azguard-filament": "1.0.0",
-                    "axioma-studio/azguard-context": "1.0.0"
+                    "axioma-studio/azguard-core": "0.1.0",
+                    "axioma-studio/azguard-filament": "0.1.0",
+                    "axioma-studio/azguard-context": "0.1.0"
                 }
             }
         }
@@ -61,6 +62,22 @@
         "refactor": "vendor/bin/rector process",
         "refactor:check": "vendor/bin/rector process --dry-run",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
-        "mutate": "vendor/bin/infection --threads=4"
+        "test:types": "vendor/bin/pest --type-coverage --min=98",
+        "mutate": "vendor/bin/infection --threads=4",
+        "check": [
+            "@lint:check",
+            "@analyse",
+            "@refactor:check",
+            "@test:types",
+            "@test"
+        ],
+        "fix": [
+            "@lint",
+            "@refactor"
+        ]
+    },
+    "scripts-descriptions": {
+        "check": "Run every CI gate locally: code style, static analysis, refactor dry-run and tests.",
+        "fix": "Auto-fix code style (Pint) and apply Rector refactorings."
     }
 }

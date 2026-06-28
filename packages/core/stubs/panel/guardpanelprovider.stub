@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace {{ namespace }};
 
+use {{ namespace }}\{{ domain }}\Permissions\{{ domain }}Permission;
 use AzGuard\PanelProvider;
 use AzGuard\Support\Panel;
 
@@ -11,6 +14,9 @@ class {{ panel }}GuardPanelProvider extends PanelProvider
     {
         return $panel
             ->id('{{ panelId }}')
-            ->path('{{ panelId }}');
+            ->path('{{ panelId }}')
+            ->permissionEnums([
+                {{ domain }}Permission::class,
+            ]);
     }
 }

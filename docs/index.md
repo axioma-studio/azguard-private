@@ -11,13 +11,13 @@ hero:
   actions:
     - theme: brand
       text: Get Started →
-      link: /guide/quick-start
+      link: /introduction/quick-start
     - theme: alt
       text: Why AzGuard?
-      link: /guide/why-azguard
+      link: /introduction/why-azguard
     - theme: alt
       text: View on GitHub
-      link: https://github.com/axioma-studio/azguard-private
+      link: https://github.com/axioma-studio/azguard
 ---
 
 <div class="az-hero-text">
@@ -130,7 +130,7 @@ class User extends Authenticatable
 }
 ```
 
-→ [Full installation guide](/guide/installation) · [Quick Start in 5 minutes](/guide/quick-start)
+→ [Full installation guide](/introduction/installation) · [Quick Start in 5 minutes](/introduction/quick-start)
 
 ---
 
@@ -149,4 +149,4 @@ class User extends Authenticatable
 | Runtime (DB) role creation | ✅ | ✅ | ✅ |
 | Built-in diagnostics (`guard:doctor` command) | ✅ | ❌ | ❌ |
 
-→ [Full comparison with Spatie, Bouncer, and Laratrust](/guide/comparison)
+→ [Full comparison with Spatie, Bouncer, and Laratrust](/introduction/comparison)

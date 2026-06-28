@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Support;
 
 use AzGuard\AzGuardManager;
+use AzGuard\Contracts\Permission;
 use BackedEnum;
 use UnitEnum;
 
@@ -21,12 +22,38 @@ final class PermissionName
 {
     public static function resolve(string|UnitEnum $permission, string $panelId): string
     {
-        if (is_string($permission)) {
+        // A plain key string is already resolved. A Permission class-string is
+        // not — it still needs scoping via its owning panel.
+        if (is_string($permission) && ! self::isPermissionClass($permission)) {
             return $permission;
         }
 
         $resolved = app(AzGuardManager::class)->tryPermission($panelId, $permission);
 
-        return $resolved ?? ($permission instanceof BackedEnum ? (string) $permission->value : $permission->name);
+        if ($resolved !== null) {
+            return $resolved;
+        }
+
+        // Panel not registered — best-effort unscoped fallback.
+        if ($permission instanceof BackedEnum) {
+            return (string) $permission->value;
+        }
+
+        if ($permission instanceof UnitEnum) {
+            return $permission->name;
+        }
+
+        /** @var class-string<Permission> $permission */
+        return $permission::ability();
+    }
+
+    /**
+     * Whether the string is a class-string of a class-based Permission. A
+     * permission key always contains a '.' (or is '*') and a class-string never
+     * does, so the dotted-key common path never triggers autoload.
+     */
+    private static function isPermissionClass(string $permission): bool
+    {
+        return ! str_contains($permission, '.') && is_subclass_of($permission, Permission::class);
     }
 }

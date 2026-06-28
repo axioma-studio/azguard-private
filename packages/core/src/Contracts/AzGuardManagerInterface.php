@@ -8,6 +8,7 @@ use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Support\Panel;
+use BackedEnum;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use RuntimeException;
@@ -34,9 +35,9 @@ interface AzGuardManagerInterface
     public function getPanels(): array;
 
     /**
-     * Возвращает панель по идентификатору или null.
+     * Возвращает панель по идентификатору (строка или backed enum) или null.
      */
-    public function panel(string $id): ?Panel;
+    public function panel(string|BackedEnum $id): ?Panel;
 
     /**
      * Возвращает текущую активную панель.
@@ -53,13 +54,13 @@ interface AzGuardManagerInterface
      *
      * @throws RuntimeException если панель не зарегистрирована
      */
-    public function permission(string $panelId, string|UnitEnum $permission): string;
+    public function permission(string|BackedEnum $panelId, string|UnitEnum $permission): string;
 
     /**
      * Soft-resolve: возвращает null если панель не зарегистрирована.
      * Безопасен в Blade / UI без try-catch.
      */
-    public function tryPermission(string $panelId, string|UnitEnum $permission): ?string;
+    public function tryPermission(string|BackedEnum $panelId, string|UnitEnum $permission): ?string;
 
     // ─── Extensions ─────────────────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ interface AzGuardManagerInterface
     public function grant(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string $panelId = 'app',
+        string|BackedEnum $panelId = 'app',
         ?int $ttl = null,
     ): DirectGrant;
 
@@ -100,7 +101,7 @@ interface AzGuardManagerInterface
     public function revoke(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string $panelId = 'app',
+        string|BackedEnum $panelId = 'app',
     ): int;
 
     /**
@@ -110,6 +111,6 @@ interface AzGuardManagerInterface
      */
     public function grants(
         Authenticatable $user,
-        string $panelId = 'app',
+        string|BackedEnum $panelId = 'app',
     ): Collection;
 }

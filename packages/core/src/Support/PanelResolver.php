@@ -6,6 +6,7 @@ namespace AzGuard\Support;
 
 use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Facades\AzGuard;
+use BackedEnum;
 
 /**
  * Centralises the recurring pattern:
@@ -29,6 +30,16 @@ final class PanelResolver
     public static function resolveDefault(?string $panelId): string
     {
         return $panelId ?? Config::defaultPanel() ?? 'app';
+    }
+
+    /**
+     * Normalise a panel identifier to its string id. Accepts a backed enum
+     * (e.g. PanelId::Admin) or a plain string, so the whole panel API can be
+     * called type-safely with enums.
+     */
+    public static function normalizeId(string|BackedEnum $panelId): string
+    {
+        return $panelId instanceof BackedEnum ? (string) $panelId->value : $panelId;
     }
 
     /**

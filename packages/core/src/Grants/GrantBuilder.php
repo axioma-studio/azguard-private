@@ -10,6 +10,7 @@ use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Support\PanelResolver;
 use AzGuard\Support\PermissionName;
+use BackedEnum;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,9 +37,9 @@ final class GrantBuilder
 
     // ─── Fluent setters ───────────────────────────────────────────────────────
 
-    public function on(string $panelId): static
+    public function on(string|BackedEnum $panelId): static
     {
-        $this->panelId = $panelId;
+        $this->panelId = PanelResolver::normalizeId($panelId);
 
         return $this;
     }

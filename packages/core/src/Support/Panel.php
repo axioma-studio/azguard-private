@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Contracts\Permission;
 use BackedEnum;
 use UnitEnum;
 
@@ -134,6 +135,13 @@ final class Panel
 
         if ($permission instanceof UnitEnum) {
             return $this->scope($permission->name);
+        }
+
+        // A class-based permission (implements Permission). A permission key
+        // always contains a '.' (or is '*'); a class-string never does — so the
+        // dotted-key common path never triggers autoload.
+        if (! str_contains($permission, '.') && is_subclass_of($permission, Permission::class)) {
+            return $this->scope($permission::ability());
         }
 
         return $this->scope($permission);

@@ -32,7 +32,7 @@ final class DoctorPage extends Page
 
     protected static ?string $title = 'AzGuard Doctor';
 
-    protected string $view = 'az-guard-filament::pages.doctor';
+    protected string $view = 'az-guard::pages.doctor';
 
     // ─── Badge: кол-во ошибок в навигации ─────────────────────────────────
 
