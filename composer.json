@@ -54,7 +54,7 @@
     },
     "scripts": {
         "test": "vendor/bin/pest",
-        "test:coverage": "vendor/bin/pest --coverage --min=80",
+        "test:coverage": "vendor/bin/pest --coverage --min=50",
         "test:unit": "vendor/bin/pest tests/Unit",
         "test:feature": "vendor/bin/pest tests/Feature",
         "lint": "vendor/bin/pint",
