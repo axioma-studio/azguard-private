@@ -9,6 +9,8 @@ use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Support\Panel;
+use AzGuard\Support\PanelResolver;
+use BackedEnum;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
 use Override;
@@ -47,9 +49,9 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     #[Override]
-    public function panel(string $id): ?Panel
+    public function panel(string|BackedEnum $id): ?Panel
     {
-        return $this->panels[$id] ?? null;
+        return $this->panels[PanelResolver::normalizeId($id)] ?? null;
     }
 
     #[Override]
@@ -65,19 +67,21 @@ final class AzGuardManager implements AzGuardManagerInterface
     }
 
     #[Override]
-    public function permission(string $panelId, string|UnitEnum $permission): string
+    public function permission(string|BackedEnum $panelId, string|UnitEnum $permission): string
     {
         $panel = $this->panel(id: $panelId);
 
         if (! $panel instanceof Panel) {
-            throw new RuntimeException("AzGuard panel [{$panelId}] is not registered.");
+            $id = PanelResolver::normalizeId($panelId);
+
+            throw new RuntimeException("AzGuard panel [{$id}] is not registered.");
         }
 
         return $panel->resolvePermission(permission: $permission);
     }
 
     #[Override]
-    public function tryPermission(string $panelId, string|UnitEnum $permission): ?string
+    public function tryPermission(string|BackedEnum $panelId, string|UnitEnum $permission): ?string
     {
         $panel = $this->panel(id: $panelId);
 
@@ -128,7 +132,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     public function grant(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string $panelId = 'app',
+        string|BackedEnum $panelId = 'app',
         ?int $ttl = null,
     ): DirectGrant {
         return $this->forUser($user)->on($panelId)->ttl($ttl)->grant($permissionKey);
@@ -143,7 +147,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     public function revoke(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string $panelId = 'app',
+        string|BackedEnum $panelId = 'app',
     ): int {
         return $this->forUser($user)->on($panelId)->revoke($permissionKey);
     }
@@ -156,7 +160,7 @@ final class AzGuardManager implements AzGuardManagerInterface
     #[Override]
     public function grants(
         Authenticatable $user,
-        string $panelId = 'app',
+        string|BackedEnum $panelId = 'app',
     ): Collection {
         return $this->forUser($user)->on($panelId)->grants();
     }

@@ -31,6 +31,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/ListScopedRolesCommandTest.php',
         'Feature/LoadAzGuardRolesMiddlewareTest.php',
         'Feature/MakeGuardPanelCommandTest.php',
+        'Feature/PanelEnumIdentityTest.php',
         'Feature/PanelPermissionResolverTest.php',
         'Feature/PermissionAccessTest.php',
         'Feature/PermissionMapTest.php',
