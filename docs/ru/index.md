@@ -17,7 +17,7 @@ hero:
       link: /ru/guide/why-azguard
     - theme: alt
       text: GitHub
-      link: https://github.com/axioma-studio/azguard-private
+      link: https://github.com/axioma-studio/azguard
 ---
 
 <div class="az-hero-text">

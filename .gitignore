@@ -13,21 +13,30 @@ composer.lock
 
 # Инструменты качества
 .rector_cache/
+build/
 pint.json.bak
 
-# VuePress (Документация)
-docs/.vuepress/dist/
-docs/.vuepress/.temp/
-docs/.vuepress/.cache/
+# VitePress (документация)
+node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 # Тесты и логи
 storage/*.log
 .env
 tests/temp/
 
-# Локальные/персональные оверрайды Claude Code (не в общий репозиторий)
-.claude/settings.local.json.bak
-.claude/auto-approve.env.ini
-.claude/auto-approve.config.json
-.claude/memory.env.ini
-.claude/memory.config.json
+# AI / dev tooling — приватная инфраструктура разработки, НЕ в публичный репозиторий
+.claude/
+.serena/
+.swissknifeman/
+.cursorrules
+.mcp.json
+.mcp.json.example
+skills-lock.json
+AI-OPTIMIZATION.md
+docs/05_AI/
+ideas/
+CLAUDE.md
+AGENTS.md
+*.bak

@@ -135,7 +135,7 @@ Gate::allows('app.users.create');
 ## Структура монорепозитория
 
 ```
-azguard-private/
+azguard/
 ├── packages/
 │   ├── core/      # axioma-studio/azguard-core — основной пакет
 │   └── filament/  # azguard/filament — Filament-интеграция

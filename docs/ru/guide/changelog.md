@@ -30,4 +30,4 @@
 - Интеграция с Filament v5
 - Полное покрытие тестами (Pest)
 
-→ [Полный список на GitHub](https://github.com/axioma-studio/azguard-private/releases)
+→ [Полный список на GitHub](https://github.com/axioma-studio/azguard/releases)

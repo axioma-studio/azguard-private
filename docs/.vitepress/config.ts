@@ -216,10 +216,10 @@ export default defineConfig({
   title: 'AzGuard',
   description: 'Code-first RBAC for Laravel — roles as PHP classes, permissions in Git.',
 
-  base: '/azguard-private/',
+  base: '/azguard/',
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/azguard-private/favicon.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/azguard/favicon.svg' }],
   ],
 
   locales: {
@@ -256,7 +256,7 @@ export default defineConfig({
             link: '/ru/guide/testing',
             activeMatch: '/ru/guide/(testing|seeding|exceptions|extending|cache|events|context|entity-scopes|panels|uuid-ulid|phpstorm|recipes)',
           },
-          { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard-private' },
+          { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard' },
         ],
         sidebar: {
           ...makeSidebarMap('/ru', ruIntroSidebar, introPages),
@@ -270,7 +270,7 @@ export default defineConfig({
         darkModeSwitchLabel: 'Тема',
         langMenuLabel: 'Язык',
         editLink: {
-          pattern: 'https://github.com/axioma-studio/azguard-private/edit/main/docs/:path',
+          pattern: 'https://github.com/axioma-studio/azguard/edit/main/docs/:path',
           text: 'Редактировать на GitHub',
         },
         docFooter: {
@@ -307,7 +307,7 @@ export default defineConfig({
         activeMatch: '/guide/(testing|seeding|exceptions|extending|cache|events|context|entity-scopes|panels|uuid-ulid|phpstorm|recipes)',
       },
       { text: 'Changelog', link: '/guide/changelog' },
-      { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard-private' },
+      { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard' },
     ],
 
     sidebar: {
@@ -318,7 +318,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/axioma-studio/azguard-private' },
+      { icon: 'github', link: 'https://github.com/axioma-studio/azguard' },
     ],
 
     footer: {
@@ -331,7 +331,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/axioma-studio/azguard-private/edit/main/docs/:path',
+      pattern: 'https://github.com/axioma-studio/azguard/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
   },

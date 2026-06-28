@@ -4,7 +4,7 @@
 
 Если вы обнаружили баг, создайте issue на GitHub:
 
-→ [github.com/axioma-studio/azguard/issues](https://github.com/axioma-studio/azguard-private/issues)
+→ [github.com/axioma-studio/azguard/issues](https://github.com/axioma-studio/azguard/issues)
 
 Пожалуйста, включите:
 - Версию AzGuard (`composer show axioma-studio/azguard-core | grep versions`)
@@ -14,7 +14,7 @@
 
 ## Задать вопрос
 
-Для общих вопросов используйте [GitHub Discussions](https://github.com/axioma-studio/azguard-private/discussions).
+Для общих вопросов используйте [GitHub Discussions](https://github.com/axioma-studio/azguard/discussions).
 
 ## Частые проблемы
 

@@ -73,8 +73,8 @@ Releases are fully automated via GitHub Actions.
 ## Development Setup
 
 ```bash
-git clone git@github.com:axioma-studio/azguard-private.git
-cd azguard-private
+git clone git@github.com:axioma-studio/azguard.git
+cd azguard
 composer install
 
 # Run all checks
