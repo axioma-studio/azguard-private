@@ -204,7 +204,8 @@ composer fix       # auto-fix code style and apply refactorings
 
 ## Upgrading
 
-See [UPGRADING.md](UPGRADING.md) for the 1.0 breaking changes and the enum SemVer policy.
+This is the initial `0.1` release. See [UPGRADING.md](UPGRADING.md) for migration
+notes as future versions ship.
 
 ## Security
 
