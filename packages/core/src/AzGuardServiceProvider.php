@@ -23,6 +23,7 @@ use AzGuard\Commands\MakeGuardRoleCommand;
 use AzGuard\Commands\PruneGrantsCommand;
 use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
+use AzGuard\Commands\SuperAdminCommand;
 use AzGuard\Commands\SyncRolesCommand;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\PermissionLayer;
@@ -196,6 +197,7 @@ final class AzGuardServiceProvider extends ServiceProvider
                 GrantCommand::class,
                 RevokeGrantCommand::class,
                 PruneGrantsCommand::class,
+                SuperAdminCommand::class,
             ]);
         }
     }
