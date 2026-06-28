@@ -27,10 +27,10 @@ use UnitEnum;
  * Pure DB roles without a class_name are handled by DatabaseRoleGrantSource.
  * Priority: 100 (highest).
  */
-final class ClassRoleGrantSource implements GrantSource
+final readonly class ClassRoleGrantSource implements GrantSource
 {
     public function __construct(
-        private readonly AzGuardManagerInterface $manager,
+        private AzGuardManagerInterface $manager,
     ) {}
 
     #[Override]

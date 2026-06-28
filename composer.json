@@ -61,6 +61,20 @@
         "refactor": "vendor/bin/rector process",
         "refactor:check": "vendor/bin/rector process --dry-run",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
-        "mutate": "vendor/bin/infection --threads=4"
+        "mutate": "vendor/bin/infection --threads=4",
+        "check": [
+            "@lint:check",
+            "@analyse",
+            "@refactor:check",
+            "@test"
+        ],
+        "fix": [
+            "@lint",
+            "@refactor"
+        ]
+    },
+    "scripts-descriptions": {
+        "check": "Run every CI gate locally: code style, static analysis, refactor dry-run and tests.",
+        "fix": "Auto-fix code style (Pint) and apply Rector refactorings."
     }
 }
