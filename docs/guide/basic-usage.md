@@ -42,11 +42,12 @@ See [Permissions](./permissions.md) for the full attribute reference.
 
 ## Define a role
 
-Roles are PHP classes that declare which permissions they grant:
+Roles are PHP classes that declare which permissions they grant. Return **enum cases**, not strings — the panel scopes each case automatically (no `"app."` prefix):
 
 ```php
 // app/AzGuard/App/Roles/EditorRole.php
 use AzGuard\Roles\BaseRole;
+use App\AzGuard\App\Permissions\DocumentsPermission;
 
 class EditorRole extends BaseRole
 {
@@ -55,33 +56,35 @@ class EditorRole extends BaseRole
     public function permissions(): array
     {
         return [
-            'app.documents.view',
-            'app.documents.create',
-            'app.documents.edit',
+            DocumentsPermission::View,
+            DocumentsPermission::Create,
+            DocumentsPermission::Edit,
         ];
     }
 }
 ```
+
+Each enum must be registered on its panel via `->permissionEnums([...])`. After declaring or changing role classes, run `php artisan guard:sync-roles` to mirror them into the DB before assigning.
 
 See [Roles](./roles.md) for dynamic (DB-backed) roles and level-based hierarchy.
 
 ## Assign / remove / sync roles
 
 ```php
-// Assign one role
+// Assign one role — by class (preferred: unambiguous and refactor-safe)
 $user->assignRole(EditorRole::class);
-$user->assignRole('editor');                     // by name
+$user->assignRole('editor');                     // by name also works
 
 // Assign several at once (variadic)
-$user->assignRole('editor', 'viewer');
+$user->assignRole(EditorRole::class, ViewerRole::class);
 
 // Remove one role
 $user->removeRole(EditorRole::class);
-$user->removeRole('editor');
+$user->removeRole('editor');                     // by name also works
 
 // Sync — replaces ALL current roles with the given list
-$user->syncRoles([EditorRole::class]);
-$user->syncRoles(['editor', 'viewer']);          // by name
+$user->syncRoles([EditorRole::class, ViewerRole::class]);
+$user->syncRoles(['editor', 'viewer']);          // by name also works
 
 // Remove all roles
 $user->syncRoles([]);
@@ -90,7 +93,8 @@ $user->syncRoles([]);
 ## Check roles
 
 ```php
-$user->hasRole('editor');                          // bool — by role name
+$user->hasRole(EditorRole::class);                 // bool — by class (preferred)
+$user->hasRole('editor');                          // by name also works
 $user->getRoleNames();                             // Collection<string>
 $user->roles();                                    // the roles() relation
 ```

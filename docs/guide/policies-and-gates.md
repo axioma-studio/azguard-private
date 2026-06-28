@@ -55,12 +55,20 @@ No other logic runs in `Gate::before`. All real permission checks happen in poli
 
 ## Calling the Gate
 
-Always pass the **enum case** directly — not a raw string. Laravel Gate accepts `BackedEnum` and calls `->value` automatically:
+Laravel's **native** Gate matches against the full, panel-prefixed key. Passing a bare enum case to `Gate::allows()` / `Gate::authorize()` does **not** work — Laravel normalises the enum to its unscoped `->value`, which never matches the panel-scoped key. Pass the full string key, or derive it from the enum with `AzGuard::permission($panelId, $case)` to stay typo-proof:
 
 ```php
-// ✅ In a controller — enum case
-Gate::allows(DocumentsPermission::View, $document);
-Gate::authorize(DocumentsPermission::Edit, $document);
+use AzGuard\Facades\AzGuard;
+
+// ✅ In a controller — full panel-prefixed key (derived from the enum)
+Gate::allows(AzGuard::permission('app', DocumentsPermission::View), $document);
+Gate::authorize(AzGuard::permission('app', DocumentsPermission::Edit), $document);
+
+// ✅ Or the plain full key when readability matters
+Gate::allows('app.documents.view', $document);
+
+// For a capability check that *is* enum-aware, use the trait instead of the Gate
+$user->hasPermission(DocumentsPermission::View);
 ```
 
 ```blade
@@ -69,17 +77,17 @@ Gate::authorize(DocumentsPermission::Edit, $document);
     <button>Delete</button>
 @endif
 
-{{-- ✅ Option 2: FQCN with ->value --}}
-@can(\App\Guards\App\Permissions\DocumentsPermission::Delete->value, $document)
+{{-- ✅ Option 2: native @can with the full panel-prefixed key --}}
+@can('app.documents.delete', $document)
     <button>Delete</button>
 @endcan
 
-{{-- ✅ AzGuard directive — pass the full panel-prefixed key --}}
-@azcan('app.documents.view')
+{{-- ✅ AzGuard directive — enum-aware, pass the enum case directly --}}
+@azcan(DocumentsPermission::View)
     <a href="...">View</a>
 @endazcan
 ```
 
 ::: tip Enum vs string
-Enum cases are type-safe and refactor-safe. `@azcan` calls `hasPermission()` directly, so a string argument must be the full panel-prefixed key (`app.documents.view`). In PHP code (controllers, services, jobs), always pass the enum directly to `Gate::allows()` / `Gate::authorize()`.
+The `@azcan` directive and `$user->hasPermission()` are enum-aware — pass the enum case directly and it is scoped to the panel automatically. Laravel's **native** Gate (`Gate::allows()`, `Gate::authorize()`, `@can`, `$user->can()`) is not: it needs the full panel-prefixed key (`app.documents.view`), so derive it with `AzGuard::permission(...)` rather than passing the bare enum.
 :::

@@ -25,7 +25,7 @@ Define `isSuperAdmin()` in your User model:
 ```php
 public function isSuperAdmin(): bool
 {
-    return $this->hasRole('super-admin');  // or any other check
+    return $this->hasRole(SuperAdminRole::class);  // by class (preferred); 'super-admin' by name also works
 }
 ```
 
@@ -50,13 +50,13 @@ class SuperAdminRole extends BaseRole
 
 Register it on the panel via `roleClasses([SuperAdminRole::class])` in your panel provider.
 
-Then assign the role to the user as normal:
+Then assign the role to the user as normal. Run `php artisan guard:sync-roles` first so the role class is mirrored into the DB before assigning:
 
 ```php
-$user->assignRole('super-admin');
+$user->assignRole(SuperAdminRole::class);     // by class (preferred); 'super-admin' by name also works
 
-$user->hasPermission('app.documents.view');   // true
-$user->hasPermission('app.anything.at.all');  // true
+$user->hasPermission(DocumentsPermission::View);  // true — enum case, scoped to the panel
+$user->hasPermission('app.anything.at.all');      // true — full panel-prefixed key
 ```
 
 ## Option 3: Direct wildcard grant
@@ -75,7 +75,7 @@ AzGuard::forUser($user)
 
 ```php
 // Quickly make any user a super-admin in a test
-$user->assignRole('super-admin');
+$user->assignRole(SuperAdminRole::class);     // 'super-admin' by name also works
 $this->actingAs($user);
 
 $this->get('/admin/users')->assertOk();
@@ -86,7 +86,7 @@ $this->get('/admin/users')->assertOk();
 Wildcard access applies **per panel** — a role's wildcard only covers the panel that registered the role class. A super-admin role registered on `app` does not automatically have access to `admin`:
 
 ```php
-$user->assignRole('super-admin');  // role registered on the 'app' panel
+$user->assignRole(SuperAdminRole::class);  // role registered on the 'app' panel
 
 $user->hasPermission('app.documents.delete');  // true
 $user->hasPermission('admin.users.delete');    // false — different panel

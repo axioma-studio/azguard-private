@@ -8,8 +8,10 @@ Roles defined as PHP classes are **always available** without seeding. You can a
 
 ```php
 // In a seeder, factory, or anywhere after `php artisan migrate`
-$user->assignRole('editor');  // works out of the box
+$user->assignRole(EditorRole::class);  // by class (preferred); 'editor' by name also works
 ```
+
+Run `php artisan guard:sync-roles` first so your code role classes are mirrored into the `roles` table before assigning.
 
 ## Seeding dynamic (DB-backed) roles
 
@@ -85,19 +87,19 @@ class UsersSeeder extends Seeder
             ['email' => 'admin@example.com'],
             ['name' => 'Admin User', 'password' => Hash::make('password')]
         );
-        $admin->assignRole('super-admin');
+        $admin->assignRole(SuperAdminRole::class);    // 'super-admin' by name also works
 
         $editor = User::firstOrCreate(
             ['email' => 'editor@example.com'],
             ['name' => 'Editor User', 'password' => Hash::make('password')]
         );
-        $editor->assignRole('editor');
+        $editor->assignRole(EditorRole::class);
 
         $viewer = User::firstOrCreate(
             ['email' => 'viewer@example.com'],
             ['name' => 'Viewer User', 'password' => Hash::make('password')]
         );
-        $viewer->assignRole('viewer');
+        $viewer->assignRole(ViewerRole::class);
     }
 }
 ```
@@ -109,21 +111,21 @@ class UsersSeeder extends Seeder
 public function editor(): static
 {
     return $this->afterCreating(fn (User $u) =>
-        $u->assignRole('editor')
+        $u->assignRole(EditorRole::class)
     );
 }
 
 public function manager(): static
 {
     return $this->afterCreating(fn (User $u) =>
-        $u->assignRole('manager')
+        $u->assignRole(ManagerRole::class)
     );
 }
 
 public function admin(): static
 {
     return $this->afterCreating(fn (User $u) =>
-        $u->assignRole('super-admin')
+        $u->assignRole(SuperAdminRole::class)
     );
 }
 ```

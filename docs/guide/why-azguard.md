@@ -27,6 +27,8 @@ enum DocumentsPermission: string
 }
 
 // Role — a PHP class. Readable. Testable. Diffable.
+use App\AzGuard\App\Permissions\DocumentsPermission;
+
 class EditorRole extends BaseRole
 {
     public function getName(): string { return 'editor'; }
@@ -34,10 +36,10 @@ class EditorRole extends BaseRole
 
     public function permissions(): array
     {
-        // Full, panel-prefixed permission keys
+        // Enum cases — the panel scopes each one automatically (no "app." prefix)
         return [
-            'app.documents.view',
-            'app.documents.edit',
+            DocumentsPermission::View,
+            DocumentsPermission::Edit,
         ];
     }
 }

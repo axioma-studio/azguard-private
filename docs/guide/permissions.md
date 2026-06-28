@@ -153,18 +153,22 @@ $user->permissions('app')->contains('app.documents.view');
 
 ## Assigning permissions to a role
 
-In static roles, permissions are declared directly in code as full panel-prefixed keys:
+In static roles, permissions are declared directly in code as **enum cases** — the panel scopes each case automatically (no `"app."` prefix):
 
 ```php
+use App\AzGuard\App\Permissions\DocumentsPermission;
+
 public function permissions(): array
 {
     return [
-        'app.documents.view',
-        'app.documents.create',
-        'app.documents.edit',
+        DocumentsPermission::View,
+        DocumentsPermission::Create,
+        DocumentsPermission::Edit,
     ];
 }
 ```
+
+Each enum must be registered on its panel via `->permissionEnums([...])`. After changing role classes, run `php artisan guard:sync-roles` to mirror them into the DB before assigning.
 
 For DB-backed roles, manage permission keys with the `guard:role-permissions` command:
 

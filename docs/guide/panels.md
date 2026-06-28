@@ -77,12 +77,13 @@ $user->hasPermission('app.documents.view');
 A single user can have completely different roles in different panels:
 
 ```php
-// 'editor' grants app.* permissions; 'viewer' grants admin.* permissions
-$user->assignRole('editor');
-$user->assignRole('viewer');
+// EditorRole grants app.* permissions; ViewerRole grants admin.* permissions
+$user->assignRole(EditorRole::class);   // 'editor' by name also works
+$user->assignRole(ViewerRole::class);   // 'viewer' by name also works
 
-$user->hasPermission('app.documents.edit');   // true
-$user->hasPermission('admin.users.delete');   // false
+// Enum case — scoped to its own panel automatically
+$user->hasPermission(DocumentsPermission::Edit);   // true  (app panel)
+$user->hasPermission(UsersPermission::Delete);     // false (admin panel — not granted)
 ```
 
 ## Listing panels
