@@ -104,4 +104,4 @@ enum UsersPermission: string
 `Panel::permissionEnums([UsersPermission::class])` — именно панель задаёт префикс ключа.
 :::
 
-→ [Каталог разрешений](/ru/guide/permission-catalog) · [Панели](/ru/guide/panels)
+→ [Каталог разрешений](/ru/guide/best-practices/permission-catalog) · [Панели](/ru/guide/advanced/panels)

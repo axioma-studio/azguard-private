@@ -3,7 +3,7 @@
 ::: warning Prefer roles over direct grants
 Direct Grants are an **exception** mechanism, not a primary access-control pattern. The correct default is to assign permissions to roles, and assign roles to users. Use direct grants only when a specific user needs a temporary or one-off permission that doesn't warrant a new role.
 
-See [Roles vs Permissions](./best-practices.md#roles-vs-permissions) for the full guidance.
+See [Roles vs Permissions](/guide/best-practices/best-practices#roles-vs-permissions) for the full guidance.
 :::
 
 Direct Grants let you assign a permission **directly to a user** without creating a role for it. Typical use cases:

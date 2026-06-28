@@ -83,4 +83,4 @@ AzGuard работает со всеми стандартными Blade-дире
 `@can` + модель маршрутизируется через Laravel Policy, которая может использовать `hasPermission()` внутри.
 :::
 
-→ [Политики и Gate](/ru/guide/policies-and-gates) · [Права на фронтенде](/ru/guide/abilities-frontend)
+→ [Политики и Gate](/ru/guide/best-practices/policies-and-gates) · [Права на фронтенде](/ru/guide/basic-usage/abilities-frontend)

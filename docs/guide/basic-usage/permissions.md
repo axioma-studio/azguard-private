@@ -204,7 +204,7 @@ return inertia('Documents/Index', [
 ]);
 ```
 
-See [Frontend Abilities](./abilities-frontend.md) for Inertia / Vue / React integration.
+See [Frontend Abilities](/guide/basic-usage/abilities-frontend) for Inertia / Vue / React integration.
 
 ## Listing all permissions
 

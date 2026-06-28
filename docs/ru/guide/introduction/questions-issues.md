@@ -40,4 +40,4 @@ php artisan migrate:status
 
 ### Проблемы с Laravel Octane
 
-См. раздел [Требования → Octane](/ru/guide/prerequisites#laravel-octane-kubernetes).
+См. раздел [Требования → Octane](/ru/guide/introduction/prerequisites#laravel-octane-kubernetes).

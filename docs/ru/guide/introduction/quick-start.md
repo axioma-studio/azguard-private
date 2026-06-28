@@ -74,5 +74,5 @@ Gate::allows('app.posts.view');               // true
 ```
 
 ::: tip
-Полный список конфигурации — в разделе [Установка](/ru/guide/installation).
+Полный список конфигурации — в разделе [Установка](/ru/guide/introduction/installation).
 :::

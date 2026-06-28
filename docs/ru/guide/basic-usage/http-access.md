@@ -66,4 +66,4 @@ $exceptions->renderable(function (HttpException $e, Request $request) {
 });
 ```
 
-→ [Исключения](/ru/guide/exceptions) · [Несколько Guards](/ru/guide/multiple-guards)
+→ [Исключения](/ru/guide/advanced/exceptions) · [Несколько Guards](/ru/guide/basic-usage/multiple-guards)

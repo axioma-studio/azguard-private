@@ -50,8 +50,8 @@ AzGuard работает с любым guard, зарегистрированны
 ],
 ```
 
-Каждый guard может иметь собственный набор панелей AzGuard. Подробнее — в разделе [Несколько Guards](/ru/guide/multiple-guards).
+Каждый guard может иметь собственный набор панелей AzGuard. Подробнее — в разделе [Несколько Guards](/ru/guide/basic-usage/multiple-guards).
 
 ## Следующий шаг
 
-→ [Установка](/ru/guide/installation)
+→ [Установка](/ru/guide/introduction/installation)

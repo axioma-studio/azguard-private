@@ -60,4 +60,4 @@ php artisan guard:cache-reset
 
 Внутри одной мажорной версии (1.x) AzGuard следует SemVer. Обновления патч-версий (1.0.x → 1.0.y) не требуют изменений кода.
 
-→ [Список изменений](/ru/guide/changelog)
+→ [Список изменений](/ru/guide/introduction/changelog)

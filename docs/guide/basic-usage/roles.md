@@ -197,4 +197,4 @@ php artisan guard:role-permissions list {role} --panel=app
 - **Use static roles as the source of truth.** Dynamic roles are useful for multi-tenant customization, but your base roles should always be in code.
 - **One class per role.** `EditorRole`, `ViewerRole`, `AdminRole` — each in its own file.
 - **Keep permission lists readable.** Avoid computed permission arrays or loops — the list should be scannable at a glance.
-- **Use [Direct Grants](./direct-grants.md) for exceptions.** If one user needs an extra permission, grant it directly rather than creating a narrow role used by a single user.
+- **Use [Direct Grants](/guide/basic-usage/direct-grants) for exceptions.** If one user needs an extra permission, grant it directly rather than creating a narrow role used by a single user.

@@ -77,4 +77,4 @@ php artisan guard:sync-roles
 `sync-roles` идемпотентна. Запускайте в миграциях или CI при деплое.
 :::
 
-→ [Лучшие практики: роли vs разрешения](/ru/guide/best-practices)
+→ [Лучшие практики: роли vs разрешения](/ru/guide/best-practices/best-practices)

@@ -16,7 +16,7 @@ default `cache.store` is `'array'` (request-scoped). Point it at a persistent st
 ],
 ```
 
-See [Cache](./cache.md) for the full reference, including how to invalidate on role changes.
+See [Cache](/guide/advanced/cache) for the full reference, including how to invalidate on role changes.
 
 ## Avoid N+1 checks in loops
 
@@ -45,7 +45,7 @@ Gate::allows('app.documents.view');
 
 ## Validate the catalog at deploy time
 
-Validate the [Permission Catalog](./permission-catalog.md) during deployment so
+Validate the [Permission Catalog](/guide/best-practices/permission-catalog) during deployment so
 misconfigurations surface in CI rather than at runtime:
 
 ```bash

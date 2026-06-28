@@ -35,4 +35,4 @@ class User extends Authenticatable
 }
 ```
 
-→ [Full Getting Started guide](/guide/quick-start)
+→ [Full Getting Started guide](/guide/introduction/quick-start)

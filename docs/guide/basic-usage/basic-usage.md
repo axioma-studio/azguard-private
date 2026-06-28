@@ -17,7 +17,7 @@ class User extends Authenticatable
 ```
 
 ::: tip
-See [Prerequisites](/guide/prerequisites) for important constraints — especially the list of reserved property names.
+See [Prerequisites](/guide/introduction/prerequisites) for important constraints — especially the list of reserved property names.
 :::
 
 ## Define a permission
@@ -38,7 +38,7 @@ enum DocumentsPermission: string
 }
 ```
 
-See [Permissions](./permissions.md) for the full attribute reference.
+See [Permissions](/guide/basic-usage/permissions) for the full attribute reference.
 
 ## Define a role
 
@@ -66,7 +66,7 @@ class EditorRole extends BaseRole
 
 Each enum must be registered on its panel via `->permissionEnums([...])`. After declaring or changing role classes, run `php artisan guard:sync-roles` to mirror them into the DB before assigning.
 
-See [Roles](./roles.md) for dynamic (DB-backed) roles and level-based hierarchy.
+See [Roles](/guide/basic-usage/roles) for dynamic (DB-backed) roles and level-based hierarchy.
 
 ## Assign / remove / sync roles
 
@@ -231,11 +231,11 @@ public function edit(Document $document): Response
 Blade directives take the full panel-prefixed permission key (`'app.documents.edit'`). Pass pre-resolved booleans from the controller whenever possible to keep templates simple.
 :::
 
-See [Blade Directives](./blade-directives.md) for role checks and custom directives.
+See [Blade Directives](/guide/basic-usage/blade-directives) for role checks and custom directives.
 
 ::: tip Next steps
-- [Permissions](./permissions.md) — defining enums, attributes, TypeScript export
-- [Roles](./roles.md) — static vs dynamic roles, levels, artisan commands
-- [Direct Grants](./direct-grants.md) — per-user permissions without roles
-- [HTTP Access](./http-access.md) — middleware, route groups, policies
+- [Permissions](/guide/basic-usage/permissions) — defining enums, attributes, TypeScript export
+- [Roles](/guide/basic-usage/roles) — static vs dynamic roles, levels, artisan commands
+- [Direct Grants](/guide/basic-usage/direct-grants) — per-user permissions without roles
+- [HTTP Access](/guide/basic-usage/http-access) — middleware, route groups, policies
 :::

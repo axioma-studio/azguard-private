@@ -97,7 +97,7 @@ AzGuard's default migrations assume an **auto-incrementing integer** primary key
 
 The migrations read this value and create the polymorphic columns with the matching type. (You can also set the `AZ_GUARD_MORPH_TYPE` environment variable.)
 
-See [UUID / ULID](/guide/uuid-ulid) for the complete walkthrough.
+See [UUID / ULID](/guide/advanced/uuid-ulid) for the complete walkthrough.
 
 ## Foreign key constraints
 
@@ -112,7 +112,7 @@ As long as you only manage assignments through AzGuard's own methods (`assignRol
 
 ## Multi-guard apps
 
-If your application uses multiple [guards](https://laravel.com/docs/authentication#introduction) (e.g. `web` and `api`), each guard has its own independent set of roles and permissions in AzGuard. See [Multiple Guards](./multiple-guards.md) for setup details.
+If your application uses multiple [guards](https://laravel.com/docs/authentication#introduction) (e.g. `web` and `api`), each guard has its own independent set of roles and permissions in AzGuard. See [Multiple Guards](/guide/basic-usage/multiple-guards) for setup details.
 
 ## Octane compatibility
 

@@ -53,5 +53,5 @@ Route::middleware(['auth:admin', 'can:admin.users.ban'])
 Blade `@can` resolves against the current panel automatically. To check a different panel, resolve the boolean in the controller with `$user->hasPermission($permission, $panelId)` and pass it to the view.
 
 ::: tip
-See [Panels](./panels.md) for the full panel configuration reference.
+See [Panels](/guide/advanced/panels) for the full panel configuration reference.
 :::

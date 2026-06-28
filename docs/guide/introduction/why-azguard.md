@@ -100,4 +100,4 @@ php artisan guard:sync-roles        # syncs PHP role classes to DB
 - You're on a tiny app with 2-3 fixed roles that never change
 - You're migrating a legacy app deeply integrated with Spatie's DB schema
 
-→ [Detailed comparison with Spatie, Bouncer, and Laratrust](/guide/comparison)
+→ [Detailed comparison with Spatie, Bouncer, and Laratrust](/guide/introduction/comparison)

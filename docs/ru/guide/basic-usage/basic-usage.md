@@ -78,7 +78,7 @@ $user->grant(ReportsPermission::Export, 'app', now()->addHour());
 $user->revoke(ReportsPermission::Export, 'app');
 ```
 
-→ [Подробнее о прямых грантах](/ru/guide/direct-grants)
+→ [Подробнее о прямых грантах](/ru/guide/basic-usage/direct-grants)
 
 ## Запросы по ролям
 
@@ -92,4 +92,4 @@ User::whereHas('roles', fn ($q) => $q->where('name', 'editor'))->get();
 User::whereDoesntHave('roles')->get();
 ```
 
-→ [Разрешения](/ru/guide/permissions) · [Роли](/ru/guide/roles) · [Blade-директивы](/ru/guide/blade-directives)
+→ [Разрешения](/ru/guide/basic-usage/permissions) · [Роли](/ru/guide/basic-usage/roles) · [Blade-директивы](/ru/guide/basic-usage/blade-directives)

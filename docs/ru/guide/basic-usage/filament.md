@@ -67,4 +67,4 @@ NavigationItem::make()
     ->visible(fn () => auth()->user()?->hasPermission(UsersPermission::View, 'admin'))
 ```
 
-→ [Несколько Guards](/ru/guide/multiple-guards)
+→ [Несколько Guards](/ru/guide/basic-usage/multiple-guards)

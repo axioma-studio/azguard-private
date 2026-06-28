@@ -49,4 +49,4 @@ Route::middleware(['auth:api', 'azguard.panel:api'])
 ->plugin(AzGuardPlugin::make()->forPanel('admin'))
 ```
 
-→ [Панели](/ru/guide/panels) · [HTTP и Middleware](/ru/guide/http-access)
+→ [Панели](/ru/guide/advanced/panels) · [HTTP и Middleware](/ru/guide/basic-usage/http-access)

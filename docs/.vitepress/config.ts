@@ -8,13 +8,13 @@ function introSidebar(base = '') {
     {
       text: 'Introduction',
       items: [
-        { text: 'What is AzGuard?',   link: p('/guide/why-azguard') },
-        { text: 'Prerequisites',      link: p('/guide/prerequisites') },
-        { text: 'Installation',       link: p('/guide/installation') },
-        { text: 'Quick Start',        link: p('/guide/quick-start') },
-        { text: 'Upgrading',          link: p('/guide/upgrading') },
-        { text: 'Questions & Issues', link: p('/guide/questions-issues') },
-        { text: 'Changelog',          link: p('/guide/changelog') },
+        { text: 'What is AzGuard?',   link: p('/guide/introduction/why-azguard') },
+        { text: 'Prerequisites',      link: p('/guide/introduction/prerequisites') },
+        { text: 'Installation',       link: p('/guide/introduction/installation') },
+        { text: 'Quick Start',        link: p('/guide/introduction/quick-start') },
+        { text: 'Upgrading',          link: p('/guide/introduction/upgrading') },
+        { text: 'Questions & Issues', link: p('/guide/introduction/questions-issues') },
+        { text: 'Changelog',          link: p('/guide/introduction/changelog') },
       ],
     },
   ]
@@ -26,17 +26,17 @@ function basicUsageSidebar(base = '') {
     {
       text: 'Basic Usage',
       items: [
-        { text: 'Overview',                 link: p('/guide/basic-usage') },
-        { text: 'Permissions',              link: p('/guide/permissions') },
-        { text: 'Roles',                    link: p('/guide/roles') },
-        { text: 'Direct Grants',            link: p('/guide/direct-grants') },
-        { text: 'Blade Directives',         link: p('/guide/blade-directives') },
-        { text: 'Defining a Super-Admin',   link: p('/guide/super-admin') },
-        { text: 'Multiple Guards',          link: p('/guide/multiple-guards') },
-        { text: 'HTTP Access & Middleware', link: p('/guide/http-access') },
-        { text: 'Artisan Commands',         link: p('/guide/artisan-commands') },
-        { text: 'Filament Integration',     link: p('/guide/filament') },
-        { text: 'Frontend Abilities',       link: p('/guide/abilities-frontend') },
+        { text: 'Overview',                 link: p('/guide/basic-usage/basic-usage') },
+        { text: 'Permissions',              link: p('/guide/basic-usage/permissions') },
+        { text: 'Roles',                    link: p('/guide/basic-usage/roles') },
+        { text: 'Direct Grants',            link: p('/guide/basic-usage/direct-grants') },
+        { text: 'Blade Directives',         link: p('/guide/basic-usage/blade-directives') },
+        { text: 'Defining a Super-Admin',   link: p('/guide/basic-usage/super-admin') },
+        { text: 'Multiple Guards',          link: p('/guide/basic-usage/multiple-guards') },
+        { text: 'HTTP Access & Middleware', link: p('/guide/basic-usage/http-access') },
+        { text: 'Artisan Commands',         link: p('/guide/basic-usage/artisan-commands') },
+        { text: 'Filament Integration',     link: p('/guide/basic-usage/filament') },
+        { text: 'Frontend Abilities',       link: p('/guide/basic-usage/abilities-frontend') },
       ],
     },
   ]
@@ -48,10 +48,10 @@ function bestPracticesSidebar(base = '') {
     {
       text: 'Best Practices',
       items: [
-        { text: 'Roles vs Permissions',   link: p('/guide/best-practices') },
-        { text: 'Model Policies & Gates', link: p('/guide/policies-and-gates') },
-        { text: 'Permission Catalog',     link: p('/guide/permission-catalog') },
-        { text: 'Performance Tips',       link: p('/guide/performance-tips') },
+        { text: 'Roles vs Permissions',   link: p('/guide/best-practices/best-practices') },
+        { text: 'Model Policies & Gates', link: p('/guide/best-practices/policies-and-gates') },
+        { text: 'Permission Catalog',     link: p('/guide/best-practices/permission-catalog') },
+        { text: 'Performance Tips',       link: p('/guide/best-practices/performance-tips') },
       ],
     },
   ]
@@ -63,17 +63,17 @@ function advancedSidebar(base = '') {
     {
       text: 'Advanced',
       items: [
-        { text: 'Testing',          link: p('/guide/testing') },
-        { text: 'Database Seeding', link: p('/guide/seeding') },
-        { text: 'Exceptions',       link: p('/guide/exceptions') },
-        { text: 'Extending',        link: p('/guide/extending') },
-        { text: 'Cache',            link: p('/guide/cache') },
-        { text: 'Events',           link: p('/guide/events') },
-        { text: 'Context (opt-in)', link: p('/guide/context') },
-        { text: 'Entity Scopes',    link: p('/guide/entity-scopes') },
-        { text: 'Panels',           link: p('/guide/panels') },
-        { text: 'UUID / ULID',      link: p('/guide/uuid-ulid') },
-        { text: 'PhpStorm',         link: p('/guide/phpstorm') },
+        { text: 'Testing',          link: p('/guide/advanced/testing') },
+        { text: 'Database Seeding', link: p('/guide/advanced/seeding') },
+        { text: 'Exceptions',       link: p('/guide/advanced/exceptions') },
+        { text: 'Extending',        link: p('/guide/advanced/extending') },
+        { text: 'Cache',            link: p('/guide/advanced/cache') },
+        { text: 'Events',           link: p('/guide/advanced/events') },
+        { text: 'Context (opt-in)', link: p('/guide/advanced/context') },
+        { text: 'Entity Scopes',    link: p('/guide/advanced/entity-scopes') },
+        { text: 'Panels',           link: p('/guide/advanced/panels') },
+        { text: 'UUID / ULID',      link: p('/guide/advanced/uuid-ulid') },
+        { text: 'PhpStorm',         link: p('/guide/advanced/phpstorm') },
       ],
     },
     {
@@ -99,13 +99,13 @@ function ruIntroSidebar() {
     {
       text: 'Введение',
       items: [
-        { text: 'Что такое AzGuard?',   link: p('/guide/why-azguard') },
-        { text: 'Требования',           link: p('/guide/prerequisites') },
-        { text: 'Установка',            link: p('/guide/installation') },
-        { text: 'Быстрый старт',        link: p('/guide/quick-start') },
-        { text: 'Обновление',           link: p('/guide/upgrading') },
-        { text: 'Вопросы и проблемы',   link: p('/guide/questions-issues') },
-        { text: 'Список изменений',     link: p('/guide/changelog') },
+        { text: 'Что такое AzGuard?',   link: p('/guide/introduction/why-azguard') },
+        { text: 'Требования',           link: p('/guide/introduction/prerequisites') },
+        { text: 'Установка',            link: p('/guide/introduction/installation') },
+        { text: 'Быстрый старт',        link: p('/guide/introduction/quick-start') },
+        { text: 'Обновление',           link: p('/guide/introduction/upgrading') },
+        { text: 'Вопросы и проблемы',   link: p('/guide/introduction/questions-issues') },
+        { text: 'Список изменений',     link: p('/guide/introduction/changelog') },
       ],
     },
   ]
@@ -117,17 +117,17 @@ function ruBasicUsageSidebar() {
     {
       text: 'Основы',
       items: [
-        { text: 'Обзор',                     link: p('/guide/basic-usage') },
-        { text: 'Разрешения',                link: p('/guide/permissions') },
-        { text: 'Роли',                      link: p('/guide/roles') },
-        { text: 'Прямые гранты',             link: p('/guide/direct-grants') },
-        { text: 'Blade-директивы',           link: p('/guide/blade-directives') },
-        { text: 'Супер-администратор',       link: p('/guide/super-admin') },
-        { text: 'Несколько Guards',          link: p('/guide/multiple-guards') },
-        { text: 'HTTP и Middleware',         link: p('/guide/http-access') },
-        { text: 'Artisan-команды',           link: p('/guide/artisan-commands') },
-        { text: 'Интеграция с Filament',     link: p('/guide/filament') },
-        { text: 'Права на фронтенде',        link: p('/guide/abilities-frontend') },
+        { text: 'Обзор',                     link: p('/guide/basic-usage/basic-usage') },
+        { text: 'Разрешения',                link: p('/guide/basic-usage/permissions') },
+        { text: 'Роли',                      link: p('/guide/basic-usage/roles') },
+        { text: 'Прямые гранты',             link: p('/guide/basic-usage/direct-grants') },
+        { text: 'Blade-директивы',           link: p('/guide/basic-usage/blade-directives') },
+        { text: 'Супер-администратор',       link: p('/guide/basic-usage/super-admin') },
+        { text: 'Несколько Guards',          link: p('/guide/basic-usage/multiple-guards') },
+        { text: 'HTTP и Middleware',         link: p('/guide/basic-usage/http-access') },
+        { text: 'Artisan-команды',           link: p('/guide/basic-usage/artisan-commands') },
+        { text: 'Интеграция с Filament',     link: p('/guide/basic-usage/filament') },
+        { text: 'Права на фронтенде',        link: p('/guide/basic-usage/abilities-frontend') },
       ],
     },
   ]
@@ -139,10 +139,10 @@ function ruBestPracticesSidebar() {
     {
       text: 'Лучшие практики',
       items: [
-        { text: 'Роли vs Разрешения',    link: p('/guide/best-practices') },
-        { text: 'Политики и Gate',       link: p('/guide/policies-and-gates') },
-        { text: 'Каталог разрешений',    link: p('/guide/permission-catalog') },
-        { text: 'Производительность',    link: p('/guide/performance-tips') },
+        { text: 'Роли vs Разрешения',    link: p('/guide/best-practices/best-practices') },
+        { text: 'Политики и Gate',       link: p('/guide/best-practices/policies-and-gates') },
+        { text: 'Каталог разрешений',    link: p('/guide/best-practices/permission-catalog') },
+        { text: 'Производительность',    link: p('/guide/best-practices/performance-tips') },
       ],
     },
   ]
@@ -154,17 +154,17 @@ function ruAdvancedSidebar() {
     {
       text: 'Продвинутое использование',
       items: [
-        { text: 'Тестирование',         link: p('/guide/testing') },
-        { text: 'Сидирование БД',       link: p('/guide/seeding') },
-        { text: 'Исключения',           link: p('/guide/exceptions') },
-        { text: 'Расширение',           link: p('/guide/extending') },
-        { text: 'Кэш',                  link: p('/guide/cache') },
-        { text: 'События',              link: p('/guide/events') },
-        { text: 'Контекст (опц.)',       link: p('/guide/context') },
-        { text: 'Entity Scopes',        link: p('/guide/entity-scopes') },
-        { text: 'Панели',               link: p('/guide/panels') },
-        { text: 'UUID / ULID',          link: p('/guide/uuid-ulid') },
-        { text: 'PhpStorm',             link: p('/guide/phpstorm') },
+        { text: 'Тестирование',         link: p('/guide/advanced/testing') },
+        { text: 'Сидирование БД',       link: p('/guide/advanced/seeding') },
+        { text: 'Исключения',           link: p('/guide/advanced/exceptions') },
+        { text: 'Расширение',           link: p('/guide/advanced/extending') },
+        { text: 'Кэш',                  link: p('/guide/advanced/cache') },
+        { text: 'События',              link: p('/guide/advanced/events') },
+        { text: 'Контекст (опц.)',       link: p('/guide/advanced/context') },
+        { text: 'Entity Scopes',        link: p('/guide/advanced/entity-scopes') },
+        { text: 'Панели',               link: p('/guide/advanced/panels') },
+        { text: 'UUID / ULID',          link: p('/guide/advanced/uuid-ulid') },
+        { text: 'PhpStorm',             link: p('/guide/advanced/phpstorm') },
       ],
     },
     {
@@ -189,24 +189,24 @@ function makeSidebarMap(base: string, factory: (b: string) => any[], pages: stri
 }
 
 const introPages = [
-  '/guide/why-azguard', '/guide/prerequisites', '/guide/installation',
-  '/guide/quick-start', '/guide/upgrading', '/guide/questions-issues',
-  '/guide/changelog', '/guide/introduction',
+  '/guide/introduction/why-azguard', '/guide/introduction/prerequisites', '/guide/introduction/installation',
+  '/guide/introduction/quick-start', '/guide/introduction/upgrading', '/guide/introduction/questions-issues',
+  '/guide/introduction/changelog', '/guide/introduction',
 ]
 const basicPages = [
-  '/guide/basic-usage', '/guide/permissions', '/guide/roles',
-  '/guide/direct-grants', '/guide/blade-directives', '/guide/super-admin',
-  '/guide/multiple-guards', '/guide/http-access', '/guide/artisan-commands',
-  '/guide/filament', '/guide/abilities-frontend',
+  '/guide/basic-usage/basic-usage', '/guide/basic-usage/permissions', '/guide/basic-usage/roles',
+  '/guide/basic-usage/direct-grants', '/guide/basic-usage/blade-directives', '/guide/basic-usage/super-admin',
+  '/guide/basic-usage/multiple-guards', '/guide/basic-usage/http-access', '/guide/basic-usage/artisan-commands',
+  '/guide/basic-usage/filament', '/guide/basic-usage/abilities-frontend',
 ]
 const bestPages = [
-  '/guide/best-practices', '/guide/policies-and-gates',
-  '/guide/permission-catalog', '/guide/performance-tips',
+  '/guide/best-practices/best-practices', '/guide/best-practices/policies-and-gates',
+  '/guide/best-practices/permission-catalog', '/guide/best-practices/performance-tips',
 ]
 const advancedPages = [
-  '/guide/testing', '/guide/seeding', '/guide/exceptions', '/guide/extending',
-  '/guide/cache', '/guide/events', '/guide/context', '/guide/entity-scopes',
-  '/guide/panels', '/guide/uuid-ulid', '/guide/phpstorm', '/guide/recipes',
+  '/guide/advanced/testing', '/guide/advanced/seeding', '/guide/advanced/exceptions', '/guide/advanced/extending',
+  '/guide/advanced/cache', '/guide/advanced/events', '/guide/advanced/context', '/guide/advanced/entity-scopes',
+  '/guide/advanced/panels', '/guide/advanced/uuid-ulid', '/guide/advanced/phpstorm', '/guide/recipes',
 ]
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -238,22 +238,22 @@ export default defineConfig({
         nav: [
           {
             text: 'Введение',
-            link: '/ru/guide/why-azguard',
+            link: '/ru/guide/introduction/why-azguard',
             activeMatch: '/ru/guide/(why-azguard|prerequisites|installation|quick-start|upgrading|questions-issues|changelog)',
           },
           {
             text: 'Основы',
-            link: '/ru/guide/basic-usage',
+            link: '/ru/guide/basic-usage/basic-usage',
             activeMatch: '/ru/guide/(basic-usage|permissions|roles|direct-grants|blade-directives|super-admin|multiple-guards|http-access|artisan-commands|filament|abilities-frontend)',
           },
           {
             text: 'Лучшие практики',
-            link: '/ru/guide/best-practices',
+            link: '/ru/guide/best-practices/best-practices',
             activeMatch: '/ru/guide/(best-practices|policies-and-gates|permission-catalog|performance-tips)',
           },
           {
             text: 'Продвинутое',
-            link: '/ru/guide/testing',
+            link: '/ru/guide/advanced/testing',
             activeMatch: '/ru/guide/(testing|seeding|exceptions|extending|cache|events|context|entity-scopes|panels|uuid-ulid|phpstorm|recipes)',
           },
           { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard' },
@@ -288,25 +288,25 @@ export default defineConfig({
     nav: [
       {
         text: 'Introduction',
-        link: '/guide/why-azguard',
+        link: '/guide/introduction/why-azguard',
         activeMatch: '/guide/(why-azguard|prerequisites|installation|quick-start|upgrading|questions-issues|changelog)',
       },
       {
         text: 'Basic Usage',
-        link: '/guide/basic-usage',
+        link: '/guide/basic-usage/basic-usage',
         activeMatch: '/guide/(basic-usage|permissions|roles|direct-grants|blade-directives|super-admin|multiple-guards|http-access|artisan-commands|filament|abilities-frontend)',
       },
       {
         text: 'Best Practices',
-        link: '/guide/best-practices',
+        link: '/guide/best-practices/best-practices',
         activeMatch: '/guide/(best-practices|policies-and-gates|permission-catalog|performance-tips)',
       },
       {
         text: 'Advanced',
-        link: '/guide/testing',
+        link: '/guide/advanced/testing',
         activeMatch: '/guide/(testing|seeding|exceptions|extending|cache|events|context|entity-scopes|panels|uuid-ulid|phpstorm|recipes)',
       },
-      { text: 'Changelog', link: '/guide/changelog' },
+      { text: 'Changelog', link: '/guide/introduction/changelog' },
       { text: 'GitHub', link: 'https://github.com/axioma-studio/azguard' },
     ],
 

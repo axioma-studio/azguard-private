@@ -130,7 +130,7 @@ class User extends Authenticatable
 }
 ```
 
-→ [Full installation guide](/guide/installation) · [Quick Start in 5 minutes](/guide/quick-start)
+→ [Full installation guide](/guide/introduction/installation) · [Quick Start in 5 minutes](/guide/introduction/quick-start)
 
 ---
 
@@ -149,4 +149,4 @@ class User extends Authenticatable
 | Runtime (DB) role creation | ✅ | ✅ | ✅ |
 | Built-in diagnostics (`guard:doctor` command) | ✅ | ❌ | ❌ |
 
-→ [Full comparison with Spatie, Bouncer, and Laratrust](/guide/comparison)
+→ [Full comparison with Spatie, Bouncer, and Laratrust](/guide/introduction/comparison)

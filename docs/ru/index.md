@@ -108,4 +108,4 @@ class User extends Authenticatable
 }
 ```
 
-→ [Полное руководство по установке](/ru/guide/installation) · [Быстрый старт за 5 минут](/ru/guide/quick-start)
+→ [Полное руководство по установке](/ru/guide/introduction/installation) · [Быстрый старт за 5 минут](/ru/guide/introduction/quick-start)

@@ -151,9 +151,9 @@ The doctor checks:
 
 ## Next steps
 
-- [Panels](/guide/panels) — understand `app` vs `admin` isolation
-- [Permissions](/guide/permissions) — naming conventions, `#[RoleOnly]`, TypeScript export
-- [Roles](/guide/roles) — static and dynamic (DB-backed) roles
-- [HTTP Access](/guide/http-access) — `#[CheckPermission]` on controllers and middleware
-- [Direct Grants](/guide/direct-grants) — per-user permissions without a role
-- [Super-Admin](/guide/super-admin) — wildcard access bypass
+- [Panels](/guide/advanced/panels) — understand `app` vs `admin` isolation
+- [Permissions](/guide/basic-usage/permissions) — naming conventions, `#[RoleOnly]`, TypeScript export
+- [Roles](/guide/basic-usage/roles) — static and dynamic (DB-backed) roles
+- [HTTP Access](/guide/basic-usage/http-access) — `#[CheckPermission]` on controllers and middleware
+- [Direct Grants](/guide/basic-usage/direct-grants) — per-user permissions without a role
+- [Super-Admin](/guide/basic-usage/super-admin) — wildcard access bypass

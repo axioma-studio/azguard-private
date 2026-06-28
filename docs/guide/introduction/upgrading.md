@@ -77,7 +77,7 @@ composer require axioma-studio/azguard-core
 
 The Filament package now requires Filament 5 and replaces the old
 `AzGuardResource` / `GuardResource` base classes with a config-driven,
-zero-boilerplate model. See the [Filament guide](/guide/filament).
+zero-boilerplate model. See the [Filament guide](/guide/basic-usage/filament).
 
 ### Config & migrations
 
@@ -86,4 +86,4 @@ published migrations remain valid.
 
 ## From Spatie Permission
 
-If you are migrating from Spatie's `laravel-permission`, see the [Comparison page](/guide/comparison) for a feature mapping and the recipes section for migration patterns.
+If you are migrating from Spatie's `laravel-permission`, see the [Comparison page](/guide/introduction/comparison) for a feature mapping and the recipes section for migration patterns.

@@ -20,7 +20,7 @@ composer require axioma-studio/azguard-core
 php artisan vendor:publish --tag=az-guard-config
 ```
 
-This creates `config/az-guard.php`. See the [Configuration reference](/guide/configuration) for all options.
+This creates `config/az-guard.php`. See the [Configuration reference](/guide/advanced/configuration) for all options.
 
 ## Run migrations
 
@@ -90,4 +90,4 @@ expect(Gate::forUser($user)->allows('app.documents.view'))->toBeTrue();
 
 With `cache.store = 'array'` no permission state leaks between test cases.
 
-See [Testing](/guide/testing) for the full guide.
+See [Testing](/guide/advanced/testing) for the full guide.

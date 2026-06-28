@@ -89,4 +89,4 @@ public function createRole(CreateRoleRequest $request, Tenant $tenant): JsonResp
 $user->hasPermissionIn('tenant', (string) $tenant->id, DocumentsPermission::View, 'app');
 ```
 
-See [Context](/guide/context) for the full context API.
+See [Context](/guide/advanced/context) for the full context API.
