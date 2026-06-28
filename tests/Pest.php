@@ -35,6 +35,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/PermissionAccessTest.php',
         'Feature/PermissionMapTest.php',
         'Feature/PolicyAttributeRegistrarTest.php',
+        'Feature/RoleClassResolutionTest.php',
         'Feature/SetCurrentPanelMiddlewareTest.php',
         'Feature/SyncRolesCommandTest.php',
         'Feature/WildcardCatalogFilterTest.php',
