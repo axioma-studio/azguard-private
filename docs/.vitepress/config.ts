@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitepress'
 
+// Available at build time (Node) without pulling in @types/node.
+declare const process: { env: Record<string, string | undefined> }
+
 // ─── Shared sidebar factories (EN) ───────────────────────────────────────────
 
 function introSidebar(base = '') {
@@ -211,15 +214,20 @@ const advancedPages = [
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
+// GitHub Pages serves a project site under /<repo>/. CI sets VITEPRESS_BASE to
+// the repo name (so it works for azguard-private now and azguard after rename);
+// falls back to /azguard/ for local builds, or set VITEPRESS_BASE=/ for a custom domain.
+const base = process.env.VITEPRESS_BASE || '/azguard/'
+
 export default defineConfig({
   lang: 'en-US',
   title: 'AzGuard',
   description: 'Code-first RBAC for Laravel — roles as PHP classes, permissions in Git.',
 
-  base: '/azguard/',
+  base,
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/azguard/favicon.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
   ],
 
   locales: {
