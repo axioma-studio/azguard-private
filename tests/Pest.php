@@ -29,6 +29,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/DoctorCommandTest.php',
         'Feature/GateIntegrationScopedTest.php',
         'Feature/HasDirectGrantsTest.php',
+        'Feature/InstallCommandTest.php',
         'Feature/ListScopedRolesCommandTest.php',
         'Feature/LoadAzGuardRolesMiddlewareTest.php',
         'Feature/MakeGuardPanelCommandTest.php',
