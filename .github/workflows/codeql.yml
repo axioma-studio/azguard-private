@@ -23,7 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [actions, php]
+        # CodeQL does not support PHP — the PHP code is covered by PHPStan/Larastan
+        # (level 6) and the Pest security/arch tests. CodeQL scans the Actions here.
+        language: [actions]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
