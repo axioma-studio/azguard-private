@@ -10,6 +10,8 @@ Static roles extend `BaseRole` (which implements `RoleInterface`). Their permiss
 // app/AzGuard/App/Roles/EditorRole.php
 namespace App\AzGuard\App\Roles;
 
+use App\AzGuard\App\Permissions\CommentsPermission;
+use App\AzGuard\App\Permissions\DocumentsPermission;
 use AzGuard\Roles\BaseRole;
 
 class EditorRole extends BaseRole
@@ -19,17 +21,17 @@ class EditorRole extends BaseRole
     public function permissions(): array
     {
         return [
-            'app.documents.view',
-            'app.documents.create',
-            'app.documents.edit',
-            'app.comments.view',
-            'app.comments.create',
+            DocumentsPermission::View,
+            DocumentsPermission::Create,
+            DocumentsPermission::Edit,
+            CommentsPermission::View,
+            CommentsPermission::Create,
         ];
     }
 }
 ```
 
-`BaseRole` derives `getName()` from the class name (`EditorRole` → `editor`) and defaults `getLevel()` to `0`. Override either as needed. `permissions()` returns full panel-prefixed keys, or `['*']` for a super-admin.
+`BaseRole` derives `getName()` from the class name (`EditorRole` → `editor`) and defaults `getLevel()` to `0`. Override either as needed. `permissions()` returns **enum cases** — the owning panel scopes each one automatically — or `['*']` for a super-admin. Full panel-prefixed string keys are also accepted. Each enum must be registered on its panel via `->permissionEnums([...])`.
 
 ### Role levels
 

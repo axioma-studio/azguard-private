@@ -98,6 +98,7 @@ php artisan make:guard-role
 // app/AzGuard/App/Roles/EditorRole.php
 namespace App\AzGuard\App\Roles;
 
+use App\AzGuard\App\Permissions\DocumentsPermission;
 use AzGuard\Roles\BaseRole;
 
 class EditorRole extends BaseRole
@@ -107,30 +108,29 @@ class EditorRole extends BaseRole
     public function permissions(): array
     {
         return [
-            'app.documents.view',
-            'app.documents.create',
-            'app.documents.edit',
+            DocumentsPermission::View,
+            DocumentsPermission::Create,
+            DocumentsPermission::Edit,
         ];
     }
 }
 ```
 
-`BaseRole` derives the role name from the class name (`EditorRole` → `editor`). `permissions()` returns full panel-prefixed keys.
+`BaseRole` derives the role name from the class name (`EditorRole` → `editor`). `permissions()` returns **enum cases** — the panel scopes each one automatically, so you never spell out the `"app."` prefix. Run `php artisan guard:sync-roles` to mirror the role class into the `roles` table before assigning it.
 
 ## 6. Assign and check
 
 ```php
-// Assign
-$user->assignRole('editor');                 // by name
-$user->assignRole(EditorRole::class);        // by class (preferred)
+// Assign by class — unambiguous and refactor-safe
+$user->assignRole(EditorRole::class);
+$user->assignRole('editor');                       // by name also works
 
-// ✅ Check with an enum — scoped to the panel automatically
+// ✅ Check with an enum case — scoped to the panel automatically
 $user->hasPermission(DocumentsPermission::View);   // true
+
+// Laravel's native Gate uses the full panel-prefixed key
 Gate::allows('app.documents.view');                // true (Gate facade)
 request()->user()->can('app.documents.view');      // true (Auth helper)
-
-// String form — the full panel-prefixed key
-$user->hasPermission('app.documents.view');        // true
 ```
 
 ::: tip Enum cases vs. string keys
