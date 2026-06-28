@@ -24,6 +24,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/DatabaseRoleGrantSourceTest.php',
         'Feature/DiscoveryTest.php',
         'Feature/EnumPermissionArgumentTest.php',
+        'Feature/EnumRolePermissionsTest.php',
         'Feature/DoctorCommandTest.php',
         'Feature/GateIntegrationScopedTest.php',
         'Feature/HasDirectGrantsTest.php',

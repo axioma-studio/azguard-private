@@ -7,6 +7,7 @@ namespace AzGuard\Roles;
 use AzGuard\Contracts\RoleInterface;
 use Illuminate\Support\Str;
 use Override;
+use UnitEnum;
 
 abstract class BaseRole implements RoleInterface
 {
@@ -25,7 +26,15 @@ abstract class BaseRole implements RoleInterface
         return 0;
     }
 
-    /** @return list<string> */
+    /**
+     * Permissions granted by this role.
+     *
+     * Prefer enum cases — they are refactor-safe and scoped to their panel
+     * automatically (no "{panel}." prefix needed). String keys (the full
+     * panel-prefixed form) and `['*']` for super-admin are also accepted.
+     *
+     * @return list<UnitEnum|string>
+     */
     #[Override]
     abstract public function permissions(): array;
 }

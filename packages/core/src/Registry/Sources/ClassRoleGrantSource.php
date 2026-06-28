@@ -5,15 +5,23 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Sources;
 
 use AzGuard\Concerns\HasRoles;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\RoleInterface;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Override;
+use UnitEnum;
 
 /**
  * Grant source from PHP role classes (RoleInterface::permissions()).
+ *
+ * A role may declare its permissions as enum cases (preferred, refactor-safe)
+ * or as already-resolved panel-prefixed string keys. Enum cases are scoped to
+ * their owning panel automatically, so a role only needs to list the bare
+ * permission cases — never the "{panel}." prefix.
  *
  * Only processes roles that have a class_name set (code-defined roles).
  * Pure DB roles without a class_name are handled by DatabaseRoleGrantSource.
@@ -21,6 +29,10 @@ use Override;
  */
 final class ClassRoleGrantSource implements GrantSource
 {
+    public function __construct(
+        private readonly AzGuardManagerInterface $manager,
+    ) {}
+
     #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
@@ -31,16 +43,19 @@ final class ClassRoleGrantSource implements GrantSource
             return PermissionSet::empty();
         }
 
+        $panel = $this->manager->panel($panelId);
+        $panelEnums = $panel?->getPermissionEnums() ?? [];
+
         $keys = $user->roles
             ->filter(fn ($role): bool => $role->class_name !== null)
             ->map(fn ($role) => $role->getRoleLogic())
             ->filter()
-            ->flatMap(
-                // Keep '*' (wildcard) and permissions prefixed with the current panel ID.
-                fn (RoleInterface $roleLogic): array => array_filter(
-                    $roleLogic->permissions(),
-                    static fn (string $p): bool => $p === '*' || str_starts_with($p, $panelId.'.'),
-                ))
+            ->flatMap(fn (RoleInterface $roleLogic): array => $this->resolvePermissions(
+                permissions: $roleLogic->permissions(),
+                panelId: $panelId,
+                panel: $panel,
+                panelEnums: $panelEnums,
+            ))
             ->unique()
             ->values()
             ->all();
@@ -50,6 +65,38 @@ final class ClassRoleGrantSource implements GrantSource
         }
 
         return PermissionSet::fromKeys($keys);
+    }
+
+    /**
+     * Normalise a role's declared permissions to the full keys that belong to
+     * the queried panel. Enum cases are scoped via their owning panel; strings
+     * are kept when they are the '*' wildcard or already prefixed with the panel.
+     *
+     * @param  list<UnitEnum|string>  $permissions
+     * @param  list<class-string>  $panelEnums
+     * @return list<string>
+     */
+    private function resolvePermissions(array $permissions, string $panelId, ?Panel $panel, array $panelEnums): array
+    {
+        $keys = [];
+
+        foreach ($permissions as $permission) {
+            if ($permission instanceof UnitEnum) {
+                // Include an enum case only when it belongs to the queried panel,
+                // scoped to its full "{panelId}.{value}" key.
+                if ($panel instanceof Panel && in_array($permission::class, $panelEnums, strict: true)) {
+                    $keys[] = $panel->resolvePermission(permission: $permission);
+                }
+
+                continue;
+            }
+
+            if ($permission === '*' || str_starts_with($permission, $panelId.'.')) {
+                $keys[] = $permission;
+            }
+        }
+
+        return $keys;
     }
 
     #[Override]
