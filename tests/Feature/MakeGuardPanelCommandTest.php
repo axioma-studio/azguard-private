@@ -30,6 +30,12 @@ it('создаёт guard-панель с доменной структурой',
     expect($policyContent)->toContain('namespace App\Guards\Admin\Documents\Policies;')
         ->and($policyContent)->toContain('use AuthorizesPermission;')
         ->and($policyContent)->toContain('#[GuardPolicy');
+
+    // The provider wires the generated permission enum into the panel, so
+    // enum-declared role permissions resolve out of the box.
+    $providerContent = File::get(path: $basePath.'/AdminGuardPanelProvider.php');
+    expect($providerContent)->toContain('->permissionEnums([')
+        ->and($providerContent)->toContain('DocumentsPermission::class');
 });
 
 it('создаёт Abilities при флаге --with-abilities', function (): void {
