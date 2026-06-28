@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AzGuard\Contracts;
 
-use AzGuard\Concerns\HasPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
