@@ -11,10 +11,10 @@ hero:
   actions:
     - theme: brand
       text: Начать →
-      link: /ru/guide/quick-start
+      link: /ru/introduction/quick-start
     - theme: alt
       text: Почему AzGuard?
-      link: /ru/guide/why-azguard
+      link: /ru/introduction/why-azguard
     - theme: alt
       text: GitHub
       link: https://github.com/axioma-studio/azguard
@@ -108,4 +108,4 @@ class User extends Authenticatable
 }
 ```
 
-→ [Полное руководство по установке](/ru/guide/introduction/installation) · [Быстрый старт за 5 минут](/ru/guide/introduction/quick-start)
+→ [Полное руководство по установке](/ru/introduction/installation) · [Быстрый старт за 5 минут](/ru/introduction/quick-start)

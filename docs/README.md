@@ -3,7 +3,7 @@ home: true
 heroText: AzGuard
 tagline: Code-first RBAC for Laravel. Roles as PHP classes. Permissions in Git.
 actionText: Get Started →
-actionLink: /guide/quick-start
+actionLink: /introduction/quick-start
 features:
   - title: Code-first
     details: Roles are PHP classes. Permissions are PHP Enums. Everything lives in Git and gets code-reviewed.
@@ -35,4 +35,4 @@ class User extends Authenticatable
 }
 ```
 
-→ [Full Getting Started guide](/guide/introduction/quick-start)
+→ [Full Getting Started guide](/introduction/quick-start)
