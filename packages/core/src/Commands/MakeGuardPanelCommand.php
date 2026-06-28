@@ -93,9 +93,54 @@ final class MakeGuardPanelCommand extends Command
             );
         }
 
+        $this->registerPanelInConfig(providerFqcn: $baseNamespace.'\\'.$panel.'GuardPanelProvider');
+
         $this->info("Panel [{$panel}] created at {$basePath}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Auto-register the generated PanelProvider in config/az-guard.php so the
+     * panel works immediately — no manual config edit. Best-effort: prints a
+     * clear instruction when the config is not published or cannot be parsed.
+     */
+    protected function registerPanelInConfig(string $providerFqcn): void
+    {
+        $configPath = config_path('az-guard.php');
+
+        if (! File::exists(path: $configPath)) {
+            $this->warn("Add \\{$providerFqcn}::class to the 'panels' array in config/az-guard.php (config not published).");
+
+            return;
+        }
+
+        $contents = File::get(path: $configPath);
+
+        if (str_contains($contents, $providerFqcn)) {
+            $this->line('Panel already registered in config/az-guard.php.');
+
+            return;
+        }
+
+        // Insert as the first entry right after "'panels' => [" — valid for both
+        // an empty array and a populated one (PHP allows the trailing comma).
+        $updated = preg_replace(
+            pattern: '/(\'panels\'\s*=>\s*\[)/',
+            replacement: "$1\n        \\\\{$providerFqcn}::class,",
+            subject: $contents,
+            limit: 1,
+            count: $count,
+        );
+
+        if (! is_string($updated) || $count === 0) {
+            $this->warn("Could not auto-register; add \\{$providerFqcn}::class to 'panels' in config/az-guard.php.");
+
+            return;
+        }
+
+        File::put(path: $configPath, contents: $updated);
+        $this->info('Registered panel in config/az-guard.php');
     }
 
     /**

@@ -46,6 +46,24 @@ it('создаёт Abilities при флаге --with-abilities', function (): v
     expect(base_path('Modules/Blog/Guards/BlogAdmin/Posts/Abilities/PostsAbilities.php'))->toBeFile();
 });
 
+it('auto-registers the generated panel provider in config/az-guard.php', function (): void {
+    $configPath = config_path('az-guard.php');
+    $backup = File::exists($configPath) ? File::get($configPath) : null;
+
+    File::ensureDirectoryExists(dirname($configPath));
+    File::put($configPath, "<?php\n\nreturn [\n    'panels' => [],\n];\n");
+
+    $this->artisan(
+        command: 'make:guard-panel',
+        parameters: ['panel' => 'Admin', 'domain' => 'Documents'],
+    )->assertSuccessful();
+
+    expect(File::get($configPath))
+        ->toContain('App\Guards\Admin\AdminGuardPanelProvider::class');
+
+    $backup === null ? File::delete($configPath) : File::put($configPath, $backup);
+});
+
 it('отказывается если панель уже существует', function (): void {
     $path = base_path('app/Guards/ExistingPanel');
     File::makeDirectory(path: $path, mode: 0755, recursive: true);
