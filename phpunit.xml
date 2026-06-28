@@ -35,6 +35,11 @@
             <directory>packages/context/src</directory>
             <directory>packages/filament/src</directory>
         </include>
+        <exclude>
+            <!-- Declarative Filament UI (resources, pages, relation managers) is
+                 covered by Filament's own integration testing, not unit coverage. -->
+            <directory>packages/filament/src/Resources</directory>
+        </exclude>
     </source>
 
     <php>
