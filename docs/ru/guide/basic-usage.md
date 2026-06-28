@@ -5,31 +5,43 @@
 ## Проверка прав
 
 ```php
-// Проверка через модель
-$user->hasPermission(PostsPermission::View);        // true / false
-$user->hasPermission('app.posts.view');              // то же
+use AzGuard\Facades\AzGuard;
+use Illuminate\Support\Facades\Gate;
+use App\AzGuard\App\Permissions\PostsPermission;
 
-// Проверка роли (по имени роли)
-$user->hasRole('editor');                            // true / false
+// Проверка через модель — enum-кейс привязывается к панели автоматически
+$user->hasPermission(PostsPermission::View);         // true / false
+$user->hasPermission('app.posts.view');               // строка — полный ключ с префиксом панели
 
-// Laravel Gate
-Gate::allows('app.posts.view');                      // true / false
-$this->authorize('update', $post);                   // 403 если запрещено
+// Проверка роли — по классу (предпочтительно), по имени тоже работает
+$user->hasRole(EditorRole::class);                    // true / false
+$user->hasRole('editor');                             // по имени тоже работает
+
+// Нативный Laravel Gate — нужен полный строковый ключ с префиксом панели.
+// НЕ передавайте сюда «голый» enum: Laravel приведёт его к ->value без
+// префикса панели, и он никогда не совпадёт с панельным ключом.
+Gate::allows('app.posts.view');                       // true / false
+// Либо выведите ключ из enum «без опечаток»:
+Gate::allows(AzGuard::permission('app', PostsPermission::View));
+$this->authorize('update', $post);                    // 403 если запрещено
 
 // Blade
-@can('app.posts.edit') ... @endcan
+@azcan(PostsPermission::Edit) ... @endazcan           // директива AzGuard — понимает enum
+@can('app.posts.edit') ... @endcan                    // нативный @can — полный ключ с префиксом панели
 @azrole('editor') ... @endazrole
 ```
 
 ## Назначение / снятие роли
 
 ```php
-// Назначить (по имени роли)
-$user->assignRole('editor');
-$user->assignRole('editor', 'moderator');
+// Назначить — по классу (предпочтительно: однозначно и безопасно при рефакторинге)
+$user->assignRole(EditorRole::class);
+$user->assignRole('editor');                          // по имени тоже работает
+$user->assignRole(EditorRole::class, ModeratorRole::class);
 
 // Снять
-$user->removeRole('editor');
+$user->removeRole(EditorRole::class);
+$user->removeRole('editor');                          // по имени тоже работает
 
 // Все роли пользователя
 $user->roles;   // Collection (отношение)

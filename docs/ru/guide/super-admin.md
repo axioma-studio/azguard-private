@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Gate;
 public function boot(): void
 {
     Gate::before(function ($user, $ability) {
-        if ($user->hasRole('super-admin')) {
+        if ($user->hasRole(SuperAdminRole::class)) {  // по классу (предпочтительно); 'super-admin' по имени тоже работает
             return true;  // пропустить любой Gate-чек
         }
     });
@@ -45,8 +45,13 @@ Wildcard-роль работает и для `hasPermission()`, и для `Gate:
 
 ## Назначение
 
+Сначала выполните `php artisan guard:sync-roles`, чтобы класс-роль попал в БД, и только потом назначайте её:
+
 ```php
-$user->assignRole('super-admin');
+$user->assignRole(SuperAdminRole::class);     // по классу (предпочтительно); 'super-admin' по имени тоже работает
+
+$user->hasPermission(DocumentsPermission::View);  // true — enum-кейс, привязан к панели
+$user->hasPermission('app.anything.at.all');      // true — полный ключ с префиксом панели
 ```
 
 ## Blade

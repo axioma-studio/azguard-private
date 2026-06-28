@@ -49,10 +49,17 @@ class AppPanelProvider extends PanelProvider
 
 ## Изоляция прав
 
-Права между панелями не пересекаются:
+Права между панелями не пересекаются. Enum-кейс привязывается к своей панели
+автоматически; строковую форму используют как явный пример сборки полного ключа:
 
 ```php
-// app.users.view и admin.users.view — разные права
+// Назначаем роли — по классу (предпочтительно)
+$user->assignRole(EditorRole::class);   // 'editor' по имени тоже работает
+
+// Enum-кейс — привязан к своей панели автоматически
+$user->hasPermission(UsersPermission::View);   // зависит от панели, где зарегистрирован enum
+
+// app.users.view и admin.users.view — разные права (полный ключ с префиксом панели)
 $user->hasPermission('app.users.view');   // false — нет роли в app
 $user->hasPermission('admin.users.view'); // true  — есть роль в admin
 ```

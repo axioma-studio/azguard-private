@@ -27,8 +27,10 @@ enum PostsPermission: string
 ## Проверка прав
 
 ```php
-$user->hasPermission(PostsPermission::View);   // enum-кейс (привязан к панели)
-$user->hasPermission('app.posts.view');         // полный строковый ключ
+use App\AzGuard\App\Permissions\PostsPermission;
+
+$user->hasPermission(PostsPermission::View);   // enum-кейс (привязан к панели автоматически)
+$user->hasPermission('app.posts.view');         // полный строковый ключ с префиксом панели
 
 // checkPermission() — то же, но никогда не бросает исключений (безопасно в Blade)
 $user->checkPermission(PostsPermission::Edit);
@@ -46,11 +48,21 @@ $canCreateOrEdit =
 ## Интеграция с Laravel Gate
 
 AzGuard регистрируется через `Gate::before`, поэтому любой полный ключ права
-сразу работает в Gate без отдельной регистрации:
+сразу работает в Gate без отдельной регистрации. Нативный Gate ожидает **полный
+строковый ключ с префиксом панели** — «голый» enum сюда передавать нельзя:
+Laravel приведёт его к `->value` без префикса панели, и совпадения не будет.
 
 ```php
+use AzGuard\Facades\AzGuard;
+
 Gate::allows('app.posts.view');     // true / false
 $user->can('app.posts.view');        // то же
+
+// Чтобы вывести ключ из enum «без опечаток»:
+Gate::allows(AzGuard::permission('app', PostsPermission::View));
+
+// Директива @azcan и $user->hasPermission() — наоборот, понимают enum напрямую:
+$user->hasPermission(PostsPermission::View);
 ```
 
 ## Атрибут `#[GateAbility]`

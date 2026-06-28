@@ -8,15 +8,15 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Синхронизируем классы ролей с БД (создаёт записи по имени роли)
+        // Синхронизируем классы ролей с БД (зеркалит классы ролей в таблицу roles перед назначением)
         Artisan::call('guard:sync-roles');
 
-        // Назначаем роли по имени конкретным пользователям
+        // Назначаем роли конкретным пользователям — по классу (предпочтительно)
         $admin = User::where('email', 'admin@example.com')->first();
-        $admin?->assignRole('admin');
+        $admin?->assignRole(AdminRole::class);        // 'admin' по имени тоже работает
 
         $editor = User::where('email', 'editor@example.com')->first();
-        $editor?->assignRole('editor');
+        $editor?->assignRole(EditorRole::class);      // 'editor' по имени тоже работает
     }
 }
 ```
@@ -29,7 +29,7 @@ public function test_seeder_assigns_correct_roles(): void
     $this->seed(RolesAndPermissionsSeeder::class);
 
     $admin = User::where('email', 'admin@example.com')->first();
-    $this->assertTrue($admin->hasRole('admin'));
+    $this->assertTrue($admin->hasRole(AdminRole::class));   // 'admin' по имени тоже работает
     $this->assertTrue($admin->hasPermission(UsersPermission::Manage));
 }
 ```
@@ -41,7 +41,7 @@ public function test_seeder_assigns_correct_roles(): void
 public function editor(): static
 {
     return $this->afterCreating(function (User $user) {
-        $user->assignRole('editor');
+        $user->assignRole(EditorRole::class);     // 'editor' по имени тоже работает
     });
 }
 
