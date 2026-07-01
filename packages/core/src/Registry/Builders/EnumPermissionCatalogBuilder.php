@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Builders;
 
-use AzGuard\Facades\AzGuard;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
 use Illuminate\Support\Facades\File;
@@ -22,19 +22,27 @@ use UnitEnum;
  */
 final readonly class EnumPermissionCatalogBuilder implements PermissionCatalogBuilder
 {
+    private AzGuardManagerInterface $manager;
+
     /**
      * @param  string|null  $panelId  When set, this builder only handles this panel.
      * @param  list<class-string>  $enumClasses  Explicit enum class list (optional).
+     * @param  AzGuardManagerInterface|null  $manager  Injected manager (parity with GrantSource DI).
+     *                                                 Falls back to the container when this builder
+     *                                                 is constructed directly via `new` (PanelProvider).
      */
     public function __construct(
         private ?string $panelId = null,
         private array $enumClasses = [],
-    ) {}
+        ?AzGuardManagerInterface $manager = null,
+    ) {
+        $this->manager = $manager ?? app(AzGuardManagerInterface::class);
+    }
 
     #[Override]
     public function build(string $panelId): array
     {
-        $panel = AzGuard::panel($panelId);
+        $panel = $this->manager->panel($panelId);
 
         if ($panel === null) {
             return [];
@@ -78,7 +86,7 @@ final readonly class EnumPermissionCatalogBuilder implements PermissionCatalogBu
             return $this->panelId === $panelId;
         }
 
-        return AzGuard::panel($panelId) !== null;
+        return $this->manager->panel($panelId) !== null;
     }
 
     /**

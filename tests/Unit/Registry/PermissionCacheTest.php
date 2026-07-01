@@ -7,12 +7,14 @@ use AzGuard\Registry\Values\PermissionSet;
 
 describe('PermissionCache', function () {
 
-    it('generates canonical cache key', function () {
-        expect(PermissionCache::keyFor(42, 'app'))
-            ->toBe('azguard.perms.42.app');
+    it('generates canonical cache key embedding the current epoch', function () {
+        $cache = new PermissionCache;
 
-        expect(PermissionCache::keyFor('uuid-123', 'admin'))
-            ->toBe('azguard.perms.uuid-123.admin');
+        expect($cache->keyFor(42, 'app'))
+            ->toBe('azguard.perms.42.app.v1');
+
+        expect($cache->keyFor('uuid-123', 'admin'))
+            ->toBe('azguard.perms.uuid-123.admin.v1');
     });
 
     it('remembers result for same user+panel', function () {
@@ -57,6 +59,49 @@ describe('PermissionCache', function () {
         });
 
         $cache->forgetAll();
+
+        $cache->rememberForRequest(1, 'app', function () use (&$calls): PermissionSet {
+            $calls++;
+
+            return PermissionSet::fromKeys(['app.posts.view']);
+        });
+
+        expect($calls)->toBe(2);
+    });
+
+    it('forgetRequestCache drops the in-process entry WITHOUT bumping the epoch', function () {
+        // Persistent store so an epoch bump would be observable in keyFor().
+        config()->set('cache.stores.azguard_test', ['driver' => 'array']);
+        config()->set('az-guard.cache.store', 'azguard_test');
+
+        $cache = new PermissionCache;
+        $calls = 0;
+
+        $cache->rememberForRequest(1, 'app', function () use (&$calls): PermissionSet {
+            $calls++;
+
+            return PermissionSet::fromKeys(['app.posts.view']);
+        });
+
+        expect($cache->keyFor(1, 'app'))->toBe('azguard.perms.1.app.v1');
+
+        $cache->forgetRequestCache(1, 'app');
+
+        // Epoch must NOT advance — the durable cross-request cache stays intact.
+        expect($cache->keyFor(1, 'app'))->toBe('azguard.perms.1.app.v1');
+    });
+
+    it('forgetRequestCache forces an in-process recompute of that user+panel', function () {
+        $cache = new PermissionCache;
+        $calls = 0;
+
+        $cache->rememberForRequest(1, 'app', function () use (&$calls): PermissionSet {
+            $calls++;
+
+            return PermissionSet::fromKeys(['app.posts.view']);
+        });
+
+        $cache->forgetRequestCache(1, 'app');
 
         $cache->rememberForRequest(1, 'app', function () use (&$calls): PermissionSet {
             $calls++;

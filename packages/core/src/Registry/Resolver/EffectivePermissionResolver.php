@@ -109,11 +109,24 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
      * actually covers at least one catalog key — so a meaningful grant survives
      * but a stale 'app.nonsense.*' that matches nothing is dropped. With the
      * feature off, patterns are treated as unknown exact keys and removed.
+     *
+     * After an exact-match miss, a key is also checked against every dynamic
+     * definition in the catalog (PermissionDefinition::isDynamic()) — e.g. a
+     * concrete grant 'app.team.42.admin' matches the dynamic definition
+     * 'app.team.{id}.admin', whose '{seg}' placeholder segments stand for
+     * exactly one dotted segment. Non-dynamic definitions never participate
+     * in this match — a bogus unknown key is still filtered out.
      */
     private function filterAgainstCatalog(PermissionSet $set, string $panelId): PermissionSet
     {
+        $dynamicDefinitions = array_values(array_filter(
+            $this->catalog->all($panelId),
+            static fn (PermissionDefinition $d): bool => $d->isDynamic(),
+        ));
+
         if (! Config::wildcardEnabled()) {
-            $filtered = $set->filter(fn (string $key): bool => $this->catalog->has($panelId, $key));
+            $filtered = $set->filter(fn (string $key): bool => $this->catalog->has($panelId, $key)
+                || $this->matchesDynamicDefinition($key, $dynamicDefinitions));
             $this->logDroppedKeys($set, $filtered, $panelId);
 
             return $filtered;
@@ -124,9 +137,13 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
             $this->catalog->all($panelId),
         );
 
-        $filtered = $set->filter(function (string $key) use ($panelId, $catalogKeys): bool {
+        $filtered = $set->filter(function (string $key) use ($panelId, $catalogKeys, $dynamicDefinitions): bool {
             if (! str_contains($key, PermissionKey::WILDCARD)) {
-                return $this->catalog->has($panelId, $key);
+                if ($this->catalog->has($panelId, $key)) {
+                    return true;
+                }
+
+                return $this->matchesDynamicDefinition($key, $dynamicDefinitions);
             }
 
             $pattern = PermissionSet::fromKeys([$key]);
@@ -143,6 +160,44 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
         $this->logDroppedKeys($set, $filtered, $panelId);
 
         return $filtered;
+    }
+
+    /**
+     * Whether a concrete key (e.g. 'app.team.42.admin') matches at least one
+     * dynamic definition (e.g. 'app.team.{id}.admin'). Each '{seg}' placeholder
+     * segment matches exactly one dotted segment of the candidate key.
+     *
+     * @param  list<PermissionDefinition>  $dynamicDefinitions
+     */
+    private function matchesDynamicDefinition(string $key, array $dynamicDefinitions): bool
+    {
+        foreach ($dynamicDefinitions as $definition) {
+            if ($this->matchesDynamicPattern($key, $definition->key())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function matchesDynamicPattern(string $key, string $pattern): bool
+    {
+        $keySegments = explode(PermissionKey::SEPARATOR, $key);
+        $patternSegments = explode(PermissionKey::SEPARATOR, $pattern);
+
+        if (count($keySegments) !== count($patternSegments)) {
+            return false;
+        }
+
+        foreach ($patternSegments as $index => $patternSegment) {
+            $isPlaceholder = str_starts_with($patternSegment, '{') && str_ends_with($patternSegment, '}');
+
+            if (! $isPlaceholder && $patternSegment !== $keySegments[$index]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -169,5 +224,15 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
     public function forgetForUser(Authenticatable $user, string $panelId): void
     {
         $this->cache->forgetForUser($user->getAuthIdentifier(), $panelId);
+    }
+
+    /**
+     * In-process-only flush for a specific user (call for transient,
+     * within-request context switches — does not bump the durable epoch).
+     */
+    #[Override]
+    public function forgetRequestCache(Authenticatable $user, string $panelId): void
+    {
+        $this->cache->forgetRequestCache($user->getAuthIdentifier(), $panelId);
     }
 }

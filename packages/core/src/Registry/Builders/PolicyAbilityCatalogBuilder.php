@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Builders;
 
 use AzGuard\Attributes\GateAbility;
-use AzGuard\Facades\AzGuard;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Guard\PolicyDiscovery;
 use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Definitions\EnumPermissionDefinition;
+use Illuminate\Support\Facades\Log;
 use Override;
 use ReflectionClass;
 use ReflectionMethod;
@@ -22,19 +23,27 @@ use UnitEnum;
  */
 final readonly class PolicyAbilityCatalogBuilder implements PermissionCatalogBuilder
 {
+    private AzGuardManagerInterface $manager;
+
     /**
      * @param  string|null  $panelId  When set, this builder only handles this panel.
      * @param  list<class-string>  $policyClasses  Explicit policy class list (optional).
+     * @param  AzGuardManagerInterface|null  $manager  Injected manager (parity with GrantSource DI).
+     *                                                 Falls back to the container when this builder
+     *                                                 is constructed directly via `new` (PanelProvider).
      */
     public function __construct(
         private ?string $panelId = null,
         private array $policyClasses = [],
-    ) {}
+        ?AzGuardManagerInterface $manager = null,
+    ) {
+        $this->manager = $manager ?? app(AzGuardManagerInterface::class);
+    }
 
     #[Override]
     public function build(string $panelId): array
     {
-        $panel = AzGuard::panel($panelId);
+        $panel = $this->manager->panel($panelId);
 
         if ($panel === null) {
             return [];
@@ -49,6 +58,14 @@ final readonly class PolicyAbilityCatalogBuilder implements PermissionCatalogBui
         $definitions = [];
 
         foreach ($classes as $policyClass) {
+            if (! class_exists($policyClass)) {
+                Log::warning("AzGuard: policy class [{$policyClass}] does not exist, skipping catalog entry.", [
+                    'panel' => $panelId,
+                ]);
+
+                continue;
+            }
+
             $reflection = new ReflectionClass($policyClass);
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
@@ -82,7 +99,7 @@ final readonly class PolicyAbilityCatalogBuilder implements PermissionCatalogBui
             return $this->panelId === $panelId;
         }
 
-        return AzGuard::panel($panelId) !== null;
+        return $this->manager->panel($panelId) !== null;
     }
 
     /**

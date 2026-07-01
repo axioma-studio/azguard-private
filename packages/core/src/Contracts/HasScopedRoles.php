@@ -21,11 +21,11 @@ use UnitEnum;
  */
 interface HasScopedRoles
 {
-    public function assignScopedRole(string|Role $role, Model $entity): static;
+    public function assignScopedRole(string|Role $role, Model $entity, ?string $panelId = null): static;
 
-    public function removeScopedRole(string|Role $role, Model $entity): static;
+    public function removeScopedRole(string|Role $role, Model $entity, ?string $panelId = null): static;
 
-    public function hasScopedRole(string|Role $role, Model $entity): bool;
+    public function hasScopedRole(string|Role $role, Model $entity, ?string $panelId = null): bool;
 
     public function hasScopedPermission(string|UnitEnum $permission, Model $entity, ?string $panelId = null): bool;
 }

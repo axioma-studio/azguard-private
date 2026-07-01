@@ -32,9 +32,9 @@ use UnitEnum;
  *
  * --- Grants API ---
  * @method static GrantBuilder forUser(Authenticatable $user)
- * @method static DirectGrant grant(Authenticatable $user, (string | UnitEnum) $permissionKey, string $panelId = 'app', ?int $ttl = null)
- * @method static int revoke(Authenticatable $user, (string | UnitEnum) $permissionKey, string $panelId = 'app')
- * @method static Collection<int, DirectGrant> grants(Authenticatable $user, string $panelId = 'app')
+ * @method static DirectGrant grant(Authenticatable $user, (string | UnitEnum) $permissionKey, ?string $panelId = null, ?int $ttl = null)
+ * @method static int revoke(Authenticatable $user, (string | UnitEnum) $permissionKey, ?string $panelId = null)
+ * @method static Collection<int, DirectGrant> grants(Authenticatable $user, ?string $panelId = null)
  *
  * @see AzGuardManager
  */

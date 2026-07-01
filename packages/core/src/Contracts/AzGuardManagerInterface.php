@@ -109,7 +109,7 @@ interface AzGuardManagerInterface
     public function grant(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
         ?int $ttl = null,
     ): DirectGrant;
 
@@ -121,7 +121,7 @@ interface AzGuardManagerInterface
     public function revoke(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
     ): int;
 
     /**
@@ -131,6 +131,6 @@ interface AzGuardManagerInterface
      */
     public function grants(
         Authenticatable $user,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
     ): Collection;
 }

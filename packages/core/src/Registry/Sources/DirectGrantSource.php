@@ -8,6 +8,7 @@ use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
+use AzGuard\Support\Config;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Override;
 
@@ -17,6 +18,8 @@ use Override;
  * Direct per-user permissions without a role: temporary access,
  * overrides, temporary privilege escalation.
  * Filters by expires_at: null = never expires, otherwise active only.
+ * Gated by features.direct_grants; disabled -> empty PermissionSet, no query.
+ * Model resolved via Config::directGrantModel() so a custom model is honoured.
  * Priority: 80.
  */
 final class DirectGrantSource implements GrantSource
@@ -24,7 +27,14 @@ final class DirectGrantSource implements GrantSource
     #[Override]
     public function permissionsFor(Authenticatable $user, string $panelId): PermissionSet
     {
-        $keys = DirectGrant::query()
+        if (! Config::directGrantsEnabled()) {
+            return PermissionSet::empty();
+        }
+
+        /** @var class-string<DirectGrant> $model */
+        $model = Config::directGrantModel();
+
+        $keys = $model::query()
             ->where('grantable_type', $user::class)
             ->where('grantable_id', $user->getAuthIdentifier())
             ->where('panel_id', $panelId)

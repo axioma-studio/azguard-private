@@ -162,10 +162,14 @@ final class AzGuardManager implements AzGuardManagerInterface
     public function grant(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
         ?int $ttl = null,
     ): DirectGrant {
-        return $this->forUser($user)->on($panelId)->ttl($ttl)->grant($permissionKey);
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return $this->forUser($user)->on($resolvedPanelId)->ttl($ttl)->grant($permissionKey);
     }
 
     /**
@@ -177,9 +181,13 @@ final class AzGuardManager implements AzGuardManagerInterface
     public function revoke(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
     ): int {
-        return $this->forUser($user)->on($panelId)->revoke($permissionKey);
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return $this->forUser($user)->on($resolvedPanelId)->revoke($permissionKey);
     }
 
     /**
@@ -190,8 +198,12 @@ final class AzGuardManager implements AzGuardManagerInterface
     #[Override]
     public function grants(
         Authenticatable $user,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
     ): Collection {
-        return $this->forUser($user)->on($panelId)->grants();
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return $this->forUser($user)->on($resolvedPanelId)->grants();
     }
 }
