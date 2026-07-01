@@ -9,6 +9,7 @@ use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Registry\Contracts\PermissionDefinition;
 use AzGuard\Registry\Exceptions\InvalidCatalogException;
 use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
+use Closure;
 use Override;
 
 /**
@@ -28,14 +29,23 @@ final class CompositePermissionCatalog implements PermissionCatalog
 
     private bool $built = false;
 
+    /** @var Closure(): list<string> */
+    private readonly Closure $panelIdsResolver;
+
     /**
      * @param  list<PermissionCatalogBuilder>  $builders
-     * @param  list<string>  $panelIds
+     * @param  list<string>|(Closure(): list<string>)  $panelIds  An array is
+     *                                                            frozen; a closure is resolved lazily so panels registered after
+     *                                                            boot are visible.
      */
     public function __construct(
         private readonly array $builders,
-        private readonly array $panelIds,
-    ) {}
+        array|Closure $panelIds,
+    ) {
+        $this->panelIdsResolver = $panelIds instanceof Closure
+            ? $panelIds
+            : static fn (): array => $panelIds;
+    }
 
     private function ensureBuilt(): void
     {
@@ -43,7 +53,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
             return;
         }
 
-        foreach ($this->panelIds as $panelId) {
+        foreach (($this->panelIdsResolver)() as $panelId) {
             $this->definitions[$panelId] = [];
             $this->sources[$panelId] = [];
 
@@ -136,12 +146,13 @@ final class CompositePermissionCatalog implements PermissionCatalog
     #[Override]
     public function panels(): array
     {
-        return $this->panelIds;
+        return ($this->panelIdsResolver)();
     }
 
     /**
      * Reset the catalog cache (for tests or hot-reload in dev).
      */
+    #[Override]
     public function flush(): void
     {
         $this->definitions = [];

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Concerns;
 
-use AzGuard\AzGuardManager;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\ContextGuard;
 use AzGuard\Contracts\PermissionContext;
 use AzGuard\Contracts\PermissionResolverInterface;
@@ -166,7 +166,7 @@ trait HasPermissions
             return;
         }
 
-        $panels = app(AzGuardManager::class)->getPanels();
+        $panels = app(AzGuardManagerInterface::class)->getPanels();
 
         foreach (array_keys($panels) as $id) {
             $resolver->forgetForUser($this, $id);

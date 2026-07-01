@@ -7,6 +7,7 @@ namespace AzGuard\Contracts;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
+use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Support\Panel;
 use BackedEnum;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -77,6 +78,15 @@ interface AzGuardManagerInterface
     public function isSuperAdmin(Authenticatable $user, ?string $panelId = null): bool;
 
     /**
+     * Curated ability projection for the frontend: resolves ONLY the requested
+     * $keys to a map of ability => bool. The full catalog is never dumped.
+     *
+     * @param  list<string>  $keys
+     * @return array<string, bool>
+     */
+    public function abilitiesFor(Authenticatable $user, string|BackedEnum|null $panelId, array $keys): array;
+
+    /**
      * Whether the optional azguard/context ContextGuard is bound. When false,
      * contextual checks (hasPermissionIn) always return false.
      */
@@ -91,6 +101,15 @@ interface AzGuardManagerInterface
      * @param  class-string<GrantSource>  $sourceClass
      */
     public function registerGrantSource(string $sourceClass): void;
+
+    /**
+     * Register a custom PermissionCatalogBuilder (bind if needed and tag it) so
+     * CompositePermissionCatalog contributes its definitions to the catalog.
+     * Symmetric with {@see registerGrantSource()}.
+     *
+     * @param  class-string<PermissionCatalogBuilder>  $builderClass
+     */
+    public function registerCatalogBuilder(string $builderClass): void;
 
     // ─── Grants API ───────────────────────────────────────────────────────────
 

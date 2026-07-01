@@ -61,6 +61,38 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - `PermissionResolverInterface::forgetRequestCache()` — in-process-only cache
   invalidation that drops the current request's resolved sets **without** bumping
   the durable per-user epoch; used for transient authorization-context switches. (F30)
+- **First-class, symmetric extension surface (Phase 3 — Extension API).**
+  - Config-swappable core strategies — `az-guard.manager`, `az-guard.resolver`,
+    `az-guard.matcher`, `az-guard.abilities_resolver`. The `AzGuard` facade now
+    resolves through `AzGuardManagerInterface`, so a swapped manager reaches every
+    `check()` (core call sites route through the interface). (F5)
+  - `AzGuard::registerCatalogBuilder()` + `AzGuardManager::CATALOG_BUILDERS_TAG` —
+    the public, tagged catalog-builder registration, symmetric with
+    `registerGrantSource`. (F7)
+  - `AzGuard\Events\AccessDecision` + `Authorizer::explain()` — off-hot-path
+    authorization inspection returning a verdict + reason code; the event is
+    dispatched only when `features.audit_log` is enabled (default off), which
+    makes that previously-unread flag honest. `check()` is untouched. (F16)
+  - `PermissionMatcher` contract (config `az-guard.matcher`, memoized) with two
+    grammars: the default `WildcardPermissionMatcher` (historical `*` crosses
+    dots) and the opt-in `HierarchicalPermissionMatcher` (`*` = one segment,
+    `**` = recursive). The 0.3.0 default behaviour is byte-identical; the
+    hierarchical grammar becomes the default in 0.4.0. (F21, F22)
+  - `AzGuard::abilitiesFor($user, $panel, $keys)` + swappable `AbilitiesResolver`
+    (`az-guard.abilities_resolver`) — a curated ability→bool projection for the
+    frontend. The `$keys` allowlist is mandatory; the catalog is never dumped. (F37)
+  - Opt-in, swappable `RolePermissionValidator`
+    (`features.validate_role_permissions`, default off;
+    `az-guard.role_permission_validator`) vets role permission keys on save,
+    catching stray `*`/typo grants. (F46)
+  - Opt-in `az-guard.strict_panels` (default off): resolving an explicit,
+    unregistered panel throws `PanelNotFoundException` instead of best-effort
+    lenient resolution. (F47)
+
+### Changed
+- `PermissionCatalog::flush()` is now part of the contract, and panel IDs are
+  resolved lazily (no longer frozen at boot) so a panel registered after boot is
+  visible via `panels()`. (F40)
 
 ### Added
 - `AbilitiesDto::make(...)` — the supported way to instantiate an abilities DTO:

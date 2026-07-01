@@ -25,9 +25,12 @@ use AzGuard\Commands\RevokeGrantCommand;
 use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SuperAdminCommand;
 use AzGuard\Commands\SyncRolesCommand;
+use AzGuard\Contracts\AbilitiesResolver;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\PermissionLayer;
+use AzGuard\Contracts\PermissionMatcher;
 use AzGuard\Contracts\PermissionResolverInterface;
+use AzGuard\Contracts\RolePermissionValidator;
 use AzGuard\Events\GrantGiven;
 use AzGuard\Events\GrantRevoked;
 use AzGuard\Events\RoleAttached;
@@ -70,8 +73,20 @@ final class AzGuardServiceProvider extends ServiceProvider
             key: 'az-guard',
         );
 
-        $this->app->singleton(AzGuardManager::class);
-        $this->app->bind(AzGuardManagerInterface::class, AzGuardManager::class);
+        // Config-swappable: 'az-guard.manager' picks the concrete class, resolved
+        // lazily so an override set anywhere (config file, test env) is honoured.
+        // The facade and the concrete AzGuardManager key both resolve THROUGH the
+        // interface (via the alias below), so swapping this key reaches every
+        // check(). The default is instantiated directly to keep the concrete key
+        // aliased to the interface WITHOUT the interface->concrete->alias cycle.
+        $this->app->singleton(AzGuardManagerInterface::class, static function ($app): AzGuardManagerInterface {
+            $class = Config::managerClass();
+
+            return $class === AzGuardManager::class
+                ? new AzGuardManager
+                : $app->make($class);
+        });
+        $this->app->alias(AzGuardManagerInterface::class, AzGuardManager::class);
 
         $this->app->singleton(PolicyAttributeRegistrar::class);
 
@@ -120,7 +135,24 @@ final class AzGuardServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->bind(PermissionResolverInterface::class, EffectivePermissionResolver::class);
+        // Config-swappable: 'az-guard.resolver' picks the concrete class bound
+        // to the interface, reaching every check(). The scoped factory above
+        // stays the resolution path for the default EffectivePermissionResolver
+        // class itself, preserving its per-request PermissionCache lifecycle;
+        // a custom resolver class is built normally by the container (it is
+        // responsible for its own lifecycle if it needs one).
+        $this->app->bind(PermissionResolverInterface::class, static fn ($app): PermissionResolverInterface => $app->make(Config::resolverClass()));
+
+        // Config-swappable wildcard grammar. Singleton so compiled patterns are
+        // memoized for the whole process; the class is a pure pattern->regex
+        // function, safe to share across requests/users.
+        $this->app->singleton(PermissionMatcher::class, static fn ($app): PermissionMatcher => $app->make(Config::matcherClass()));
+
+        // Config-swappable curated frontend ability projection (AzGuard::abilitiesFor).
+        $this->app->bind(AbilitiesResolver::class, static fn ($app): AbilitiesResolver => $app->make(Config::abilitiesResolverClass()));
+
+        // Config-swappable opt-in role-permission validator (default lenient).
+        $this->app->bind(RolePermissionValidator::class, static fn ($app): RolePermissionValidator => $app->make(Config::rolePermissionValidatorClass()));
     }
 
     public function boot(): void
@@ -134,18 +166,17 @@ final class AzGuardServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');
 
         $this->app->singleton(PermissionCatalog::class, function (): PermissionCatalog {
-            /** @var AzGuardManager $manager */
-            $manager = $this->app->make(AzGuardManager::class);
-            $panelIds = array_keys($manager->getPanels());
+            $manager = $this->app->make(AzGuardManagerInterface::class);
 
             $builders = iterator_to_array(
-                $this->app->tagged('azguard.catalog_builders'),
+                $this->app->tagged(AzGuardManager::CATALOG_BUILDERS_TAG),
                 preserve_keys: false,
             );
 
             return new CompositePermissionCatalog(
                 builders: $builders,
-                panelIds: $panelIds,
+                // Lazy: a panel registered after boot is visible via panels().
+                panelIds: static fn (): array => array_keys($manager->getPanels()),
             );
         });
 
@@ -164,8 +195,8 @@ final class AzGuardServiceProvider extends ServiceProvider
         // but currentPanel is per-request state. Reset it between Octane requests
         // so a stale panel from a previous request cannot leak. No-op without Octane.
         Event::listen('Laravel\Octane\Events\RequestReceived', function (): void {
-            if ($this->app->resolved(AzGuardManager::class)) {
-                $this->app->make(AzGuardManager::class)->setCurrentPanel(null);
+            if ($this->app->resolved(AzGuardManagerInterface::class)) {
+                $this->app->make(AzGuardManagerInterface::class)->setCurrentPanel(null);
             }
         });
 
@@ -221,8 +252,7 @@ final class AzGuardServiceProvider extends ServiceProvider
         }
 
         AboutCommand::add('AzGuard', static function (): array {
-            /** @var AzGuardManager $manager */
-            $manager = app(AzGuardManager::class);
+            $manager = app(AzGuardManagerInterface::class);
             $panels = array_keys($manager->getPanels());
 
             $version = class_exists(InstalledVersions::class)

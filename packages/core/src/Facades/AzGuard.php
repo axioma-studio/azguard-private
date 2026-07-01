@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AzGuard\Facades;
 
 use AzGuard\AzGuardManager;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
+use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Support\Panel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,9 +27,11 @@ use UnitEnum;
  * @method static string|null tryPermission(string $panelId, (string | UnitEnum) $permission)
  * @method static string|null panelIdForPermission(UnitEnum $permission)
  * @method static void registerGrantSource(class-string<GrantSource> $sourceClass)
+ * @method static void registerCatalogBuilder(class-string<PermissionCatalogBuilder> $builderClass)
  *
  * --- Actor API ---
  * @method static bool isSuperAdmin(Authenticatable $user, ?string $panelId = null)
+ * @method static array<string, bool> abilitiesFor(Authenticatable $user, ?string $panelId, array<int, string> $keys)
  * @method static bool hasContextGuard()
  *
  * --- Grants API ---
@@ -43,6 +47,6 @@ final class AzGuard extends Facade
     #[Override]
     protected static function getFacadeAccessor(): string
     {
-        return AzGuardManager::class;
+        return AzGuardManagerInterface::class;
     }
 }

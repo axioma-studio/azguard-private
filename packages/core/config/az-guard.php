@@ -1,11 +1,50 @@
 <?php
 
 declare(strict_types=1);
+use AzGuard\Abilities\DefaultAbilitiesResolver;
+use AzGuard\AzGuardManager;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
+use AzGuard\Registry\Matching\WildcardPermissionMatcher;
+use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Registry\Validation\CatalogRolePermissionValidator;
 
 return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Extension Points
+    |--------------------------------------------------------------------------
+    | The two "one active strategy" seams AzGuard ships. Override with your
+    | own subclass to swap implementation-wide — the AzGuard facade and every
+    | check() call resolve through these bindings.
+    |
+    | manager: bound to AzGuard\Contracts\AzGuardManagerInterface. The facade
+    | resolves via the interface, so a custom manager here is honoured.
+    |
+    | resolver: bound to AzGuard\Contracts\PermissionResolverInterface. Kept
+    | on a scoped (per-request) lifecycle internally to preserve the
+    | PermissionCache request lifecycle — this key only swaps the class used.
+    |
+    | matcher: bound to AzGuard\Contracts\PermissionMatcher — the wildcard
+    | matching grammar. The default WildcardPermissionMatcher keeps the historical
+    | grammar ('*' crosses dots). Swap to HierarchicalPermissionMatcher for the
+    | stricter segment-aware grammar ('*' = one segment, '**' = recursive).
+    |
+    | abilities_resolver: bound to AzGuard\Contracts\AbilitiesResolver — builds
+    | the curated ability => bool projection for the frontend (AzGuard::abilitiesFor).
+    */
+    'manager' => AzGuardManager::class,
+
+    'resolver' => EffectivePermissionResolver::class,
+
+    'matcher' => WildcardPermissionMatcher::class,
+
+    'abilities_resolver' => DefaultAbilitiesResolver::class,
+
+    // Opt-in (features.validate_role_permissions) saving() guard for role keys.
+    'role_permission_validator' => CatalogRolePermissionValidator::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -81,6 +120,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Strict Panels
+    |--------------------------------------------------------------------------
+    | Opt-in. When true, resolving an explicit but unregistered panel throws
+    | PanelNotFoundException instead of the default lenient (best-effort)
+    | resolution against an empty catalog. Off by default for back-compat.
+    */
+    'strict_panels' => false,
+
+    /*
+    |--------------------------------------------------------------------------
     | Middleware
     |--------------------------------------------------------------------------
     */
@@ -153,8 +202,9 @@ return [
     'features' => [
         'wildcard_permission' => false, // Wildcards like 'admin.*'
         'teams' => false, // Multi-team / tenant isolation
-        'audit_log' => false, // Log role assignment and revocation events
+        'audit_log' => false, // Dispatch AzGuard\Events\AccessDecision from Authorizer::explain()
         'direct_grants' => true,  // Direct grants (HasDirectGrants + az_direct_grants table)
+        'validate_role_permissions' => false, // Vet RolePermission keys against the catalog on save
     ],
 
     /*

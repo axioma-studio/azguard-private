@@ -45,9 +45,16 @@ interface PermissionCatalog
     public function groups(string $panelId): array;
 
     /**
-     * All registered panel IDs.
+     * All registered panel IDs. Resolved lazily so a panel registered after
+     * boot is visible (implementations must not freeze this at construction).
      *
      * @return list<string>
      */
     public function panels(): array;
+
+    /**
+     * Reset any built/cached state so the next access rebuilds from source —
+     * for tests, dev hot-reload, or after registering builders/panels at runtime.
+     */
+    public function flush(): void;
 }

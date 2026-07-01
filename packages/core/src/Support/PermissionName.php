@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
-use AzGuard\AzGuardManager;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\Permission;
 use BackedEnum;
 use UnitEnum;
@@ -28,7 +28,7 @@ final class PermissionName
             return $permission;
         }
 
-        $resolved = app(AzGuardManager::class)->tryPermission($panelId, $permission);
+        $resolved = app(AzGuardManagerInterface::class)->tryPermission($panelId, $permission);
 
         if ($resolved !== null) {
             return $resolved;

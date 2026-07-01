@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AzGuard\Tests\ContextTestCase;
 use AzGuard\Tests\FilamentTestCase;
+use AzGuard\Tests\ManagerSwapTestCase;
 use AzGuard\Tests\MorphTypeTestCase;
 use AzGuard\Tests\Stubs\User;
 use AzGuard\Tests\TestCase;
@@ -13,20 +14,25 @@ uses(TestCase::class)
     ->in('Unit');
 
 uses(TestCase::class, RefreshDatabase::class)
-    ->in('Feature/AccessControlTest.php',
+    ->in('Feature/AbilitiesForTest.php',
+        'Feature/AccessControlTest.php',
+        'Feature/AccessDecisionTest.php',
         'Feature/AuthorizerExtendedTest.php',
         'Feature/AuthorizerPanelResolutionTest.php',
         'Feature/AuthorizerTest.php',
         'Feature/CacheResetCommandTest.php',
+        'Feature/CatalogLazyPanelsTest.php',
         'Feature/CheckAccessMiddlewareTest.php',
         'Feature/ClassPermissionTest.php',
         'Feature/CrossRequestCacheInvalidationTest.php',
+        'Feature/CustomCatalogBuilderTest.php',
         'Feature/CustomGrantSourceTest.php',
         'Feature/DatabaseRoleGrantSourceTest.php',
         'Feature/DirectGrantSourceTest.php',
         'Feature/DiscoveryTest.php',
         'Feature/EnumPermissionArgumentTest.php',
         'Feature/EnumRolePermissionsTest.php',
+        'Feature/ExtensionSwapTest.php',
         'Feature/FakeGrantSourceTest.php',
         'Feature/DoctorCommandTest.php',
         'Feature/GateIntegrationScopedTest.php',
@@ -45,6 +51,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/PermissionMapTest.php',
         'Feature/PolicyAttributeRegistrarTest.php',
         'Feature/RoleClassResolutionTest.php',
+        'Feature/RolePermissionValidationTest.php',
         'Feature/ScopedPermissionEnumResolutionTest.php',
         'Feature/ScopedRolePanelIsolationTest.php',
         'Feature/SetCurrentPanelMiddlewareTest.php',
@@ -52,6 +59,9 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/SyncRolesCommandTest.php',
         'Feature/WildcardCatalogFilterTest.php',
     );
+
+uses(ManagerSwapTestCase::class, RefreshDatabase::class)
+    ->in('Feature/ManagerSwapTest.php');
 
 uses(ContextTestCase::class, RefreshDatabase::class)
     ->in('Feature/Context');

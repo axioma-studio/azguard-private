@@ -100,7 +100,7 @@ abstract class PanelProvider extends ServiceProvider
                 enumClasses: $permissionEnums,
                 manager: $manager,
             ));
-            $this->app->tag([$abstract], 'azguard.catalog_builders');
+            $this->app->tag([$abstract], AzGuardManager::CATALOG_BUILDERS_TAG);
         }
 
         if ($policyClasses !== []) {
@@ -110,7 +110,7 @@ abstract class PanelProvider extends ServiceProvider
                 policyClasses: $policyClasses,
                 manager: $manager,
             ));
-            $this->app->tag([$abstract], 'azguard.catalog_builders');
+            $this->app->tag([$abstract], AzGuardManager::CATALOG_BUILDERS_TAG);
         }
 
         $this->registerCustomCatalogBuilders($panel);

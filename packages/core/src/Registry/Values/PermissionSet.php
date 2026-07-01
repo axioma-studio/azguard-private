@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Values;
 
+use AzGuard\Contracts\PermissionMatcher;
 use AzGuard\PermissionKey;
+use AzGuard\Registry\Matching\WildcardPermissionMatcher;
 use Closure;
 
 /**
@@ -108,15 +110,27 @@ final readonly class PermissionSet
             return true;
         }
 
-        foreach ($this->patterns as $pattern) {
-            $regex = '/^'.str_replace(['\\.', '\\*'], ['[.]', '.*'], preg_quote((string) $pattern, '/')).'$/';
+        $matcher = $this->matcher();
 
-            if (preg_match($regex, $key)) {
+        foreach ($this->patterns as $pattern) {
+            if ($matcher->matches($pattern, $key)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * The configured, swappable matcher (memoizes compiled patterns). Falls back
+     * to the default grammar when resolved outside a booted container so the VO
+     * stays usable standalone.
+     */
+    private function matcher(): PermissionMatcher
+    {
+        return app()->bound(PermissionMatcher::class)
+            ? app(PermissionMatcher::class)
+            : new WildcardPermissionMatcher;
     }
 
     /**

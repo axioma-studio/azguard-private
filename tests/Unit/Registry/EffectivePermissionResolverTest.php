@@ -107,6 +107,8 @@ function makeCatalog(array $knownKeys, array $panels = ['app']): PermissionCatal
         {
             return $this->panelList;
         }
+
+        public function flush(): void {}
     };
 }
 
@@ -161,6 +163,8 @@ function makeDefinitionCatalog(array $definitions, array $panels = ['app']): Per
         {
             return $this->panelList;
         }
+
+        public function flush(): void {}
     };
 }
 
