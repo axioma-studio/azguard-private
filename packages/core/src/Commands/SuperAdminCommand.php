@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class SuperAdminCommand extends Command
 {
-    protected $signature = 'azguard:super-admin {--user= : ID of the user to promote}';
+    protected $signature = 'guard:super-admin {--user= : ID of the user to promote}';
 
     protected $description = 'Grant a user the super-admin role (wildcard access)';
 

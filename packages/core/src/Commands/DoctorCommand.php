@@ -13,8 +13,6 @@ final class DoctorCommand extends Command
 
     protected $description = 'Check consistency of AzGuard enums, policies, and roles';
 
-    protected $aliases = ['guard:doctor'];
-
     public function handle(AzGuardDiagnostics $doctor): int
     {
         $panel = $this->option(key: 'panel');

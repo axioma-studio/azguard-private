@@ -90,6 +90,17 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
     lenient resolution. (F47)
 
 ### Changed
+- **Breaking: unified CLI prefix to `guard:` (F51).** `azguard:install` and
+  `azguard:super-admin` are renamed to `guard:install` and `guard:super-admin`.
+  The package is pre-1.0 and not yet in production, so the rename ships
+  directly — no deprecated alias is kept. Every runtime command now lives
+  under `guard:`, and every scaffolding generator under `make:guard-`; update
+  any script, scheduler entry, or CI step that calls the old names.
+- **Breaking: dropped dead self-referential `$aliases` (F51).** `guard:catalog`,
+  `guard:catalog:validate` and `guard:doctor` each declared an `$aliases` entry
+  identical to their own primary signature — a no-op that Artisan silently
+  ignored. Removed; behavior is unchanged for anyone calling the commands by
+  their real name.
 - `PermissionCatalog::flush()` is now part of the contract, and panel IDs are
   resolved lazily (no longer frozen at boot) so a panel registered after boot is
   visible via `panels()`. (F40)
