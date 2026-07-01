@@ -20,9 +20,18 @@ use Closure;
  * or one user's resolved permissions would bleed into the next request.
  * Concurrent in-process calls compute the value twice and last writer wins
  * in the array — harmless and far safer than any locking strategy.
+ *
+ * @internal
  */
 class PermissionCache
 {
+    /**
+     * Prefix for every durable cache entry (permission set + per-user epoch).
+     * A fixed internal namespace — Laravel's own `cache.prefix` already isolates
+     * AzGuard's entries per app on a shared store, so this is not a config knob.
+     */
+    private const string KEY_PREFIX = 'azguard.perms';
+
     /**
      * @var array<string, array<string, array<string, PermissionSet>>>
      *                                                                 userId => panelId => discriminator => PermissionSet
@@ -45,7 +54,7 @@ class PermissionCache
         $store = Config::cacheStore();
 
         $set = $store !== 'array'
-            ? $this->loadFromStore(self::keyFor($userId, $panelId, $discriminator), $store, $callback)
+            ? $this->loadFromStore($this->keyFor($userId, $panelId, $discriminator), $store, $callback)
             : $callback();
 
         return $this->requestCache[$uid][$panelId][$discriminator] = $set;
@@ -60,11 +69,42 @@ class PermissionCache
 
         $store = Config::cacheStore();
 
-        if ($store !== 'array') {
-            // Context-discriminated store entries (if any) are bounded by TTL —
-            // a generic cache store cannot enumerate them by prefix.
-            cache()->store($store)->forget(self::keyFor($userId, $panelId));
+        if ($store === 'array') {
+            return;
         }
+
+        // Bump the per-user epoch. Every key built from `keyFor()` embeds the
+        // epoch, so incrementing it orphans ALL context-discriminated entries
+        // (and the base entry) at once — no store-specific prefix enumeration
+        // needed, and infinite-TTL entries stop being served immediately.
+        //
+        // `increment()` on a store where the key is still absent treats the
+        // missing value as 0 and returns 1 — i.e. a no-op against the
+        // `currentEpoch()` default of 1. Seed the key first (`add`, so a
+        // concurrent forget never clobbers a genuine counter) to guarantee
+        // the epoch strictly advances past the default on every forget.
+        $epochKey = $this->epochKey($userId, $panelId);
+        cache()->store($store)->add($epochKey, 1, Config::cacheTtl());
+        cache()->store($store)->increment($epochKey);
+    }
+
+    /**
+     * In-process-only invalidation: drops the cached PermissionSet(s) for this
+     * user+panel from the request-local array WITHOUT bumping the durable
+     * per-user epoch.
+     *
+     * Intended for transient, within-request context switches (e.g.
+     * ContextGuard::checkInContext) where the previously-computed set for the
+     * OLD discriminator must not leak into a check made under a different
+     * (temporarily active) context, but there is no real grant/role change to
+     * persist. Bumping the epoch here would invalidate the entire cross-request
+     * cache for this user+panel on a persistent store on every single context
+     * check — see forgetForUser() for the durable counterpart used on actual
+     * grant/role mutations.
+     */
+    public function forgetRequestCache(int|string $userId, string $panelId): void
+    {
+        unset($this->requestCache[(string) $userId][$panelId]);
     }
 
     public function forgetAll(): void
@@ -72,11 +112,33 @@ class PermissionCache
         $this->requestCache = [];
     }
 
-    public static function keyFor(int|string $userId, string $panelId, string $discriminator = ''): string
+    public function keyFor(int|string $userId, string $panelId, string $discriminator = ''): string
     {
-        $base = "azguard.perms.{$userId}.{$panelId}";
+        $epoch = $this->currentEpoch($userId, $panelId);
+        $base = self::KEY_PREFIX.".{$userId}.{$panelId}.v{$epoch}";
 
         return $discriminator === '' ? $base : "{$base}.{$discriminator}";
+    }
+
+    /**
+     * Current epoch for user+panel, read from the store (defaults to 1 —
+     * never yet forgotten). Only meaningful when a persistent store is in
+     * use; the array store never calls into this (see rememberForRequest).
+     */
+    private function currentEpoch(int|string $userId, string $panelId): int
+    {
+        $store = Config::cacheStore();
+
+        if ($store === 'array') {
+            return 1;
+        }
+
+        return (int) cache()->store($store)->get($this->epochKey($userId, $panelId), 1);
+    }
+
+    private function epochKey(int|string $userId, string $panelId): string
+    {
+        return self::KEY_PREFIX.".{$userId}.{$panelId}.epoch";
     }
 
     private function loadFromStore(string $cacheKey, string $store, Closure $callback): PermissionSet

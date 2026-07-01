@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AzGuard;
 
+use AzGuard\Contracts\AbilitiesResolver;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\ContextGuard;
 use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
+use AzGuard\Registry\Contracts\PermissionCatalogBuilder;
 use AzGuard\Support\Panel;
 use AzGuard\Support\PanelResolver;
 use BackedEnum;
@@ -26,6 +28,13 @@ final class AzGuardManager implements AzGuardManagerInterface
      * custom GrantSource with this to plug it into the resolution chain.
      */
     public const string GRANT_SOURCES_TAG = 'azguard.grant_sources';
+
+    /**
+     * Container tag collected by CompositePermissionCatalog. Bind and tag a
+     * custom PermissionCatalogBuilder with this to contribute definitions to
+     * the catalog. Symmetric with {@see GRANT_SOURCES_TAG}.
+     */
+    public const string CATALOG_BUILDERS_TAG = 'azguard.catalog_builders';
 
     /** @var array<string, Panel> */
     protected array $panels = [];
@@ -118,6 +127,25 @@ final class AzGuardManager implements AzGuardManagerInterface
         return app()->bound(ContextGuard::class);
     }
 
+    /**
+     * Curated ability projection for the frontend: resolves ONLY the requested
+     * $keys to a map of ability => bool for shared props (nav/shell). The full
+     * catalog is never dumped — the allowlist is mandatory. Delegates to the
+     * swappable {@see AbilitiesResolver} (config `az-guard.abilities_resolver`).
+     *
+     * @param  list<string>  $keys
+     * @return array<string, bool>
+     */
+    #[Override]
+    public function abilitiesFor(Authenticatable $user, string|BackedEnum|null $panelId, array $keys): array
+    {
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return app(AbilitiesResolver::class)->forUser($user, $resolvedPanelId, $keys);
+    }
+
     // ─── Extensions ───────────────────────────────────────────────────────────
 
     /**
@@ -137,6 +165,28 @@ final class AzGuardManager implements AzGuardManagerInterface
         }
 
         app()->tag([$sourceClass], self::GRANT_SOURCES_TAG);
+    }
+
+    /**
+     * Register a custom PermissionCatalogBuilder. Bind it (singleton) if it is
+     * not already bound, then tag it so CompositePermissionCatalog picks it up.
+     * The public, symmetric counterpart of {@see registerGrantSource()} — the
+     * panel-scoped {@see PanelProvider::registerCustomCatalogBuilders()} remains
+     * available for per-panel builders.
+     *
+     * Call this from a service provider's register()/boot() method:
+     *   AzGuard::registerCatalogBuilder(MyCatalogBuilder::class);
+     *
+     * @param  class-string<PermissionCatalogBuilder>  $builderClass
+     */
+    #[Override]
+    public function registerCatalogBuilder(string $builderClass): void
+    {
+        if (! app()->bound($builderClass)) {
+            app()->singleton($builderClass);
+        }
+
+        app()->tag([$builderClass], self::CATALOG_BUILDERS_TAG);
     }
 
     // ─── Grants API ─────────────────────────────────────────────────────────
@@ -162,10 +212,14 @@ final class AzGuardManager implements AzGuardManagerInterface
     public function grant(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
         ?int $ttl = null,
     ): DirectGrant {
-        return $this->forUser($user)->on($panelId)->ttl($ttl)->grant($permissionKey);
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return $this->forUser($user)->on($resolvedPanelId)->ttl($ttl)->grant($permissionKey);
     }
 
     /**
@@ -177,9 +231,13 @@ final class AzGuardManager implements AzGuardManagerInterface
     public function revoke(
         Authenticatable $user,
         string|UnitEnum $permissionKey,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
     ): int {
-        return $this->forUser($user)->on($panelId)->revoke($permissionKey);
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return $this->forUser($user)->on($resolvedPanelId)->revoke($permissionKey);
     }
 
     /**
@@ -190,8 +248,12 @@ final class AzGuardManager implements AzGuardManagerInterface
     #[Override]
     public function grants(
         Authenticatable $user,
-        string|BackedEnum $panelId = 'app',
+        string|BackedEnum|null $panelId = null,
     ): Collection {
-        return $this->forUser($user)->on($panelId)->grants();
+        $resolvedPanelId = PanelResolver::resolveDefault(
+            $panelId === null ? null : PanelResolver::normalizeId($panelId),
+        );
+
+        return $this->forUser($user)->on($resolvedPanelId)->grants();
     }
 }

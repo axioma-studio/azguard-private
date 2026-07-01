@@ -7,6 +7,8 @@ namespace AzGuard\Registry\Contracts;
 /**
  * Permission metadata for UI, CLI and TypeScript generation.
  * Immutable value object.
+ *
+ * @api
  */
 interface PermissionMeta
 {

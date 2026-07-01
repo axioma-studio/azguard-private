@@ -7,6 +7,7 @@ namespace AzGuard\Http\Middleware;
 use AzGuard\Attributes\CheckPermission as CheckPermissionAttribute;
 use AzGuard\Attributes\SkipGuardCheck;
 use AzGuard\Facades\AzGuard;
+use AzGuard\PermissionKey;
 use BackedEnum;
 use Closure;
 use Illuminate\Http\Request;
@@ -101,10 +102,6 @@ final class CheckAccess
             return $panel->resolvePermission(permission: $permission);
         }
 
-        if ($permission instanceof BackedEnum) {
-            return $permission->value;
-        }
-
-        return $permission->name;
+        return PermissionKey::normalize($permission);
     }
 }

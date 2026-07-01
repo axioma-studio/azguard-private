@@ -14,6 +14,8 @@ use Illuminate\Support\Collection;
  * Public contract for the role surface of an AzGuard user.
  *
  * Mirrors the {@see \AzGuard\Concerns\HasRoles} trait 1:1.
+ *
+ * @api
  */
 interface HasRoles
 {

@@ -16,6 +16,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * restrict, e.g. the context package narrowing the result to the active
  * workspace. Bind a single implementation to this interface to install it; with
  * none bound the resolver leaves the global set untouched.
+ *
+ * @api
  */
 interface PermissionLayer
 {

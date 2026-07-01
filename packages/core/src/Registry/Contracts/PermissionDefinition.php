@@ -7,6 +7,8 @@ namespace AzGuard\Registry\Contracts;
 /**
  * Immutable descriptor of a single permission from the catalog.
  * The source of truth is always PHP code (enum, attribute).
+ *
+ * @api
  */
 interface PermissionDefinition
 {

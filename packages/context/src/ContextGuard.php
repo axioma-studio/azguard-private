@@ -35,7 +35,17 @@ final readonly class ContextGuard implements ContextGuardContract
         $previous = $this->manager->current($panelId);
 
         $this->manager->set($context);
-        $this->resolver->forgetForUser($user, $panelId);
+
+        // In-process-only: this is a transient, within-request context switch,
+        // not a real grant/role change — must not bump the durable per-user
+        // epoch (that would bust the entire cross-request cache for this
+        // user+panel on a persistent store on every single context check).
+        // ContextPermissionLayer::cacheDiscriminator() already keys the
+        // request-local slot by context, but the resolved set is cached under
+        // the discriminator of whichever context was active on first
+        // resolution — dropping it here guarantees this check recomputes
+        // against the context just set, not a stale in-memory entry.
+        $this->resolver->forgetRequestCache($user, $panelId);
 
         try {
             return $this->resolver->forUser($user, $panelId)->grants($permission);
@@ -44,7 +54,7 @@ final readonly class ContextGuard implements ContextGuardContract
                 ? $this->manager->set($previous)
                 : $this->manager->clear($panelId);
 
-            $this->resolver->forgetForUser($user, $panelId);
+            $this->resolver->forgetRequestCache($user, $panelId);
         }
     }
 }

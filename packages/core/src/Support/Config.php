@@ -4,10 +4,20 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Abilities\DefaultAbilitiesResolver;
+use AzGuard\AzGuardManager;
+use AzGuard\Contracts\AbilitiesResolver;
+use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Contracts\PermissionMatcher;
+use AzGuard\Contracts\PermissionResolverInterface;
+use AzGuard\Contracts\RolePermissionValidator;
 use AzGuard\Exceptions\InvalidMorphTypeException;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
+use AzGuard\Registry\Matching\WildcardPermissionMatcher;
+use AzGuard\Registry\Resolver\EffectivePermissionResolver;
+use AzGuard\Registry\Validation\CatalogRolePermissionValidator;
 
 /**
  * Centralised config accessor for AzGuard.
@@ -34,14 +44,22 @@ final class Config
         return $model;
     }
 
+    /** @return class-string<ModelHasScope> */
     public static function scopeModel(): string
     {
-        return (string) config('az-guard.models.scope', ModelHasScope::class);
+        /** @var class-string<ModelHasScope> $model */
+        $model = config('az-guard.models.scope', ModelHasScope::class);
+
+        return $model;
     }
 
+    /** @return class-string<DirectGrant> */
     public static function directGrantModel(): string
     {
-        return (string) config('az-guard.models.direct_grant', DirectGrant::class);
+        /** @var class-string<DirectGrant> $model */
+        $model = config('az-guard.models.direct_grant', DirectGrant::class);
+
+        return $model;
     }
 
     public static function modelsNamespace(): string
@@ -130,6 +148,11 @@ final class Config
         return self::isEnabled('audit_log');
     }
 
+    public static function validateRolePermissionsEnabled(): bool
+    {
+        return self::isEnabled('validate_role_permissions');
+    }
+
     // ─── Teams ────────────────────────────────────────────────────────────
 
     public static function teamForeignKey(): string
@@ -152,11 +175,6 @@ final class Config
         $value = config('az-guard.cache.expiration_time', 3600);
 
         return $value !== null ? (int) $value : null;
-    }
-
-    public static function cacheKey(): string
-    {
-        return (string) config('az-guard.cache.key', 'azguard.permissions');
     }
 
     // ─── Middleware ─────────────────────────────────────────────────────────
@@ -185,6 +203,15 @@ final class Config
         return $value !== null ? (string) $value : null;
     }
 
+    /**
+     * Opt-in strict mode: resolving an explicit, unregistered panel throws
+     * PanelNotFoundException instead of the default lenient (best-effort) resolution.
+     */
+    public static function strictPanelsEnabled(): bool
+    {
+        return (bool) config('az-guard.strict_panels', false);
+    }
+
     // ─── Grant Sources ────────────────────────────────────────────────────
 
     /**
@@ -207,5 +234,77 @@ final class Config
     public static function pruneExpiredDaily(): bool
     {
         return (bool) config('az-guard.prune_expired_daily', false);
+    }
+
+    // ─── Extension Points ─────────────────────────────────────────────────
+
+    /**
+     * Concrete class bound to AzGuardManagerInterface (and the AzGuard facade).
+     * Swappable single active-strategy seam — override to replace the manager.
+     *
+     * @return class-string<AzGuardManagerInterface>
+     */
+    public static function managerClass(): string
+    {
+        /** @var class-string<AzGuardManagerInterface> $class */
+        $class = config('az-guard.manager', AzGuardManager::class);
+
+        return $class;
+    }
+
+    /**
+     * Concrete class bound to PermissionResolverInterface. Swappable single
+     * active-strategy seam — override to replace permission resolution.
+     *
+     * @return class-string<PermissionResolverInterface>
+     */
+    public static function resolverClass(): string
+    {
+        /** @var class-string<PermissionResolverInterface> $class */
+        $class = config('az-guard.resolver', EffectivePermissionResolver::class);
+
+        return $class;
+    }
+
+    /**
+     * Concrete class bound to PermissionMatcher — the wildcard matching grammar.
+     * Swappable seam; the default keeps the historical dot-crossing behaviour.
+     *
+     * @return class-string<PermissionMatcher>
+     */
+    public static function matcherClass(): string
+    {
+        /** @var class-string<PermissionMatcher> $class */
+        $class = config('az-guard.matcher', WildcardPermissionMatcher::class);
+
+        return $class;
+    }
+
+    /**
+     * Concrete class bound to AbilitiesResolver — the curated frontend ability
+     * projection used by AzGuard::abilitiesFor(). Swappable seam.
+     *
+     * @return class-string<AbilitiesResolver>
+     */
+    public static function abilitiesResolverClass(): string
+    {
+        /** @var class-string<AbilitiesResolver> $class */
+        $class = config('az-guard.abilities_resolver', DefaultAbilitiesResolver::class);
+
+        return $class;
+    }
+
+    /**
+     * Concrete class bound to RolePermissionValidator — the opt-in saving()
+     * guard for role permission keys. Swappable seam.
+     *
+     * @return class-string<RolePermissionValidator>
+     */
+    public static function rolePermissionValidatorClass(): string
+    {
+        /** @var class-string<RolePermissionValidator> $class */
+        $class = config('az-guard.role_permission_validator', CatalogRolePermissionValidator::class);
+
+        return $class;
     }
 }

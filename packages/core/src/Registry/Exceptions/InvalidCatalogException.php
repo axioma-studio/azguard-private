@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Exceptions;
 
-use RuntimeException;
+use AzGuard\Exceptions\AzGuardException;
 
 /**
  * Catalog conflict: a single key is declared from two sources with different definitions.
  */
-final class InvalidCatalogException extends RuntimeException
+final class InvalidCatalogException extends AzGuardException
 {
     public static function duplicateKey(string $key, string $panelId, string $source1, string $source2): self
     {

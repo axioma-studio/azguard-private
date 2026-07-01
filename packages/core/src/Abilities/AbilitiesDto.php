@@ -6,6 +6,9 @@ namespace AzGuard\Abilities;
 
 use AzGuard\Support\ResolvesGateAbilities;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract readonly class AbilitiesDto
 {
     use ResolvesGateAbilities;
@@ -27,11 +30,18 @@ abstract readonly class AbilitiesDto
         );
     }
 
+    public static function make(mixed ...$arguments): static
+    {
+        $flags = static::resolveFlags(arguments: $arguments);
+
+        return new static(...$flags);
+    }
+
     /**
      * @return array<string, bool>
      */
     public function toArray(): array
     {
-        return get_object_vars(object: $this);
+        return array_filter(get_object_vars(object: $this), is_bool(...));
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard;
 
 use AzGuard\Auth\PolicyAttributeRegistrar;
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Facades\AzGuard;
 use AzGuard\Guard\PolicyDiscovery;
 use AzGuard\Registry\Builders\EnumPermissionCatalogBuilder;
@@ -90,13 +91,16 @@ abstract class PanelProvider extends ServiceProvider
         $panelId = $panel->getId();
         $permissionEnums = $panel->getPermissionEnums();
 
+        $manager = $this->app->make(AzGuardManagerInterface::class);
+
         if ($permissionEnums !== []) {
             $abstract = 'azguard.catalog_builder.'.$panelId.'.enum';
             $this->app->instance($abstract, new EnumPermissionCatalogBuilder(
                 panelId: $panelId,
                 enumClasses: $permissionEnums,
+                manager: $manager,
             ));
-            $this->app->tag([$abstract], 'azguard.catalog_builders');
+            $this->app->tag([$abstract], AzGuardManager::CATALOG_BUILDERS_TAG);
         }
 
         if ($policyClasses !== []) {
@@ -104,8 +108,9 @@ abstract class PanelProvider extends ServiceProvider
             $this->app->instance($abstract, new PolicyAbilityCatalogBuilder(
                 panelId: $panelId,
                 policyClasses: $policyClasses,
+                manager: $manager,
             ));
-            $this->app->tag([$abstract], 'azguard.catalog_builders');
+            $this->app->tag([$abstract], AzGuardManager::CATALOG_BUILDERS_TAG);
         }
 
         $this->registerCustomCatalogBuilders($panel);

@@ -76,7 +76,7 @@ class RolePermissionsCommand extends Command
             $perms->map(fn ($p): array => [
                 $p->permission_key,
                 $p->panel_id,
-                $p->created_at?->toDateTimeString() ?? '—',
+                $p->created_at->toDateTimeString(),
             ])->all(),
         );
 

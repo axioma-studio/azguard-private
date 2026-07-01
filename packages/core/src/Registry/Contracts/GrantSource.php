@@ -14,6 +14,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * DirectGrantSource. Implement this interface and register it (see
  * AzGuard::registerGrantSource()) to add your own. The context package layers
  * its workspace permissions on top via a PermissionLayer, not a GrantSource.
+ *
+ * @api
  */
 interface GrantSource
 {

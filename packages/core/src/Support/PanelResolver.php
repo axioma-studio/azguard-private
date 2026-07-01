@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Exceptions\PanelNotFoundException;
 use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Facades\AzGuard;
+use AzGuard\PermissionKey;
 use BackedEnum;
 use Illuminate\Support\Facades\Log;
 
@@ -31,7 +33,7 @@ final class PanelResolver
     public static function resolveDefault(?string $panelId): string
     {
         if ($panelId !== null) {
-            self::warnIfUnregistered($panelId);
+            self::guardUnregistered($panelId);
 
             return $panelId;
         }
@@ -40,24 +42,35 @@ final class PanelResolver
     }
 
     /**
-     * Debug-only, fail-soft: flag an explicit panel id that is not registered
-     * (a permission check against it silently resolves to an empty catalog).
-     * Only runs under app.debug and once panels exist, so headless/test
-     * bootstraps stay quiet. Never throws — resolution is best-effort by design.
+     * Handle an explicit panel id that is not registered. Default (lenient):
+     * debug-only, fail-soft log — resolution is best-effort by design. Opt-in
+     * strict mode (config `az-guard.strict_panels`): throw PanelNotFoundException.
+     * Both skip when no panels are registered yet (headless/test bootstraps).
+     *
+     * @throws PanelNotFoundException
      */
-    private static function warnIfUnregistered(string $panelId): void
+    private static function guardUnregistered(string $panelId): void
     {
-        if (! config('app.debug')) {
+        $strict = Config::strictPanelsEnabled();
+
+        // Fast path: nothing to inspect when lenient and not debugging.
+        if (! $strict && ! config('app.debug')) {
             return;
         }
 
         $panels = AzGuard::getPanels();
 
-        if ($panels !== [] && ! isset($panels[$panelId])) {
-            Log::debug("AzGuard: permission check against unregistered panel [{$panelId}].", [
-                'registered' => array_keys($panels),
-            ]);
+        if ($panels === [] || isset($panels[$panelId])) {
+            return;
         }
+
+        if ($strict) {
+            throw new PanelNotFoundException($panelId);
+        }
+
+        Log::debug("AzGuard: permission check against unregistered panel [{$panelId}].", [
+            'registered' => array_keys($panels),
+        ]);
     }
 
     /**
@@ -67,7 +80,7 @@ final class PanelResolver
      */
     public static function normalizeId(string|BackedEnum $panelId): string
     {
-        return $panelId instanceof BackedEnum ? (string) $panelId->value : $panelId;
+        return PermissionKey::normalize($panelId);
     }
 
     /**

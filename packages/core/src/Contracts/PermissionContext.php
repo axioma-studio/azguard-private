@@ -9,6 +9,8 @@ namespace AzGuard\Contracts;
  *
  * Passed as the $context argument to hasPermission() / checkPermission().
  * The context package's AuthorizationContext implements this interface.
+ *
+ * @api
  */
 interface PermissionContext
 {

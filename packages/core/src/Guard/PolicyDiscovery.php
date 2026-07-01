@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use ReflectionClass;
 
+/** @internal */
 final class PolicyDiscovery
 {
     /**

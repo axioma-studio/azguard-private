@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Guard;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Events\AccessDecision;
 use AzGuard\Registry\Resolver\EffectivePermissionResolver;
 use AzGuard\Support\Config;
 use AzGuard\Support\Panel;
@@ -51,6 +52,66 @@ final readonly class Authorizer
         }
 
         return null;
+    }
+
+    /**
+     * Off-hot-path inspection: re-run the decision and describe WHY it landed,
+     * returning an {@see AccessDecision}. When `az-guard.audit_log` is enabled
+     * the same object is dispatched as an event for auditors/listeners. The hot
+     * {@see check()} path is never touched — no event work happens there.
+     */
+    public function explain(Authenticatable $user, string $ability): AccessDecision
+    {
+        $identifier = $user->getAuthIdentifier();
+        $userId = is_int($identifier) ? $identifier : (string) $identifier;
+
+        $panelId = $this->resolvePanelId();
+
+        if ($panelId === null) {
+            return $this->record(new AccessDecision(
+                userId: $userId,
+                panelId: '',
+                ability: $ability,
+                allowed: false,
+                reasonCode: AccessDecision::NO_ACTIVE_PANEL,
+            ));
+        }
+
+        $set = $this->resolver->forUser($user, $panelId);
+
+        $decision = match (true) {
+            $set->isWildcard() => new AccessDecision(
+                userId: $userId, panelId: $panelId, ability: $ability,
+                allowed: true, reasonCode: AccessDecision::WILDCARD,
+            ),
+            $set->has($ability) => new AccessDecision(
+                userId: $userId, panelId: $panelId, ability: $ability,
+                allowed: true, reasonCode: AccessDecision::SOURCE_GRANT,
+            ),
+            $set->matchesWildcard($ability) => new AccessDecision(
+                userId: $userId, panelId: $panelId, ability: $ability,
+                allowed: true, reasonCode: AccessDecision::PATTERN_MATCH,
+            ),
+            default => new AccessDecision(
+                userId: $userId, panelId: $panelId, ability: $ability,
+                allowed: false, reasonCode: AccessDecision::NO_GRANT,
+            ),
+        };
+
+        return $this->record($decision);
+    }
+
+    /**
+     * Dispatch the decision only when auditing is opted in (default off), so
+     * inspection stays free of side effects and the flag has an honest reader.
+     */
+    private function record(AccessDecision $decision): AccessDecision
+    {
+        if (Config::auditLogEnabled()) {
+            event($decision);
+        }
+
+        return $decision;
     }
 
     private function resolvePanelId(): ?string

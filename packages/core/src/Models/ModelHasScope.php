@@ -14,14 +14,16 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  *
  * Represents a role granted to a model (e.g. User) scoped to a specific entity
  * (e.g. Project, Team). The scope_class defines optional query-scope behaviour.
+ * A null scope_class indicates a logic-less role with no query filtering.
  *
  * @property int $id
  * @property string $model_type
  * @property int $model_id
  * @property string|null $scope_entity_type
  * @property int|null $scope_entity_id
- * @property string $scope_class
+ * @property string|null $scope_class
  * @property int|null $role_id
+ * @property string|null $panel_id
  */
 class ModelHasScope extends Model
 {
@@ -32,6 +34,7 @@ class ModelHasScope extends Model
         'scope_entity_type',
         'scope_class',
         'role_id',
+        'panel_id',
     ];
 
     /** @return MorphTo<Model, $this> */

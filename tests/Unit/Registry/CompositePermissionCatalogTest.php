@@ -233,6 +233,23 @@ describe('CompositePermissionCatalog', function () {
         expect($catalog->panels())->toBe(['app', 'admin']);
     });
 
+    it('resolves a Closure panelIds lazily so a panel added after construction is visible', function () {
+        $panels = ['app'];
+
+        $catalog = new CompositePermissionCatalog(
+            builders: [],
+            panelIds: function () use (&$panels): array {
+                return $panels;
+            },
+        );
+
+        expect($catalog->panels())->toBe(['app']);
+
+        $panels[] = 'admin'; // "registered after boot"
+
+        expect($catalog->panels())->toBe(['app', 'admin']);
+    });
+
     it('flush() resets built state and allows re-build', function () {
         $catalog = new CompositePermissionCatalog(
             builders: [makeBuilder([makeDefinition('app.posts.view')])],

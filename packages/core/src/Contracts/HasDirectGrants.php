@@ -16,6 +16,8 @@ use UnitEnum;
  *
  * Mirrors the {@see \AzGuard\Concerns\HasDirectGrants} trait 1:1. Opt in by
  * declaring this interface and `use`-ing the trait alongside {@see AzGuardUser}.
+ *
+ * @api
  */
 interface HasDirectGrants
 {

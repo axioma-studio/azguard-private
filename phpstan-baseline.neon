@@ -37,30 +37,6 @@ parameters:
 			path: packages/core/src/Commands/GrantCommand.php
 
 		-
-			message: '#^Access to an undefined property AzGuard\\Models\\DirectGrant\:\:\$model_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Commands/GrantsListCommand.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\DirectGrant\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: packages/core/src/Commands/GrantsListCommand.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\DirectGrant\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: packages/core/src/Commands/GrantsListCommand.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: packages/core/src/Commands/ListScopedRolesCommand.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -83,12 +59,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: packages/core/src/Commands/MakeGuardRoleCommand.php
-
-		-
-			message: '#^Access to an undefined property AzGuard\\Models\\RolePermission\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Commands/RolePermissionsCommand.php
 
 		-
 			message: '#^Trait AzGuard\\Concerns\\HasAzGuard is used zero times and is not analysed\.$#'
@@ -131,12 +101,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: packages/core/src/Contracts/ScopeInterface.php
-
-		-
-			message: '#^Method AzGuard\\Grants\\GrantBuilder\:\:baseQuery\(\) return type with generic class Illuminate\\Database\\Eloquent\\Builder does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: packages/core/src/Grants/GrantBuilder.php
 
 		-
 			message: '#^Instanceof between UnitEnum and UnitEnum will always evaluate to true\.$#'

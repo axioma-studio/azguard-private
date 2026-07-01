@@ -41,12 +41,12 @@ class GrantsListCommand extends Command
         $format = (string) $this->option('format');
 
         $query = DirectGrant::query()
-            ->where('model_type', $modelClass)
+            ->where('grantable_type', $modelClass)
             ->orderBy('panel_id')
-            ->orderBy('model_id');
+            ->orderBy('grantable_id');
 
         if ($userId !== null) {
-            $query->where('model_id', $userId);
+            $query->where('grantable_id', $userId);
         }
 
         if ($panelId !== null) {
@@ -59,7 +59,7 @@ class GrantsListCommand extends Command
             });
         }
 
-        $grants = $query->get(['model_id', 'panel_id', 'permission_key', 'expires_at']);
+        $grants = $query->get(['grantable_id', 'panel_id', 'permission_key', 'expires_at']);
 
         if ($grants->isEmpty()) {
             $this->warn('No grants found.');
@@ -68,7 +68,7 @@ class GrantsListCommand extends Command
         }
 
         $rows = $grants->map(fn ($g): array => [
-            'user_id' => $g->model_id,
+            'user_id' => $g->grantable_id,
             'panel' => $g->panel_id,
             'permission_key' => $g->permission_key,
             'expires_at' => $g->expires_at ? $g->expires_at->toDateTimeString() : '—',

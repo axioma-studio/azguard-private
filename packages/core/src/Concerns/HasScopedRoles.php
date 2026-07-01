@@ -8,6 +8,7 @@ use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
 use AzGuard\PermissionKey;
+use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Support\Config;
 use AzGuard\Support\PanelResolver;
 use AzGuard\Support\PermissionName;
@@ -64,7 +65,9 @@ trait HasScopedRoles
             );
 
             foreach ($scopes as $scope) {
-                if (class_exists($scope->scope_class)) {
+                // A null scope_class indicates a logic-less role (no query-scope behavior).
+                // Only apply the scope filter if a scope_class exists and is instantiable.
+                if ($scope->scope_class !== null && class_exists($scope->scope_class)) {
                     app($scope->scope_class)->apply($builder, $user, $scope->scopeEntity);
                 }
             }
@@ -75,8 +78,16 @@ trait HasScopedRoles
      * Assign a role scoped to a specific entity.
      *
      *   $user->assignScopedRole('editor', $project);
+     *   $user->assignScopedRole('editor', $project, panelId: 'admin');
+     *
+     * A null $panelId (the default) persists as "any panel" for back-compat:
+     * the assignment is honoured regardless of which panel is being checked.
+     * Pass an explicit $panelId to isolate the assignment to that panel only.
+     *
+     * For logic-less roles (where getRoleLogic() returns null), scope_class
+     * is stored as null to avoid the fragile anonymous-class sentinel pattern.
      */
-    public function assignScopedRole(string|Role $role, Model $entity): static
+    public function assignScopedRole(string|Role $role, Model $entity, ?string $panelId = null): static
     {
         $roleModel = $this->resolveRole($role);
 
@@ -84,14 +95,17 @@ trait HasScopedRoles
             return $this;
         }
 
+        $roleLogic = $roleModel->getRoleLogic();
+
         ModelHasScope::firstOrCreate([
             'model_type' => $this->getMorphClass(),
             'model_id' => $this->getKey(),
             'scope_entity_type' => $entity->getMorphClass(),
             'scope_entity_id' => $entity->getKey(),
             'role_id' => $roleModel->getKey(),
+            'panel_id' => $panelId,
         ], [
-            'scope_class' => ($roleModel->getRoleLogic() ?? new class {})::class,
+            'scope_class' => $roleLogic !== null ? $roleLogic::class : null,
         ]);
 
         $this->flushPermissions();
@@ -103,8 +117,12 @@ trait HasScopedRoles
      * Remove a scoped role for a specific entity.
      *
      *   $user->removeScopedRole('editor', $project);
+     *
+     * When $panelId is null (the default), removes assignments regardless of
+     * their panel_id. Pass an explicit $panelId to remove only the assignment
+     * scoped to that panel.
      */
-    public function removeScopedRole(string|Role $role, Model $entity): static
+    public function removeScopedRole(string|Role $role, Model $entity, ?string $panelId = null): static
     {
         $roleModel = $this->resolveRole($role);
 
@@ -118,6 +136,7 @@ trait HasScopedRoles
             ->where('scope_entity_type', $entity->getMorphClass())
             ->where('scope_entity_id', $entity->getKey())
             ->where('role_id', $roleModel->getKey())
+            ->when($panelId !== null, fn (Builder $query): Builder => $query->where('panel_id', $panelId))
             ->delete();
 
         $this->flushPermissions();
@@ -129,8 +148,12 @@ trait HasScopedRoles
      * Check if user has a specific role scoped to an entity.
      *
      *   $user->hasScopedRole('editor', $project);
+     *
+     * When $panelId is null (the default), matches assignments regardless of
+     * their panel_id. Pass an explicit $panelId to require that panel — a
+     * scope with a null panel_id still matches (any-panel back-compat).
      */
-    public function hasScopedRole(string|Role $role, Model $entity): bool
+    public function hasScopedRole(string|Role $role, Model $entity, ?string $panelId = null): bool
     {
         $roleModel = $this->resolveRole($role);
 
@@ -144,6 +167,12 @@ trait HasScopedRoles
             ->where('scope_entity_type', $entity->getMorphClass())
             ->where('scope_entity_id', $entity->getKey())
             ->where('role_id', $roleModel->getKey())
+            ->when(
+                $panelId !== null,
+                fn (Builder $query): Builder => $query->where(fn (Builder $query) => $query
+                    ->whereNull('panel_id')
+                    ->orWhere('panel_id', $panelId)),
+            )
             ->exists();
     }
 
@@ -155,13 +184,18 @@ trait HasScopedRoles
      *
      * Resolution order:
      *   1. SuperAdmin global wildcard (*) — always granted via hasPermission()
-     *   2. Scoped roles for the given entity
+     *   2. Scoped roles for the given entity, isolated to the resolved panel
      *
      * Panel resolution: an explicit $panelId always wins. Otherwise the panel is
      * taken from a scoped string key's first segment ("app.projects.edit" -> "app"),
      * or — for an enum permission — from the panel that owns the enum, falling back
      * to az-guard.default_panel. Pass $panelId explicitly for scopedByPanelId(false)
      * panels or an enum registered on more than one panel.
+     *
+     * Panel isolation: a scoped role assigned under panel A is NOT honoured when
+     * checked against panel B. A scope with a null panel_id (assigned before this
+     * isolation was added, or intentionally left unscoped) is honoured for ANY
+     * panel — back-compat.
      */
     public function hasScopedPermission(string|UnitEnum $permission, Model $entity, ?string $panelId = null): bool
     {
@@ -185,6 +219,9 @@ trait HasScopedRoles
             ->where('scope_entity_type', $entity->getMorphClass())
             ->where('scope_entity_id', $entity->getKey())
             ->whereNotNull('role_id')
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNull('panel_id')
+                ->orWhere('panel_id', $panelId))
             ->pluck('role_id');
 
         if ($scopedRoleIds->isEmpty()) {
@@ -196,6 +233,8 @@ trait HasScopedRoles
 
         $roles = $roleClass::query()->whereIn('id', $scopedRoleIds)->get();
 
+        $grantSource = app(ClassRoleGrantSource::class);
+
         foreach ($roles as $roleModel) {
             $logic = $roleModel->getRoleLogic();
 
@@ -203,9 +242,13 @@ trait HasScopedRoles
                 continue;
             }
 
-            $permissions = $logic->permissions();
+            // Route through the single enum -> string resolution seam
+            // (ClassRoleGrantSource::resolveFor) rather than comparing $key
+            // against the raw RoleInterface::permissions() list, which may
+            // contain unresolved UnitEnum cases.
+            $resolvedKeys = $grantSource->resolveFor(roleLogic: $logic, panelId: $panelId);
 
-            if (in_array(PermissionKey::WILDCARD, $permissions, true) || in_array($key, $permissions, true)) {
+            if (in_array(PermissionKey::WILDCARD, $resolvedKeys, true) || in_array($key, $resolvedKeys, true)) {
                 return true;
             }
         }

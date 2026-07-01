@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AzGuard\Support;
 
 use AzGuard\Contracts\Permission;
-use BackedEnum;
+use AzGuard\PermissionKey;
+use AzGuard\Roles\BaseRole;
 use UnitEnum;
 
+/** @api */
 final class Panel
 {
     protected string $id = '';
@@ -22,10 +24,10 @@ final class Panel
 
     protected bool $isScopedByPanelId = true;
 
-    /** @var list<class-string> */
+    /** @var list<class-string<UnitEnum>> */
     protected array $permissionEnums = [];
 
-    /** @var list<class-string> */
+    /** @var list<class-string<BaseRole>> */
     protected array $roleClasses = [];
 
     public static function make(): static
@@ -88,7 +90,7 @@ final class Panel
         return $this->namespace;
     }
 
-    /** @param list<class-string> $enums */
+    /** @param list<class-string<UnitEnum>> $enums */
     public function permissionEnums(array $enums): static
     {
         $this->permissionEnums = $enums;
@@ -96,13 +98,13 @@ final class Panel
         return $this;
     }
 
-    /** @return list<class-string> */
+    /** @return list<class-string<UnitEnum>> */
     public function getPermissionEnums(): array
     {
         return $this->permissionEnums;
     }
 
-    /** @param list<class-string> $classes */
+    /** @param list<class-string<BaseRole>> $classes */
     public function roleClasses(array $classes): static
     {
         $this->roleClasses = $classes;
@@ -110,7 +112,7 @@ final class Panel
         return $this;
     }
 
-    /** @return list<class-string> */
+    /** @return list<class-string<BaseRole>> */
     public function getRoleClasses(): array
     {
         return $this->roleClasses;
@@ -129,12 +131,8 @@ final class Panel
      */
     public function resolvePermission(string|UnitEnum $permission): string
     {
-        if ($permission instanceof BackedEnum) {
-            return $this->scope($permission->value);
-        }
-
         if ($permission instanceof UnitEnum) {
-            return $this->scope($permission->name);
+            return $this->scope(PermissionKey::normalize($permission));
         }
 
         // A class-based permission (implements Permission). A permission key

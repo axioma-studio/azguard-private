@@ -15,6 +15,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * the contract: when the context package is absent the binding is simply
  * not registered, and contextual checks fall back to a global check (see
  * {@see HasPermissions}).
+ *
+ * @api
  */
 interface ContextGuard
 {

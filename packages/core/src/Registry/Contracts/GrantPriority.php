@@ -11,6 +11,8 @@ namespace AzGuard\Registry\Contracts;
  * This is ordering only, not deny-precedence — see {@see GrantSource::priority()}.
  * Custom sources return a raw int from priority() and may use the gaps
  * (e.g. 85) to slot between these.
+ *
+ * @api
  */
 enum GrantPriority: int
 {

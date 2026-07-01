@@ -24,5 +24,7 @@ use Illuminate\Contracts\Auth\Access\Authorizable;
  *
  * Add {@see HasScopedRoles} / {@see HasDirectGrants} (contract + matching trait)
  * when you opt into entity-scoped roles or direct grants.
+ *
+ * @api
  */
 interface AzGuardUser extends Authorizable, HasPermissions, HasRoles {}

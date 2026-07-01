@@ -177,6 +177,8 @@ final class GrantBuilder
     /**
      * Base query scoped to this user + panel.
      * All mutating / read methods build on top of this.
+     *
+     * @return Builder<DirectGrant>
      */
     private function baseQuery(string $panel): Builder
     {

@@ -44,18 +44,13 @@ final readonly class ClassRoleGrantSource implements GrantSource
             return PermissionSet::empty();
         }
 
-        $panel = $this->manager->panel($panelId);
-        $panelEnums = $panel?->getPermissionEnums() ?? [];
-
         $keys = $user->roles
             ->filter(fn ($role): bool => $role->class_name !== null)
             ->map(fn ($role) => $role->getRoleLogic())
             ->filter()
-            ->flatMap(fn (RoleInterface $roleLogic): array => $this->resolvePermissions(
-                permissions: $roleLogic->permissions(),
+            ->flatMap(fn (RoleInterface $roleLogic): array => $this->resolveFor(
+                roleLogic: $roleLogic,
                 panelId: $panelId,
-                panel: $panel,
-                panelEnums: $panelEnums,
             ))
             ->unique()
             ->values()
@@ -73,6 +68,27 @@ final readonly class ClassRoleGrantSource implements GrantSource
      * the queried panel. Enum cases are scoped via their owning panel; strings
      * are kept when they are the wildcard or already prefixed with the panel.
      *
+     * This is the single source of truth for enum -> string permission
+     * normalisation; callers outside this class (e.g. entity-scoped role
+     * checks) must route through here rather than re-implementing in_array
+     * against a raw RoleInterface::permissions() list.
+     *
+     * @return list<string>
+     */
+    public function resolveFor(RoleInterface $roleLogic, string $panelId): array
+    {
+        $panel = $this->manager->panel($panelId);
+        $panelEnums = $panel?->getPermissionEnums() ?? [];
+
+        return $this->resolvePermissions(
+            permissions: $roleLogic->permissions(),
+            panelId: $panelId,
+            panel: $panel,
+            panelEnums: $panelEnums,
+        );
+    }
+
+    /**
      * @param  list<UnitEnum|string>  $permissions
      * @param  list<class-string>  $panelEnums
      * @return list<string>
