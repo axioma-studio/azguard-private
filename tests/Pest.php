@@ -29,6 +29,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/FakeGrantSourceTest.php',
         'Feature/DoctorCommandTest.php',
         'Feature/GateIntegrationScopedTest.php',
+        'Feature/GrantsCliColumnsTest.php',
         'Feature/HasDirectGrantsTest.php',
         'Feature/InstallCommandTest.php',
         'Feature/IntegrationPolishTest.php',
