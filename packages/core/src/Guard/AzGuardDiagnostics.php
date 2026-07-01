@@ -8,6 +8,7 @@ use AzGuard\Attributes\GateAbility;
 use AzGuard\Attributes\RoleOnly;
 use AzGuard\Contracts\RoleInterface;
 use AzGuard\Facades\AzGuard;
+use AzGuard\PermissionKey;
 use AzGuard\Support\Panel;
 use Illuminate\Support\Facades\File;
 use ReflectionClass;
@@ -234,11 +235,11 @@ class AzGuardDiagnostics
             $role = app()->make($class);
 
             foreach ($role->permissions() as $permission) {
-                if ($permission === '*') {
+                if ($permission === PermissionKey::WILDCARD) {
                     continue;
                 }
 
-                if (! str_starts_with(haystack: (string) $permission, needle: $panel->getId().'.')) {
+                if (! str_starts_with(haystack: (string) $permission, needle: $panel->getId().PermissionKey::SEPARATOR)) {
                     $this->warnings[] = "Role {$class}: permission [{$permission}] is missing the panel prefix [{$panel->getId()}.].";
 
                     continue;

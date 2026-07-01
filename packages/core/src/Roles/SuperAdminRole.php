@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace AzGuard\Roles;
 
+use AzGuard\PermissionKey;
 use Override;
 
 /**
- * Встроенная роль суперадмина.
- * Разрешение '*' даёт доступ ко всему через Gate::before().
+ * Built-in super-admin role.
  *
- * Использование:
+ * The wildcard permission ({@see PermissionKey::WILDCARD}) grants access to
+ * everything via Gate::before().
+ *
+ * Usage:
  *   php artisan guard:sync-roles
  *   $user->assignRole('super-admin');
  */
@@ -26,6 +29,6 @@ final class SuperAdminRole extends BaseRole
     #[Override]
     public function permissions(): array
     {
-        return ['*'];
+        return [PermissionKey::WILDCARD];
     }
 }

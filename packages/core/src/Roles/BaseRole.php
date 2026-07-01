@@ -31,7 +31,8 @@ abstract class BaseRole implements RoleInterface
      *
      * Prefer enum cases — they are refactor-safe and scoped to their panel
      * automatically (no "{panel}." prefix needed). String keys (the full
-     * panel-prefixed form) and `['*']` for super-admin are also accepted.
+     * panel-prefixed form) and `[\AzGuard\PermissionKey::WILDCARD]` for
+     * super-admin are also accepted.
      *
      * @return list<UnitEnum|string>
      */

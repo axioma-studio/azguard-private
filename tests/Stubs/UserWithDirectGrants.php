@@ -3,13 +3,14 @@
 namespace AzGuard\Tests\Stubs;
 
 use AzGuard\Concerns\HasDirectGrants;
+use AzGuard\Contracts\HasDirectGrants as HasDirectGrantsContract;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * User-стаб с подключённым HasDirectGrants для тестов DirectGrant.
- * Наследует Stubs\User, чтобы factory() работал через Orchestra Testbench.
+ * User stub with HasDirectGrants for DirectGrant tests.
+ * Extends Stubs\User so factory() works through Orchestra Testbench.
  */
-class UserWithDirectGrants extends User
+class UserWithDirectGrants extends User implements HasDirectGrantsContract
 {
     use HasDirectGrants;
 

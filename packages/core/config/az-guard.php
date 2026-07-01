@@ -49,6 +49,7 @@ return [
     | model_has_roles, model_has_scopes and az_direct_grants: 'int' (default),
     | 'ulid' or 'uuid'. Set it to match the primary-key type of the models that
     | get roles/scopes/grants (e.g. 'ulid' for ULID-keyed User/entities).
+    | Any other value throws InvalidMorphTypeException at boot (fail-fast).
     */
     'column_names' => [
         'morph_type' => env('AZ_GUARD_MORPH_TYPE', 'int'),
@@ -71,6 +72,10 @@ return [
     | routes without the azguard.panel middleware). Leave null to refuse to
     | guess: with no active panel and more than one registered panel, checks
     | deny (fail-closed) rather than evaluate against an arbitrary panel.
+    |
+    | Note: the model permission APIs ($user->hasPermission() etc.) fall back to
+    | the built-in 'app' panel when this is null — set it explicitly to change
+    | that project-wide. The Gate/Authorizer path stays fail-closed as above.
     */
     'default_panel' => null,
 

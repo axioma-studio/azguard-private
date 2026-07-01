@@ -7,6 +7,7 @@ namespace AzGuard\Support;
 use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Facades\AzGuard;
 use BackedEnum;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Centralises the recurring pattern:
@@ -29,7 +30,34 @@ final class PanelResolver
      */
     public static function resolveDefault(?string $panelId): string
     {
-        return $panelId ?? Config::defaultPanel() ?? 'app';
+        if ($panelId !== null) {
+            self::warnIfUnregistered($panelId);
+
+            return $panelId;
+        }
+
+        return Config::defaultPanel() ?? 'app';
+    }
+
+    /**
+     * Debug-only, fail-soft: flag an explicit panel id that is not registered
+     * (a permission check against it silently resolves to an empty catalog).
+     * Only runs under app.debug and once panels exist, so headless/test
+     * bootstraps stay quiet. Never throws — resolution is best-effort by design.
+     */
+    private static function warnIfUnregistered(string $panelId): void
+    {
+        if (! config('app.debug')) {
+            return;
+        }
+
+        $panels = AzGuard::getPanels();
+
+        if ($panels !== [] && ! isset($panels[$panelId])) {
+            Log::debug("AzGuard: permission check against unregistered panel [{$panelId}].", [
+                'registered' => array_keys($panels),
+            ]);
+        }
     }
 
     /**

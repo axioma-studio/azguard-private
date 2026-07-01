@@ -31,6 +31,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/GateIntegrationScopedTest.php',
         'Feature/HasDirectGrantsTest.php',
         'Feature/InstallCommandTest.php',
+        'Feature/IntegrationPolishTest.php',
         'Feature/ListScopedRolesCommandTest.php',
         'Feature/LoadAzGuardRolesMiddlewareTest.php',
         'Feature/MakeGuardPanelCommandTest.php',

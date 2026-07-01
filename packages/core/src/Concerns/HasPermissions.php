@@ -11,7 +11,9 @@ use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\PanelResolver;
 use AzGuard\Support\PermissionName;
+use AzGuard\Support\RequestState;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 use UnitEnum;
 
@@ -56,14 +58,43 @@ trait HasPermissions
         ?string $panelId = null,
     ): bool {
         $panelId = PanelResolver::resolveDefault($panelId);
+        $guard = $this->contextGuard();
 
-        return $this->contextGuard()?->checkInContext(
+        if ($guard === null) {
+            // Silent false is intentional (global fallback), but observable: warn
+            // once per request so a missing context backend is not a silent
+            // false-negative. RequestState is a scoped binding (flushed per
+            // request) — Octane-safe, unlike a static flag which would warn once
+            // per worker only.
+            app(RequestState::class)->once(
+                'context-guard-missing',
+                static function (): void {
+                    Log::warning(
+                        'AzGuard: hasPermissionIn() called but no ContextGuard is bound; returning false. '
+                        .'Install azguard/context or bind '.ContextGuard::class.' to enable contextual checks.',
+                    );
+                },
+            );
+
+            return false;
+        }
+
+        return $guard->checkInContext(
             $this,
             $contextType,
             $contextId,
             PermissionName::resolve($permission, $panelId),
             $panelId,
-        ) ?? false;
+        );
+    }
+
+    /**
+     * Whether the optional azguard/context ContextGuard is bound. When false,
+     * hasPermissionIn() always returns false — there is no contextual backend.
+     */
+    public function hasContextGuard(): bool
+    {
+        return app()->bound(ContextGuard::class);
     }
 
     /**
@@ -72,7 +103,7 @@ trait HasPermissions
      */
     private function contextGuard(): ?ContextGuard
     {
-        return app()->bound(ContextGuard::class)
+        return $this->hasContextGuard()
             ? app(ContextGuard::class)
             : null;
     }
@@ -106,6 +137,18 @@ trait HasPermissions
     public function permissions(?string $panelId = null): Collection
     {
         return collect($this->permissionSet($panelId)->keys());
+    }
+
+    /**
+     * Whether this user is a super-admin on the panel — i.e. holds the global
+     * wildcard ('*'), which bypasses every ability via Gate::before.
+     *
+     * Reuses the request-scoped permission cache (no extra queries). Wire
+     * absolute-allow in a Gate::before hook off this method — see the docs.
+     */
+    public function isSuperAdmin(?string $panelId = null): bool
+    {
+        return $this->permissionSet($panelId)->isWildcard();
     }
 
     /**

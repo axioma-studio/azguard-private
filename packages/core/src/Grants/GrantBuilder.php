@@ -8,9 +8,11 @@ use AzGuard\Events\GrantGiven;
 use AzGuard\Events\GrantRevoked;
 use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Models\DirectGrant;
+use AzGuard\PermissionKey;
 use AzGuard\Support\PanelResolver;
 use AzGuard\Support\PermissionName;
 use BackedEnum;
+use DateTimeInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -31,6 +33,8 @@ final class GrantBuilder
 
     private ?int $ttlSeconds = null;
 
+    private ?DateTimeInterface $expiresAt = null;
+
     public function __construct(
         private readonly Authenticatable $user,
     ) {}
@@ -45,11 +49,25 @@ final class GrantBuilder
     }
 
     /**
-     * Set TTL in seconds. null = no expiry.
+     * Set TTL in seconds. null = no expiry. Clears any expiresAt() (last wins).
      */
     public function ttl(?int $seconds): static
     {
         $this->ttlSeconds = $seconds;
+        $this->expiresAt = null;
+
+        return $this;
+    }
+
+    /**
+     * Set an absolute expiry timestamp. null = no expiry. The DateTime-based
+     * counterpart to ttl() — for parity with HasDirectGrants::grant($expiresAt).
+     * Clears any ttl() (last wins).
+     */
+    public function expiresAt(?DateTimeInterface $at): static
+    {
+        $this->expiresAt = $at;
+        $this->ttlSeconds = null;
 
         return $this;
     }
@@ -67,9 +85,8 @@ final class GrantBuilder
         $panel = PanelResolver::resolveOrFail($this->panelId);
         $permissionKey = PermissionName::resolve($permission, $panel);
 
-        $expiresAt = $this->ttlSeconds !== null
-            ? Carbon::now()->addSeconds($this->ttlSeconds)
-            : null;
+        $expiresAt = $this->expiresAt
+            ?? ($this->ttlSeconds !== null ? Carbon::now()->addSeconds($this->ttlSeconds) : null);
 
         /** @var DirectGrant $grant */
         $grant = DirectGrant::query()->updateOrCreate(
@@ -133,7 +150,7 @@ final class GrantBuilder
         if ($deleted > 0) {
             event(new GrantRevoked(
                 user: $this->user,
-                permissionKey: '*',
+                permissionKey: PermissionKey::WILDCARD,
                 panelId: $panel,
             ));
         }

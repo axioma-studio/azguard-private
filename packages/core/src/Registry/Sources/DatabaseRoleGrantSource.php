@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Registry\Sources;
 
+use AzGuard\PermissionKey;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
@@ -43,7 +44,7 @@ final class DatabaseRoleGrantSource implements GrantSource
             return PermissionSet::empty();
         }
 
-        if (in_array('*', $keys, strict: true)) {
+        if (in_array(PermissionKey::WILDCARD, $keys, strict: true)) {
             return PermissionSet::wildcard();
         }
 
