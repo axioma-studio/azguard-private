@@ -42,6 +42,6 @@ abstract readonly class AbilitiesDto
      */
     public function toArray(): array
     {
-        return get_object_vars(object: $this);
+        return array_filter(get_object_vars(object: $this), 'is_bool');
     }
 }
