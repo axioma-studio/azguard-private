@@ -82,6 +82,16 @@ $user->syncRoles([]);
 `syncRoles()` always replaces the complete role list. Pass only the roles you want the user to have after the call. An empty array removes all roles.
 :::
 
+### From the console
+
+`guard:role` mirrors `assignRole()`/`removeRole()` for console-driven workflows (deploy scripts, one-off admin tasks). The user can be identified by ID or email; the user model defaults to `auth.providers.users.model` (override with `--model`).
+
+```bash
+php artisan guard:role assign 1 editor
+php artisan guard:role detach admin@example.com editor
+php artisan guard:role assign 1 editor --model=App\\Models\\Admin
+```
+
 ## Checking roles
 
 ```php

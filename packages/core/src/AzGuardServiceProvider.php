@@ -22,6 +22,7 @@ use AzGuard\Commands\MakeGuardPolicyCommand;
 use AzGuard\Commands\MakeGuardRoleCommand;
 use AzGuard\Commands\PruneGrantsCommand;
 use AzGuard\Commands\RevokeGrantCommand;
+use AzGuard\Commands\RoleAssignmentCommand;
 use AzGuard\Commands\RolePermissionsCommand;
 use AzGuard\Commands\SuperAdminCommand;
 use AzGuard\Commands\SyncRolesCommand;
@@ -223,6 +224,7 @@ final class AzGuardServiceProvider extends ServiceProvider
                 CatalogListCommand::class,
                 CatalogValidateCommand::class,
                 RolePermissionsCommand::class,
+                RoleAssignmentCommand::class,
                 MakeGuardPanelCommand::class,
                 MakeGuardPermissionCommand::class,
                 MakeGuardPolicyCommand::class,
