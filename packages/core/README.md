@@ -18,14 +18,31 @@ php artisan migrate
 
 ## Usage
 
-Add the trait to your user model:
+Add the trait to your user model and declare the public contract so you (and your
+services) have a real type to hint — the trait provides every method:
 
 ```php
+use AzGuard\Contracts\AzGuardUser;
 use AzGuard\Concerns\HasAzGuard;
 
-class User extends Authenticatable
+class User extends Authenticatable implements AzGuardUser
 {
     use HasAzGuard;
+}
+```
+
+Add `HasScopedRoles` / `HasDirectGrants` (contract + matching trait) when you need
+entity-scoped roles or direct grants. The contract and trait share a short name
+(as with Laravel's own `Authorizable`), so alias the contract:
+
+```php
+use AzGuard\Contracts\HasDirectGrants as HasDirectGrantsContract;
+use AzGuard\Concerns\HasDirectGrants;
+
+class User extends Authenticatable implements AzGuardUser, HasDirectGrantsContract
+{
+    use HasAzGuard;
+    use HasDirectGrants;
 }
 ```
 
@@ -62,6 +79,48 @@ AzGuard::forUser($user)->on('app')->ttl(3600)->grant('app.posts.export');
 AzGuard::forUser($user)->on('app')->revoke('app.posts.export');
 AzGuard::forUser($user)->on('app')->grants();   // active grants
 ```
+
+### Super-admin
+
+Check it first-class instead of hardcoding the wildcard, and wire absolute-allow
+once via `Gate::before`:
+
+```php
+use AzGuard\Contracts\AzGuardUser;
+use Illuminate\Support\Facades\Gate;
+
+$user->isSuperAdmin();            // true when the user holds the '*' wildcard
+
+// AppServiceProvider::boot()
+Gate::before(fn ($user, string $ability) =>
+    $user instanceof AzGuardUser && $user->isSuperAdmin() ? true : null);
+```
+
+The wildcard value lives in one place — `AzGuard\PermissionKey::WILDCARD` — so
+reference it rather than a literal `'*'`.
+
+### Testing
+
+Ship-free helpers under `AzGuard\Testing` let you test authorization without
+panels, migrations or a catalog:
+
+```php
+use AzGuard\Testing\FakeAzGuardUser;
+use AzGuard\Testing\FakeGrantSource;
+
+// A database-free user double for adapter/unit tests:
+$user = (new FakeAzGuardUser)->grant('app', DocumentsPermission::View);
+$user->hasPermission(DocumentsPermission::View);   // true
+(new FakeAzGuardUser)->wildcard()->isSuperAdmin();  // true
+
+// Or grant a fixed set to every real user via a fake source:
+app()->instance(FakeGrantSource::class, (new FakeGrantSource)->grant('app', DocumentsPermission::View));
+AzGuard::registerGrantSource(FakeGrantSource::class);
+```
+
+Context checks (`hasPermissionIn`) require the optional `azguard/context` package;
+`$user->hasContextGuard()` reports whether it is installed (a call without it
+returns `false` and logs a one-time debug warning).
 
 ## Key concepts
 

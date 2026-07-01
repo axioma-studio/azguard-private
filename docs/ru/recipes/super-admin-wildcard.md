@@ -2,25 +2,50 @@
 
 Супер-администратор должен проходить **все** проверки прав без явного перечисления.
 
+## Проверка на супер-администратора
+
+Спрашивайте пользователя напрямую через first-class метод `isSuperAdmin()` вместо того, чтобы выводить это из `hasPermission('*')`:
+
+```php
+if ($user->isSuperAdmin()) {
+    // wildcard на панели по умолчанию
+}
+
+if ($user->isSuperAdmin('admin')) {
+    // wildcard на панели 'admin'
+}
+```
+
 ## Через Gate::before()
+
+Верните `true`, чтобы разрешить, или `null`, чтобы провалиться к обычным проверкам — никогда `false`, что жёстко запретит:
 
 ```php
 // app/Providers/AppServiceProvider.php
-Gate::before(function (User $user, string $ability): ?bool {
-    return $user->is_super_admin ? true : null;
+use AzGuard\Contracts\AzGuardUser;
+use Illuminate\Support\Facades\Gate;
+
+Gate::before(function ($user): ?bool {
+    return $user instanceof AzGuardUser && $user->isSuperAdmin()
+        ? true
+        : null;   // провалиться дальше — пусть решают обычные политики
 });
 ```
+
+Проверка `instanceof AzGuardUser` делает хук безопасным для гостевых запросов и не-AzGuard пользователей.
 
 ## Через роль с wildcard
 
 ```php
+use AzGuard\PermissionKey;
 use AzGuard\Roles\BaseRole;
 
 class SuperAdminRole extends BaseRole
 {
     public function permissions(): array
     {
-        return ['*']; // AzGuard возвращает true для любой проверки
+        // Ссылайтесь на PermissionKey::WILDCARD вместо литерала '*'.
+        return [PermissionKey::WILDCARD]; // AzGuard возвращает true для любой проверки
     }
 }
 
