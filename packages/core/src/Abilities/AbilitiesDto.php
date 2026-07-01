@@ -6,6 +6,9 @@ namespace AzGuard\Abilities;
 
 use AzGuard\Support\ResolvesGateAbilities;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract readonly class AbilitiesDto
 {
     use ResolvesGateAbilities;
@@ -25,6 +28,13 @@ abstract readonly class AbilitiesDto
             abilityMap: static::abilityMap(),
             arguments: $arguments,
         );
+    }
+
+    public static function make(mixed ...$arguments): static
+    {
+        $flags = static::resolveFlags(arguments: $arguments);
+
+        return new static(...$flags);
     }
 
     /**
