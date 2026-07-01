@@ -13,7 +13,7 @@ describe('guard:list-scoped-roles command', function (): void {
         $user = User::factory()->create();
 
         $this->artisan('guard:list-scoped-roles', ['user' => $user->id])
-            ->expectsOutputToContain('нет scoped-ролей')
+            ->expectsOutputToContain('has no scoped roles')
             ->assertExitCode(0);
     });
 
@@ -54,7 +54,7 @@ describe('guard:list-scoped-roles command', function (): void {
 
     it('returns failure for unknown user', function (): void {
         $this->artisan('guard:list-scoped-roles', ['user' => '99999'])
-            ->expectsOutputToContain('не найден')
+            ->expectsOutputToContain('not found')
             ->assertExitCode(1);
     });
 
@@ -83,7 +83,7 @@ describe('guard:list-scoped-roles command', function (): void {
             'user' => $user->id,
             '--entity' => 'App\\Models\\Team',
         ])
-            ->expectsOutputToContain('нет scoped-ролей')
+            ->expectsOutputToContain('has no scoped roles')
             ->assertExitCode(0);
     });
 });

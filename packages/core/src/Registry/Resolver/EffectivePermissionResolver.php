@@ -6,6 +6,7 @@ namespace AzGuard\Registry\Resolver;
 
 use AzGuard\Contracts\PermissionLayer;
 use AzGuard\Contracts\PermissionResolverInterface;
+use AzGuard\PermissionKey;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Contracts\PermissionCatalog;
 use AzGuard\Registry\Contracts\PermissionDefinition;
@@ -112,7 +113,10 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
     private function filterAgainstCatalog(PermissionSet $set, string $panelId): PermissionSet
     {
         if (! Config::wildcardEnabled()) {
-            return $set->filter(fn (string $key): bool => $this->catalog->has($panelId, $key));
+            $filtered = $set->filter(fn (string $key): bool => $this->catalog->has($panelId, $key));
+            $this->logDroppedKeys($set, $filtered, $panelId);
+
+            return $filtered;
         }
 
         $catalogKeys = array_map(
@@ -120,8 +124,8 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
             $this->catalog->all($panelId),
         );
 
-        return $set->filter(function (string $key) use ($panelId, $catalogKeys): bool {
-            if (! str_contains($key, '*')) {
+        $filtered = $set->filter(function (string $key) use ($panelId, $catalogKeys): bool {
+            if (! str_contains($key, PermissionKey::WILDCARD)) {
                 return $this->catalog->has($panelId, $key);
             }
 
@@ -135,6 +139,27 @@ final readonly class EffectivePermissionResolver implements PermissionResolverIn
 
             return false;
         });
+
+        $this->logDroppedKeys($set, $filtered, $panelId);
+
+        return $filtered;
+    }
+
+    /**
+     * Surface keys that a grant/role declared but the catalog does not know —
+     * almost always a typo in a role's permissions() or a stale DB grant. Debug
+     * level so it aids diagnosis without noise; the keys are already dropped.
+     */
+    private function logDroppedKeys(PermissionSet $before, PermissionSet $after, string $panelId): void
+    {
+        $dropped = array_values(array_diff($before->keys(), $after->keys()));
+
+        if ($dropped !== []) {
+            Log::debug('AzGuard: dropped permission keys not in catalog', [
+                'panel' => $panelId,
+                'keys' => $dropped,
+            ]);
+        }
     }
 
     /**

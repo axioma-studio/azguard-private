@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AzGuard;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
+use AzGuard\Contracts\ContextGuard;
+use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Grants\GrantBuilder;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Registry\Contracts\GrantSource;
@@ -86,6 +88,34 @@ final class AzGuardManager implements AzGuardManagerInterface
         $panel = $this->panel(id: $panelId);
 
         return $panel?->resolvePermission(permission: $permission);
+    }
+
+    #[Override]
+    public function panelIdForPermission(UnitEnum $permission): ?string
+    {
+        foreach ($this->panels as $id => $panel) {
+            if (in_array($permission::class, $panel->getPermissionEnums(), strict: true)) {
+                return $id;
+            }
+        }
+
+        return null;
+    }
+
+    // ─── Actor ─────────────────────────────────────────────────────────────────
+
+    #[Override]
+    public function isSuperAdmin(Authenticatable $user, ?string $panelId = null): bool
+    {
+        $panelId = PanelResolver::resolveDefault($panelId);
+
+        return app(PermissionResolverInterface::class)->forUser($user, $panelId)->isWildcard();
+    }
+
+    #[Override]
+    public function hasContextGuard(): bool
+    {
+        return app()->bound(ContextGuard::class);
     }
 
     // ─── Extensions ───────────────────────────────────────────────────────────

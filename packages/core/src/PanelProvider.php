@@ -75,8 +75,9 @@ abstract class PanelProvider extends ServiceProvider
      * for this panel under the azguard.catalog_builders tag so that
      * CompositePermissionCatalog can assemble the full permission catalog.
      *
-     * Override in a concrete PanelProvider to add custom builders or
-     * replace the default ones.
+     * To ADD a custom builder without losing the defaults, override
+     * {@see registerCustomCatalogBuilders()} — it runs after this. Override this
+     * method only when you need to REPLACE the default enum/policy registration.
      *
      * @param  list<string>  $policyClasses
      */
@@ -106,6 +107,19 @@ abstract class PanelProvider extends ServiceProvider
             ));
             $this->app->tag([$abstract], 'azguard.catalog_builders');
         }
+
+        $this->registerCustomCatalogBuilders($panel);
+    }
+
+    /**
+     * Extension hook: register additional PermissionCatalogBuilder instances for
+     * this panel (e.g. a database-backed catalog) without re-implementing the
+     * default enum/policy registration. Tag each with 'azguard.catalog_builders'.
+     * Empty by default — override in a concrete PanelProvider.
+     */
+    protected function registerCustomCatalogBuilders(Panel $panel): void
+    {
+        // No custom builders by default.
     }
 
     protected function getPanel(): Panel

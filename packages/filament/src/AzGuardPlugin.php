@@ -37,8 +37,8 @@ final class AzGuardPlugin implements Plugin
     }
 
     /**
-     * Указать, для какой AzGuard-панели отображать UI управления.
-     * Позволяет фильтровать права и роли только данной панели.
+     * Specify which AzGuard panel the management UI is shown for.
+     * Allows filtering permissions and roles to that panel only.
      */
     public function forPanel(string $panelId): static
     {

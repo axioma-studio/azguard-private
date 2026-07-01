@@ -8,14 +8,14 @@ return [
     | Merge Strategy
     |--------------------------------------------------------------------------
     |
-    | Определяет, как объединяются глобальные права и контекстные права.
+    | Defines how global permissions and context permissions are merged.
     |
-    | Встроенные стратегии:
-    |   GlobalPlusContextStrategy  — global ∪ context (дефолт)
-    |   ContextOnlyStrategy        — только context, global игнорируется
-    |   DenyWithoutContextStrategy — пустой set без контекста
+    | Built-in strategies:
+    |   GlobalPlusContextStrategy  — global ∪ context (default)
+    |   ContextOnlyStrategy        — context only, global ignored
+    |   DenyWithoutContextStrategy — empty set without a context
     |
-    | Можно подставить свой класс, реализующий MergeStrategy.
+    | You may provide your own class implementing MergeStrategy.
     |
     */
     'merge_strategy' => GlobalPlusContextStrategy::class,
@@ -25,11 +25,11 @@ return [
     | Context Resolvers
     |--------------------------------------------------------------------------
     |
-    | Список FQCN классов, реализующих ResolvesContext.
-    | Каждый resolver извлекает AuthorizationContext из Request
-    | и устанавливает его в AuthorizationContextManager.
+    | List of FQCNs of classes implementing ResolvesContext.
+    | Each resolver extracts an AuthorizationContext from the Request
+    | and sets it on the AuthorizationContextManager.
     |
-    | Пример:
+    | Example:
     |   'resolvers' => [
     |       App\AzGuard\WorkspaceContextResolver::class,
     |   ],

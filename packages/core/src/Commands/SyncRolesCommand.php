@@ -33,7 +33,7 @@ final class SyncRolesCommand extends Command
         $isDryRun = (bool) $this->option('dry-run');
 
         if ($isDryRun) {
-            $this->warn('[dry-run] Изменения не будут записаны в БД.');
+            $this->warn('[dry-run] No changes will be written to the database.');
         }
 
         if ($panels === []) {
@@ -136,7 +136,7 @@ final class SyncRolesCommand extends Command
         }
 
         $suffix = $isDryRun ? ' (dry-run)' : '';
-        $this->info("Синхронизация завершена{$suffix}: created={$created}, updated={$updated}, unchanged={$unchanged}");
+        $this->info("Sync complete{$suffix}: created={$created}, updated={$updated}, unchanged={$unchanged}");
 
         return self::SUCCESS;
     }

@@ -9,14 +9,14 @@ use AzGuard\Registry\Values\PermissionSet;
 use Override;
 
 /**
- * Стратегия: запретить всё без контекста, с контекстом — global ∪ context.
+ * Strategy: deny everything without a context; with a context — global ∪ context.
  *
- * Если контекст не установлен — возвращает пустой PermissionSet,
- * блокируя любой доступ.
- * Если контекст установлен — поведение как GlobalPlusContextStrategy.
+ * If no context is set — returns an empty PermissionSet,
+ * blocking all access.
+ * If a context is set — behaves like GlobalPlusContextStrategy.
  *
- * Подходит для панелей, где работа вне контекста
- * (например, вне выбранного проекта) семантически невозможна.
+ * Suitable for panels where working outside a context
+ * (e.g. outside the selected project) is semantically impossible.
  */
 final class DenyWithoutContextStrategy implements MergeStrategy
 {

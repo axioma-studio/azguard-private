@@ -17,7 +17,7 @@ final class ListDirectGrants extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->label('Выдать грант'),
+            CreateAction::make()->label('Issue grant'),
         ];
     }
 }

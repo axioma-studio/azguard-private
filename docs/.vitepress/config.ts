@@ -89,6 +89,7 @@ function advancedSidebar(base = '') {
         { text: 'Multi-Tenant Roles',    link: p('/recipes/multi-tenant') },
         { text: 'Inertia Permissions',   link: p('/recipes/inertia-permissions') },
         { text: 'Policy Integration',    link: p('/recipes/policy-integration') },
+        { text: 'Integration & Testing', link: p('/recipes/integration') },
       ],
     },
   ]
@@ -180,6 +181,7 @@ function ruAdvancedSidebar() {
         { text: 'Multi-Tenant роли',           link: p('/recipes/multi-tenant') },
         { text: 'Inertia + права',             link: p('/recipes/inertia-permissions') },
         { text: 'Интеграция с Policy',         link: p('/recipes/policy-integration') },
+        { text: 'Интеграция и тесты',          link: p('/recipes/integration') },
       ],
     },
   ]

@@ -8,9 +8,9 @@ use AzGuard\Context\AuthorizationContext;
 use Illuminate\Http\Request;
 
 /**
- * Интерфейс для классов, умеющих извлекать AuthorizationContext из Request.
+ * Interface for classes able to extract an AuthorizationContext from a Request.
  *
- * Реализуется в приложении:
+ * Implemented in the application:
  *
  *   final class WorkspaceContextResolver implements ResolvesContext
  *   {
@@ -25,19 +25,19 @@ use Illuminate\Http\Request;
  *       public function panelId(): string { return 'app'; }
  *   }
  *
- * Регистрируется в PanelProvider:
+ * Registered in a PanelProvider:
  *   AzGuardContext::registerResolver(WorkspaceContextResolver::class);
  */
 interface ResolvesContext
 {
     /**
-     * Извлечь контекст из текущего request.
-     * Вернуть null, если контекст неприменим к этому запросу.
+     * Extract the context from the current request.
+     * Return null if the context does not apply to this request.
      */
     public function resolve(Request $request): ?AuthorizationContext;
 
     /**
-     * Панель, для которой работает этот resolver.
+     * The panel this resolver works for.
      */
     public function panelId(): string;
 }

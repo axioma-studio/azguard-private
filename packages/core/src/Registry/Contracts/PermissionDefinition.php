@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Contracts;
 
 /**
- * Иммутабельный дескриптор одного permission из каталога.
- * Источник истины — всегда PHP-код (enum, attribute).
+ * Immutable descriptor of a single permission from the catalog.
+ * The source of truth is always PHP code (enum, attribute).
  */
 interface PermissionDefinition
 {
@@ -16,22 +16,22 @@ interface PermissionDefinition
     public function key(): string;
 
     /**
-     * Short key без префикса панели: "documents.view"
+     * Short key without the panel prefix: "documents.view"
      */
     public function shortKey(): string;
 
     /**
-     * ID панели: "app", "admin"
+     * Panel ID: "app", "admin"
      */
     public function panelId(): string;
 
     /**
-     * Группа для UI/CLI: "Documents", "Dashboard"
+     * Group for UI/CLI: "Documents", "Dashboard"
      */
     public function group(): ?string;
 
     /**
-     * Метаданные для Filament / TypeScript-генерации.
+     * Metadata for Filament / TypeScript generation.
      */
     public function meta(): PermissionMeta;
 

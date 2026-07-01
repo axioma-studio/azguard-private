@@ -8,8 +8,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Неизменяемый value object, описывающий ожидающую операцию grant'a.
- * Создаётся через GrantManager::for() и передаётся в GrantManager через ->save().
+ * Immutable value object describing a pending grant operation.
+ * Created via GrantManager::for() and passed back to GrantManager through ->save().
  */
 final readonly class PendingGrant
 {

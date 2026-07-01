@@ -7,7 +7,7 @@ namespace AzGuard\Context\Exceptions;
 use RuntimeException;
 
 /**
- * Выбрасывается DenyWithoutContextStrategy, когда контекст обязателен,
- * но не был установлен через SetAuthorizationContext middleware.
+ * Thrown by DenyWithoutContextStrategy when a context is required
+ * but was not set via the SetAuthorizationContext middleware.
  */
 final class MissingAuthorizationContextException extends RuntimeException {}

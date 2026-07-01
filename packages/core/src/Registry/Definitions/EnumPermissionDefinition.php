@@ -10,9 +10,9 @@ use Override;
 use UnitEnum;
 
 /**
- * PermissionDefinition, построенный из backed enum case.
+ * PermissionDefinition built from a backed enum case.
  *
- * Пример:
+ * Example:
  *   DocumentsPermission::View → key "app.documents.view"
  */
 final readonly class EnumPermissionDefinition implements PermissionDefinition
@@ -27,8 +27,8 @@ final readonly class EnumPermissionDefinition implements PermissionDefinition
     ) {}
 
     /**
-     * Создать из enum case и панели.
-     * Логика resolvePermission берётся из Panel::resolvePermission().
+     * Create from an enum case and a panel.
+     * The resolvePermission logic comes from Panel::resolvePermission().
      */
     public static function fromCase(UnitEnum $case, string $panelId, string $resolvedKey, ?string $group = null): self
     {
@@ -95,7 +95,7 @@ final readonly class EnumPermissionDefinition implements PermissionDefinition
     }
 
     /**
-     * Инферить группу из имени enum-класса: DocumentsPermission → Documents
+     * Infer the group from the enum class name: DocumentsPermission → Documents
      */
     private static function inferGroupFromClass(string $enumClass): string
     {
@@ -107,7 +107,7 @@ final readonly class EnumPermissionDefinition implements PermissionDefinition
     }
 
     /**
-     * Форматировать label из PascalCase имени case: ViewAny → View Any
+     * Format a label from a PascalCase case name: ViewAny → View Any
      */
     private static function formatLabel(string $caseName): string
     {

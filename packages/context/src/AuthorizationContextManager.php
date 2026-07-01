@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AzGuard\Context;
 
 /**
- * Singleton: хранит активный AuthorizationContext для текущего request.
+ * Singleton: holds the active AuthorizationContext for the current request.
  *
- * Регистрируется как singleton в AzGuardContextServiceProvider.
- * Устанавливается middleware SetAuthorizationContext (или вручную).
+ * Registered as a singleton in AzGuardContextServiceProvider.
+ * Set by the SetAuthorizationContext middleware (or manually).
  *
- * Пример:
+ * Example:
  *   app(AuthorizationContextManager::class)->set(
  *       new AuthorizationContext('app', 'workspace', $workspaceId)
  *   );
@@ -23,7 +23,7 @@ final class AuthorizationContextManager
     private array $contexts = [];
 
     /**
-     * Установить контекст для конкретной панели.
+     * Set the context for a specific panel.
      */
     public function set(AuthorizationContext $context): void
     {
@@ -31,8 +31,8 @@ final class AuthorizationContextManager
     }
 
     /**
-     * Получить активный контекст для панели.
-     * Возвращает null если контекст не установлен.
+     * Get the active context for a panel.
+     * Returns null if no context is set.
      */
     public function current(string $panelId): ?AuthorizationContext
     {
@@ -40,7 +40,7 @@ final class AuthorizationContextManager
     }
 
     /**
-     * Проверить, установлен ли контекст для панели.
+     * Check whether a context is set for the panel.
      */
     public function has(string $panelId): bool
     {
@@ -48,7 +48,7 @@ final class AuthorizationContextManager
     }
 
     /**
-     * Сбросить контекст для панели (например, в tearDown тестов).
+     * Clear the context for a panel (e.g. in a test tearDown).
      */
     public function clear(string $panelId): void
     {
@@ -56,7 +56,7 @@ final class AuthorizationContextManager
     }
 
     /**
-     * Сбросить все контексты.
+     * Clear all contexts.
      */
     public function clearAll(): void
     {

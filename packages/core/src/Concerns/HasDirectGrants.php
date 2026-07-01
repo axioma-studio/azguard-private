@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AzGuard\Concerns;
 
 use AzGuard\Models\DirectGrant;
+use AzGuard\Support\PanelResolver;
 use AzGuard\Support\PermissionName;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -49,18 +50,19 @@ trait HasDirectGrants
      * Check whether this model has a specific active direct grant for a panel.
      *
      * $permission may be a key string or a permission enum (scoped to $panelId).
+     * When $panelId is null the default panel is used (az-guard.default_panel,
+     * else 'app'), consistent with hasPermission() — the grant is always scoped
+     * to a resolved panel, never matched across panels with a raw key.
      */
     public function hasGrant(string|UnitEnum $permission, ?string $panelId = null): bool
     {
-        $query = $this->directGrants()
-            ->where('permission_key', PermissionName::resolve($permission, $panelId ?? ''))
-            ->active();
+        $panelId = PanelResolver::resolveDefault($panelId);
 
-        if ($panelId !== null) {
-            $query = $query->where('panel_id', $panelId);
-        }
-
-        return $query->exists();
+        return $this->directGrants()
+            ->where('panel_id', $panelId)
+            ->where('permission_key', PermissionName::resolve($permission, $panelId))
+            ->active()
+            ->exists();
     }
 
     /**

@@ -15,16 +15,16 @@ use Filament\Tables\Table;
 use Override;
 
 /**
- * Relation Manager: пользователи DB-роли.
+ * Relation Manager: users of a DB role.
  *
- * Позволяет присваивать / отзывать роль пользователям.
- * Использует morph-связь через Role::users().
+ * Allows assigning / revoking the role for users.
+ * Uses the morph relation via Role::users().
  */
 final class RoleUsersRelationManager extends RelationManager
 {
     protected static string $relationship = 'users';
 
-    protected static ?string $title = 'Пользователи';
+    protected static ?string $title = 'Users';
 
     #[Override]
     public function form(Schema $schema): Schema
@@ -34,7 +34,7 @@ final class RoleUsersRelationManager extends RelationManager
 
         return $schema->components([
             Select::make('id')
-                ->label('Пользователь')
+                ->label('User')
                 ->options(fn () => $userModel::query()->pluck($labelColumn, 'id'))
                 ->searchable()
                 ->required(),
@@ -50,19 +50,19 @@ final class RoleUsersRelationManager extends RelationManager
             ->recordTitleAttribute($labelColumn)
             ->columns([
                 TextColumn::make('id')->label('ID')->width('60px'),
-                TextColumn::make($labelColumn)->label('Пользователь')->searchable(),
+                TextColumn::make($labelColumn)->label('User')->searchable(),
                 TextColumn::make('email')->label('Email')->searchable()->toggleable(),
             ])
             ->headerActions([
                 AttachAction::make()
-                    ->label('Назначить роль')
+                    ->label('Assign role')
                     ->preloadRecordSelect(),
             ])
             ->actions([
-                DetachAction::make()->label('Отозвать'),
+                DetachAction::make()->label('Revoke'),
             ])
             ->bulkActions([
-                DetachBulkAction::make()->label('Отозвать выбранных'),
+                DetachBulkAction::make()->label('Revoke selected'),
             ]);
     }
 }

@@ -7,17 +7,17 @@ namespace AzGuard\Context\Contracts;
 use AzGuard\Registry\Values\PermissionSet;
 
 /**
- * Стратегия объединения глобальных и контекстных прав.
+ * Strategy for merging global and context permissions.
  *
- * @see GlobalPlusContextStrategy  глобальные ∪ контекстные
- * @see ContextOnlyStrategy        только контекстные
- * @see DenyWithoutContextStrategy deny если контекст отсутствует
+ * @see GlobalPlusContextStrategy  global ∪ context
+ * @see ContextOnlyStrategy        context only
+ * @see DenyWithoutContextStrategy deny when no context is present
  */
 interface MergeStrategy
 {
     /**
-     * @param  PermissionSet  $global  права из глобальных источников (ClassRole, DatabaseRole)
-     * @param  PermissionSet|null  $context  права из контекста (null = контекст не установлен)
+     * @param  PermissionSet  $global  permissions from global sources (ClassRole, DatabaseRole)
+     * @param  PermissionSet|null  $context  permissions from the context (null = no context set)
      */
     public function merge(PermissionSet $global, ?PermissionSet $context): PermissionSet;
 }

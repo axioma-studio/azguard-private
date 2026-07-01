@@ -27,15 +27,15 @@ use Override;
 use UnitEnum;
 
 /**
- * Filament Resource для управления DB-ролями.
+ * Filament Resource for managing DB roles.
  *
- * Поддерживает два режима:
+ * Supports two modes:
  *
- *  «Custom role»  — права хранятся в az_guard_role_permissions,
- *                   редактируются через RolePermissionsRelationManager.
+ *  "Custom role"  — permissions are stored in az_guard_role_permissions,
+ *                   edited via RolePermissionsRelationManager.
  *
- *  «Code role»    — права определяет PHP-класс (class_name != null);
- *                   вкладка «Права» скрыта (см. RolePermissionsRelationManager::canViewForRecord).
+ *  "Code role"    — permissions are defined by a PHP class (class_name != null);
+ *                   the "Permissions" tab is hidden (see RolePermissionsRelationManager::canViewForRecord).
  */
 final class RoleResource extends Resource
 {
@@ -45,53 +45,53 @@ final class RoleResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'AzGuard';
 
-    protected static ?string $label = 'Роль';
+    protected static ?string $label = 'Role';
 
-    protected static ?string $pluralLabel = 'Роли';
+    protected static ?string $pluralLabel = 'Roles';
 
     #[Override]
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
             TextInput::make('name')
-                ->label('Название')
+                ->label('Name')
                 ->required()
                 ->maxLength(128)
                 ->unique(ignoreRecord: true)
                 ->columnSpan('full'),
 
             TextInput::make('level')
-                ->label('Уровень приоритета')
+                ->label('Priority level')
                 ->integer()
                 ->default(0)
                 ->minValue(0)
-                ->helperText('Чем выше — тем больше приоритет при объединении прав.'),
+                ->helperText('The higher the value, the greater the priority when merging permissions.'),
 
-            // ── Переключатель режима ─────────────────────────────────────────────
+            // ── Mode toggle ──────────────────────────────────────────────────────
             Toggle::make('is_code_role')
-                ->label('Управляется PHP-классом (code role)')
-                ->helperText('Включите, если права роли определяет PHP-класс, а не БД.')
+                ->label('Managed by a PHP class (code role)')
+                ->helperText('Enable if the role permissions are defined by a PHP class rather than the database.')
                 ->default(false)
                 ->live()
                 ->afterStateHydrated(function (Toggle $component, $state, $record): void {
-                    // При загрузке существующей записи — выставляем toggle по наличию class_name.
+                    // When loading an existing record — set the toggle based on class_name presence.
                     if ($record !== null) {
                         $component->state((bool) $record->class_name);
                     }
                 })
-                ->dehydrated(false) // не сохраняем в БД напрямую
+                ->dehydrated(false) // not persisted to the database directly
                 ->columnSpan('full'),
 
-            // ── Code-role: поле класса ────────────────────────────────────────────
+            // ── Code role: class field ────────────────────────────────────────────
             TextInput::make('class_name')
-                ->label('FQCN PHP-класса')
+                ->label('PHP class FQCN')
                 ->placeholder('App\\Roles\\EditorRole')
-                ->helperText('Полное имя класса, реализующего permissions().')
+                ->helperText('Fully-qualified name of the class implementing permissions().')
                 ->nullable()
                 ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
                 ->columnSpan('full'),
 
-            // ── Code-role: информационный placeholder ─────────────────────────────
+            // ── Code role: informational placeholder ──────────────────────────────
             Placeholder::make('code_role_info')
                 ->label('')
                 ->content(fn (): HtmlString => new HtmlString(
@@ -103,7 +103,7 @@ final class RoleResource extends Resource
                     .'<path stroke-linecap="round" stroke-linejoin="round" '
                     .'d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>'
                     .'</svg>'
-                    .'Права этой роли определяет PHP-класс. Вкладка «Права» в режиме редактирования скрыта.'
+                    .'This role\'s permissions are defined by a PHP class. The "Permissions" tab is hidden in edit mode.'
                     .'</div>',
                 ))
                 ->visible(fn (Get $get): bool => (bool) $get('is_code_role'))
@@ -122,13 +122,13 @@ final class RoleResource extends Resource
                     ->width('60px'),
 
                 TextColumn::make('name')
-                    ->label('Название')
+                    ->label('Name')
                     ->searchable()
                     ->sortable(),
 
-                // Тип роли: Code / Custom
+                // Role type: Code / Custom
                 IconColumn::make('is_code_role')
-                    ->label('Тип')
+                    ->label('Type')
                     ->state(fn (Role $record): bool => $record->class_name !== null)
                     ->boolean()
                     ->trueIcon('heroicon-o-code-bracket')
@@ -137,29 +137,29 @@ final class RoleResource extends Resource
                     ->falseColor('success')
                     ->tooltip(fn (Role $record): string => $record->class_name !== null
                         ? 'Code role: '.$record->class_name
-                        : 'Custom role: права из БД',
+                        : 'Custom role: permissions from the database',
                     ),
 
                 TextColumn::make('level')
-                    ->label('Уровень')
+                    ->label('Level')
                     ->sortable(),
 
                 TextColumn::make('dbPermissions_count')
-                    ->label('Прав (DB)')
+                    ->label('Permissions (DB)')
                     ->counts('dbPermissions')
                     ->sortable()
                     ->placeholder('—'),
 
                 TextColumn::make('created_at')
-                    ->label('Создана')
+                    ->label('Created')
                     ->dateTime('d.m.Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 TernaryFilter::make('is_code_role')
-                    ->label('Тип роли')
-                    ->placeholder('Все')
+                    ->label('Role type')
+                    ->placeholder('All')
                     ->trueLabel('Code roles')
                     ->falseLabel('Custom roles')
                     ->queries(

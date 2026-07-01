@@ -25,13 +25,13 @@ use Override;
 use UnitEnum;
 
 /**
- * Filament Resource для просмотра, создания и отзыва Direct Grants.
+ * Filament Resource for viewing, creating and revoking Direct Grants.
  *
- * Форма создания:
- *  1. Выбор пользователя (searchable)
- *  2. Выбор панели из зарегистрированных panels
- *  3. Выбор права из PermissionCatalog (реактивно фильтруется по панели)
- *  4. Дата истечения (необязательно — бессрочно)
+ * Creation form:
+ *  1. Select a user (searchable)
+ *  2. Select a panel from the registered panels
+ *  3. Select a permission from the PermissionCatalog (reactively filtered by panel)
+ *  4. Expiry date (optional — no expiry)
  */
 final class DirectGrantResource extends Resource
 {
@@ -55,9 +55,9 @@ final class DirectGrantResource extends Resource
 
         return $schema->components([
 
-            // ── 1. Пользователь ──────────────────────────────────────────────
+            // ── 1. User ──────────────────────────────────────────────────────
             Select::make('grantable_id')
-                ->label('Пользователь')
+                ->label('User')
                 ->required()
                 ->searchable()
                 ->getSearchResultsUsing(
@@ -71,9 +71,9 @@ final class DirectGrantResource extends Resource
                 )
                 ->columnSpan('full'),
 
-            // ── 2. Панель ────────────────────────────────────────────────────
+            // ── 2. Panel ─────────────────────────────────────────────────────
             Select::make('panel_id')
-                ->label('Панель')
+                ->label('Panel')
                 ->required()
                 ->options(fn () => collect(app(AzGuardManager::class)->getPanels())
                     ->mapWithKeys(fn ($panel, $id): array => [$id => $id])
@@ -82,9 +82,9 @@ final class DirectGrantResource extends Resource
                 ->live()
                 ->afterStateUpdated(fn ($set) => $set('permission_key', null)),
 
-            // ── 3. Право (реактивно по панели) ───────────────────────────────
+            // ── 3. Permission (reactive by panel) ────────────────────────────
             Select::make('permission_key')
-                ->label('Право')
+                ->label('Permission')
                 ->required()
                 ->options(function (Get $get): array {
                     $panelId = $get('panel_id');
@@ -110,14 +110,14 @@ final class DirectGrantResource extends Resource
                 ->disabled(fn (Get $get): bool => ! $get('panel_id'))
                 ->helperText(fn (Get $get): string => $get('panel_id')
                     ? ''
-                    : 'Сначала выберите панель.',
+                    : 'Select a panel first.',
                 ),
 
-            // ── 4. Дата истечения ─────────────────────────────────────────────
+            // ── 4. Expiry date ───────────────────────────────────────────────
             DateTimePicker::make('expires_at')
-                ->label('Действует до')
+                ->label('Valid until')
                 ->nullable()
-                ->helperText('Оставьте пустым для бессрочного гранта.')
+                ->helperText('Leave empty for a grant that never expires.')
                 ->minDate(now()->addMinute()),
 
         ])->columns(2);
@@ -134,7 +134,7 @@ final class DirectGrantResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('grantable_id')
-                    ->label('Пользователь')
+                    ->label('User')
                     ->formatStateUsing(function (string $state, DirectGrant $record) use ($userModel, $labelColumn): string {
                         if ($record->grantable_type !== $userModel) {
                             return $record->grantable_type.'#'.$state;
@@ -147,42 +147,42 @@ final class DirectGrantResource extends Resource
                     ->searchable(),
 
                 TextColumn::make('panel_id')
-                    ->label('Панель')
+                    ->label('Panel')
                     ->badge()
                     ->color('gray'),
 
                 TextColumn::make('permission_key')
-                    ->label('Право')
+                    ->label('Permission')
                     ->searchable(),
 
                 TextColumn::make('expires_at')
-                    ->label('Действует до')
+                    ->label('Valid until')
                     ->dateTime('d.m.Y H:i')
-                    ->placeholder('Бессрочно')
+                    ->placeholder('Never')
                     ->color(fn (DirectGrant $record): string => $record->isExpired() ? 'danger' : 'success')
                     ->sortable(),
 
                 TextColumn::make('created_at')
-                    ->label('Выдан')
+                    ->label('Issued')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('panel_id')
-                    ->label('Панель')
+                    ->label('Panel')
                     ->options(fn () => DirectGrant::query()->distinct()->pluck('panel_id', 'panel_id')),
 
                 Filter::make('active')
-                    ->label('Только активные')
+                    ->label('Active only')
                     ->query(fn ($query) => $query->where(
                         fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()),
                     )),
             ])
             ->actions([
-                DeleteAction::make()->label('Отозвать'),
+                DeleteAction::make()->label('Revoke'),
             ])
             ->bulkActions([
-                DeleteBulkAction::make()->label('Отозвать выбранные'),
+                DeleteBulkAction::make()->label('Revoke selected'),
             ])
             ->defaultSort('created_at', 'desc');
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Support;
 
+use AzGuard\Exceptions\InvalidMorphTypeException;
 use AzGuard\Models\DirectGrant;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
@@ -85,16 +86,20 @@ final class Config
 
     /**
      * Morph key type for polymorphic tables (model_has_roles, model_has_scopes,
-     * az_direct_grants). Drives MorphColumns; unknown values fall back to 'int'.
+     * az_direct_grants). Drives MorphColumns. Fails loud on an unknown value so a
+     * typo cannot silently build integer columns for a ULID/UUID host.
      *
      * @return 'int'|'ulid'|'uuid'
+     *
+     * @throws InvalidMorphTypeException
      */
     public static function morphType(): string
     {
-        return match ((string) config('az-guard.column_names.morph_type', 'int')) {
+        return match ($value = (string) config('az-guard.column_names.morph_type', 'int')) {
+            'int' => 'int',
             'ulid' => 'ulid',
             'uuid' => 'uuid',
-            default => 'int',
+            default => throw InvalidMorphTypeException::forValue($value, ['int', 'ulid', 'uuid']),
         };
     }
 

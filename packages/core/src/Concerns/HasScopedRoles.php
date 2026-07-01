@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AzGuard\Concerns;
 
+use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Models\ModelHasScope;
 use AzGuard\Models\Role;
+use AzGuard\PermissionKey;
 use AzGuard\Support\Config;
 use AzGuard\Support\PanelResolver;
 use AzGuard\Support\PermissionName;
@@ -156,16 +158,19 @@ trait HasScopedRoles
      *   2. Scoped roles for the given entity
      *
      * Panel resolution: an explicit $panelId always wins. Otherwise the panel is
-     * taken from a scoped string key's first segment ("app.projects.edit" -> "app",
-     * the standard convention), falling back to az-guard.default_panel. Pass
-     * $panelId explicitly for enum permissions or scopedByPanelId(false) panels.
+     * taken from a scoped string key's first segment ("app.projects.edit" -> "app"),
+     * or — for an enum permission — from the panel that owns the enum, falling back
+     * to az-guard.default_panel. Pass $panelId explicitly for scopedByPanelId(false)
+     * panels or an enum registered on more than one panel.
      */
     public function hasScopedPermission(string|UnitEnum $permission, Model $entity, ?string $panelId = null): bool
     {
         if ($panelId === null) {
-            $panelId = is_string($permission) && str_contains($permission, '.')
-                ? explode('.', $permission)[0]
-                : PanelResolver::resolveDefault(null);
+            $panelId = match (true) {
+                is_string($permission) && str_contains($permission, PermissionKey::SEPARATOR) => explode(PermissionKey::SEPARATOR, $permission)[0],
+                $permission instanceof UnitEnum => app(AzGuardManagerInterface::class)->panelIdForPermission($permission) ?? PanelResolver::resolveDefault(null),
+                default => PanelResolver::resolveDefault(null),
+            };
         }
 
         $key = PermissionName::resolve($permission, $panelId);
@@ -200,7 +205,7 @@ trait HasScopedRoles
 
             $permissions = $logic->permissions();
 
-            if (in_array('*', $permissions, true) || in_array($key, $permissions, true)) {
+            if (in_array(PermissionKey::WILDCARD, $permissions, true) || in_array($key, $permissions, true)) {
                 return true;
             }
         }

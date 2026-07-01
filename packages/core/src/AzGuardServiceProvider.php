@@ -47,6 +47,7 @@ use AzGuard\Registry\Sources\ClassRoleGrantSource;
 use AzGuard\Registry\Sources\DatabaseRoleGrantSource;
 use AzGuard\Registry\Sources\DirectGrantSource;
 use AzGuard\Support\Config;
+use AzGuard\Support\RequestState;
 use AzGuard\Support\ScopedRoleCache;
 use Composer\InstalledVersions;
 use Illuminate\Console\Scheduling\Schedule;
@@ -96,6 +97,9 @@ final class AzGuardServiceProvider extends ServiceProvider
         // Reset per request (Octane-safe) — caches scoped-role rows for HasScopedRoles.
         $this->app->scoped(ScopedRoleCache::class);
 
+        // Per-request scratch state (Octane-safe once-per-request side effects).
+        $this->app->scoped(RequestState::class);
+
         // Scoped as well: the resolver captures the PermissionCache instance at
         // construction, so it must share the cache's per-request lifecycle.
         $this->app->scoped(EffectivePermissionResolver::class, function (): EffectivePermissionResolver {
@@ -121,6 +125,10 @@ final class AzGuardServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Fail fast on a misconfigured morph type before any migration or
+        // polymorphic query can silently build the wrong column type.
+        Config::morphType();
+
         $this->registerPanelProviders();
 
         $this->loadMigrationsFrom(paths: __DIR__.'/../database/migrations');

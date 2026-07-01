@@ -8,10 +8,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Таблица контекстных ролей: rights scoped to context (workspace, project, etc.)
+ * Context roles table: rights scoped to context (workspace, project, etc.)
  *
- * Строка = «пользователь X в контексте (type=workspace, id=42) панели app
- *           имеет право app.posts.edit»
+ * A row = "user X in context (type=workspace, id=42) of the app panel
+ *          has the app.posts.edit permission"
  */
 return new class extends Migration
 {
@@ -20,26 +20,26 @@ return new class extends Migration
         Schema::create('az_guard_context_roles', function (Blueprint $table): void {
             $table->id();
 
-            // Пользователь (polymorphic) — тип ключа следует az-guard.column_names.morph_type
+            // User (polymorphic) — key type follows az-guard.column_names.morph_type
             MorphColumns::add($table, 'model');
 
-            // Контекст
+            // Context
             $table->string('context_type');  // 'workspace', 'project', ...
-            $table->string('context_id');    // string чтобы поддерживать UUID и int
+            $table->string('context_id');    // string to support both UUID and int
 
-            // Право
+            // Permission
             $table->string('panel_id');
             $table->string('permission_key');
 
             $table->timestamps();
 
-            // Уникальность: один пользователь не получает одно право дважды
+            // Uniqueness: a user does not receive the same permission twice
             $table->unique(
                 ['model_type', 'model_id', 'context_type', 'context_id', 'panel_id', 'permission_key'],
                 'az_ctx_roles_unique',
             );
 
-            // Индексы для быстрого поиска
+            // Indexes for fast lookups
             $table->index(['model_type', 'model_id', 'panel_id'], 'az_ctx_roles_user_panel');
             $table->index(['context_type', 'context_id'], 'az_ctx_roles_context');
         });

@@ -7,6 +7,7 @@ namespace AzGuard\Registry\Sources;
 use AzGuard\Concerns\HasRoles;
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\RoleInterface;
+use AzGuard\PermissionKey;
 use AzGuard\Registry\Contracts\GrantPriority;
 use AzGuard\Registry\Contracts\GrantSource;
 use AzGuard\Registry\Values\PermissionSet;
@@ -60,7 +61,7 @@ final readonly class ClassRoleGrantSource implements GrantSource
             ->values()
             ->all();
 
-        if (in_array('*', $keys, strict: true)) {
+        if (in_array(PermissionKey::WILDCARD, $keys, strict: true)) {
             return PermissionSet::wildcard();
         }
 
@@ -70,7 +71,7 @@ final readonly class ClassRoleGrantSource implements GrantSource
     /**
      * Normalise a role's declared permissions to the full keys that belong to
      * the queried panel. Enum cases are scoped via their owning panel; strings
-     * are kept when they are the '*' wildcard or already prefixed with the panel.
+     * are kept when they are the wildcard or already prefixed with the panel.
      *
      * @param  list<UnitEnum|string>  $permissions
      * @param  list<class-string>  $panelEnums
@@ -91,7 +92,7 @@ final readonly class ClassRoleGrantSource implements GrantSource
                 continue;
             }
 
-            if ($permission === '*' || str_starts_with($permission, $panelId.'.')) {
+            if ($permission === PermissionKey::WILDCARD || str_starts_with($permission, $panelId.PermissionKey::SEPARATOR)) {
                 $keys[] = $permission;
             }
         }

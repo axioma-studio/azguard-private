@@ -7,9 +7,9 @@ namespace AzGuard\Context;
 use AzGuard\Contracts\PermissionContext;
 
 /**
- * Value object: описывает контекст авторизации.
+ * Value object: describes an authorization context.
  *
- * Пример: пользователь работает с workspace #42 панели "app".
+ * Example: a user working with workspace #42 of the "app" panel.
  *
  *   $ctx = new AuthorizationContext(
  *       panelId:     'app',
@@ -17,7 +17,7 @@ use AzGuard\Contracts\PermissionContext;
  *       contextId:   42,
  *   );
  *
- * Иммутабельный — изменения создают новый экземпляр (withPanel / withContext).
+ * Immutable — changes create a new instance (withPanel / withContext).
  */
 final readonly class AuthorizationContext implements PermissionContext
 {
@@ -38,7 +38,7 @@ final readonly class AuthorizationContext implements PermissionContext
     }
 
     /**
-     * Вернуть новый контекст с другим panelId.
+     * Return a new context with a different panelId.
      */
     public function withPanel(string $panelId): self
     {
@@ -46,7 +46,7 @@ final readonly class AuthorizationContext implements PermissionContext
     }
 
     /**
-     * Вернуть новый контекст с другой сущностью.
+     * Return a new context with a different entity.
      */
     public function withContext(string $contextType, int|string $contextId): self
     {
@@ -54,7 +54,7 @@ final readonly class AuthorizationContext implements PermissionContext
     }
 
     /**
-     * Строковый ключ для кэша / логов.
+     * String key for cache / logs.
      */
     public function cacheKey(): string
     {

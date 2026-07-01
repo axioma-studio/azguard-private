@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AzGuard\Registry\Contracts;
 
 /**
- * Метаданные permission для UI, CLI, TypeScript-генерации.
- * Иммутабельный value object.
+ * Permission metadata for UI, CLI and TypeScript generation.
+ * Immutable value object.
  */
 interface PermissionMeta
 {

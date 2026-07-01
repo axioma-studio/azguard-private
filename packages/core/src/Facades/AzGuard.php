@@ -23,7 +23,12 @@ use UnitEnum;
  * @method static void setCurrentPanel(?Panel $panel)
  * @method static string permission(string $panelId, (string | UnitEnum) $permission)
  * @method static string|null tryPermission(string $panelId, (string | UnitEnum) $permission)
+ * @method static string|null panelIdForPermission(UnitEnum $permission)
  * @method static void registerGrantSource(class-string<GrantSource> $sourceClass)
+ *
+ * --- Actor API ---
+ * @method static bool isSuperAdmin(Authenticatable $user, ?string $panelId = null)
+ * @method static bool hasContextGuard()
  *
  * --- Grants API ---
  * @method static GrantBuilder forUser(Authenticatable $user)
