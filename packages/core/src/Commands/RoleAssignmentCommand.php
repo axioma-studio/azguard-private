@@ -6,7 +6,6 @@ namespace AzGuard\Commands;
 
 use AzGuard\Commands\Concerns\ResolvesUserModel;
 use AzGuard\Contracts\HasRoles as HasRolesContract;
-use AzGuard\Models\Role;
 use AzGuard\Support\Config;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -55,7 +54,7 @@ final class RoleAssignmentCommand extends Command
 
         $roleArg = (string) $this->argument('role');
         $roleModel = Config::roleModel();
-        $role = Role::query()->where('class_name', $roleArg)->first()
+        $role = $roleModel::query()->where('class_name', $roleArg)->first()
             ?? $roleModel::findByName($roleArg);
 
         if ($role === null) {
