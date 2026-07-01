@@ -11,7 +11,7 @@ it('creates roles for panel from PHP role classes', function (): void {
     expect(Role::query()->count())->toBe(0);
 
     $this->artisan('guard:sync-roles')
-        ->expectsOutputToContain('Синхронизация завершена')
+        ->expectsOutputToContain('Sync complete')
         ->assertSuccessful();
 
     expect(Role::query()->count())->toBeGreaterThan(0);
@@ -19,7 +19,7 @@ it('creates roles for panel from PHP role classes', function (): void {
 
 it('filters by panel option', function (): void {
     $this->artisan('guard:sync-roles', ['--panel' => 'test'])
-        ->expectsOutputToContain('Синхронизация завершена')
+        ->expectsOutputToContain('Sync complete')
         ->assertSuccessful();
 });
 
@@ -28,7 +28,7 @@ it('supports dry-run mode without writing to database', function (): void {
         panel: Panel::make()->id(id: 'test')->label(label: 'Test Panel'),
     );
 
-    // Имитация существующей роли, чтобы команда что-то нашла
+    // Seed an existing role so the command finds something to sync.
     Role::query()->create([
         'name' => 'existing-role',
         'level' => 10,
@@ -38,8 +38,8 @@ it('supports dry-run mode without writing to database', function (): void {
     $beforeCount = Role::query()->count();
 
     $this->artisan('guard:sync-roles', ['--dry-run' => true])
-        ->expectsOutputToContain('[dry-run] Изменения не будут записаны в БД.')
-        ->expectsOutputToContain('Синхронизация завершена (dry-run)')
+        ->expectsOutputToContain('[dry-run] No changes will be written to the database.')
+        ->expectsOutputToContain('Sync complete (dry-run)')
         ->assertSuccessful();
 
     $afterCount = Role::query()->count();

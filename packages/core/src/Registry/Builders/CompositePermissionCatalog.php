@@ -12,18 +12,18 @@ use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
 use Override;
 
 /**
- * Агрегирует несколько PermissionCatalogBuilder в единый каталог.
+ * Aggregates multiple PermissionCatalogBuilders into a single catalog.
  *
- * При дублировании ключа из разных источников проверяет совпадение:
- * - если resolvedKey идентичен — silently dedupe (enum + policy = одна запись).
- * - если conflicting definition (разные источники, разные группы) — InvalidCatalogException.
+ * When a key is duplicated across sources, it checks for a match:
+ * - if resolvedKey is identical — silently dedupe (enum + policy = one entry).
+ * - if the definition conflicts (different sources, different groups) — InvalidCatalogException.
  */
 final class CompositePermissionCatalog implements PermissionCatalog
 {
     /** @var array<string, array<string, PermissionDefinition>> panelId => key => definition */
     private array $definitions = [];
 
-    /** @var array<string, array<string, string>> panelId => key => builderClass (для error reporting) */
+    /** @var array<string, array<string, string>> panelId => key => builderClass (for error reporting) */
     private array $sources = [];
 
     private bool $built = false;
@@ -57,8 +57,8 @@ final class CompositePermissionCatalog implements PermissionCatalog
                     $builderClass = $builder::class;
 
                     if (isset($this->definitions[$panelId][$key])) {
-                        // Одинаковый ключ из двух builder'ов — допустимо (enum + policy на тот же case).
-                        // Конфликт только если группы различаются (признак разных definition).
+                        // Same key from two builders — allowed (enum + policy on the same case).
+                        // A conflict only if the groups differ (a sign of different definitions).
                         $existing = $this->definitions[$panelId][$key];
 
                         if ($existing->group() !== $definition->group()) {
@@ -70,7 +70,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
                             );
                         }
 
-                        // Тихий dedupe — оставляем первую запись
+                        // Silent dedupe — keep the first entry
                         continue;
                     }
 
@@ -140,7 +140,7 @@ final class CompositePermissionCatalog implements PermissionCatalog
     }
 
     /**
-     * Сброс кэша каталога (для тестов или hot-reload в dev).
+     * Reset the catalog cache (for tests or hot-reload in dev).
      */
     public function flush(): void
     {

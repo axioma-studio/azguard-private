@@ -12,11 +12,11 @@ use Illuminate\Support\Carbon;
 use Override;
 
 /**
- * Страница создания Direct Grant.
+ * Direct Grant creation page.
  *
- * Переопределяет handleRecordCreation, чтобы:
- *  - выдать грант через AzGuardManager::forUser()->on()->ttl()->grant()
- *  - правильно заполнить grantable_type из конфигурации
+ * Overrides handleRecordCreation to:
+ *  - issue the grant via AzGuardManager::forUser()->on()->ttl()->grant()
+ *  - correctly populate grantable_type from configuration
  */
 final class CreateDirectGrant extends CreateRecord
 {
@@ -29,8 +29,8 @@ final class CreateDirectGrant extends CreateRecord
     }
 
     /**
-     * Выдаём грант через AzGuardManager, а не прямым insert,
-     * чтобы соблюдался тот же контракт что у grant() / GrantBuilder.
+     * Issue the grant via AzGuardManager rather than a direct insert,
+     * so the same contract as grant() / GrantBuilder is honored.
      */
     #[Override]
     protected function handleRecordCreation(array $data): Model
@@ -46,7 +46,7 @@ final class CreateDirectGrant extends CreateRecord
             $ttl = (int) now()->diffInSeconds($expiresAt, absolute: false);
 
             if ($ttl <= 0) {
-                $ttl = null; // некорректное значение — бессрочно
+                $ttl = null; // invalid value — no expiry
             }
         }
 

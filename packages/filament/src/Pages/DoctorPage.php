@@ -13,14 +13,14 @@ use Throwable;
 use UnitEnum;
 
 /**
- * Страница диагностики AzGuard в Filament UI.
+ * AzGuard diagnostics page in the Filament UI.
  *
- * Отображает результат AzGuardDiagnostics::diagnose() в трёх секциях:
- *  - Abilities  — зарегистрированные Gate abilities (таблица)
- *  - Warnings   — предупреждения (жёлтый)
- *  - Errors     — ошибки согласованности (красный)
+ * Displays the result of AzGuardDiagnostics::diagnose() in three sections:
+ *  - Abilities  — registered Gate abilities (table)
+ *  - Warnings   — warnings (yellow)
+ *  - Errors     — consistency errors (red)
  *
- * Фильтрует по panelId, указанному в AzGuardPlugin::forPanel().
+ * Filters by the panelId specified in AzGuardPlugin::forPanel().
  */
 final class DoctorPage extends Page
 {
@@ -34,7 +34,7 @@ final class DoctorPage extends Page
 
     protected string $view = 'az-guard::pages.doctor';
 
-    // ─── Badge: кол-во ошибок в навигации ─────────────────────────────────
+    // ─── Badge: number of errors in navigation ────────────────────────────
 
     #[Override]
     public static function getNavigationBadge(): ?string
@@ -78,7 +78,7 @@ final class DoctorPage extends Page
         /** @var AzGuardDiagnostics $doctor */
         $doctor = app(AzGuardDiagnostics::class);
 
-        // Фильтруем по panelId из плагина, если он зарегистрирован
+        // Filter by the plugin's panelId if it is registered
         $panelFilter = null;
 
         try {
@@ -86,7 +86,7 @@ final class DoctorPage extends Page
             $plugin = filament()->getCurrentPanel()?->getPlugin('az-guard');
             $panelFilter = $plugin->getPanelId();
         } catch (Throwable) {
-            // Плагин недоступен — диагностируем все панели
+            // Plugin unavailable — diagnose all panels
         }
 
         return $doctor->diagnose(panelFilter: $panelFilter);

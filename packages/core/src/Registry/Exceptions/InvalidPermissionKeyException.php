@@ -7,8 +7,8 @@ namespace AzGuard\Registry\Exceptions;
 use RuntimeException;
 
 /**
- * Ключ permission не зарегистрирован в PermissionCatalog.
- * Бросается при попытке записать orphan-ключ в БД или при строгой проверке.
+ * The permission key is not registered in the PermissionCatalog.
+ * Thrown when attempting to persist an orphan key to the database or during strict validation.
  */
 final class InvalidPermissionKeyException extends RuntimeException
 {

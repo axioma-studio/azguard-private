@@ -9,14 +9,14 @@ use AzGuard\Registry\Values\PermissionSet;
 use Override;
 
 /**
- * Стратегия: только контекстные права.
+ * Strategy: context permissions only.
  *
- * Глобальные права полностью игнорируются.
- * Если контекст не установлен — пустой PermissionSet.
+ * Global permissions are ignored entirely.
+ * If no context is set — an empty PermissionSet.
  *
- * Подходит для строгой изоляции:
- * пользователь вне контекста не имеет прав,
- * даже если у него есть глобальная роль.
+ * Suitable for strict isolation:
+ * a user outside a context has no permissions,
+ * even if they hold a global role.
  */
 final class ContextOnlyStrategy implements MergeStrategy
 {

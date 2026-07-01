@@ -7,7 +7,7 @@ namespace AzGuard\Registry\Exceptions;
 use RuntimeException;
 
 /**
- * Конфликт в каталоге: один ключ объявлен из двух источников с разными definition.
+ * Catalog conflict: a single key is declared from two sources with different definitions.
  */
 final class InvalidCatalogException extends RuntimeException
 {

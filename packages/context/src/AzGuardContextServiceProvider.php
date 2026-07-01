@@ -15,14 +15,14 @@ use Illuminate\Support\ServiceProvider;
 use Override;
 
 /**
- * Service Provider для azguard/context.
+ * Service Provider for azguard/context.
  *
- * Публикует конфиг, регистрирует синглтон AuthorizationContextManager,
- * биндит дефолтную стратегию, регистрирует middleware.
+ * Publishes the config, registers the AuthorizationContextManager singleton,
+ * binds the default strategy, registers the middleware.
  *
- * Конфиг az-guard-context.php:
+ * Config az-guard-context.php:
  *   'merge_strategy' => GlobalPlusContextStrategy::class,
- *   'resolvers'      => [],   // FQCN классов ResolvesContext
+ *   'resolvers'      => [],   // FQCNs of ResolvesContext classes
  */
 final class AzGuardContextServiceProvider extends ServiceProvider
 {
@@ -34,18 +34,18 @@ final class AzGuardContextServiceProvider extends ServiceProvider
             'az-guard-context',
         );
 
-        // Scoped — живёт один request. Под Octane singleton протёк бы контекстом
-        // одного тенанта в следующий запрос на том же воркере.
+        // Scoped — lives for a single request. As a singleton under Octane it would
+        // leak one tenant's context into the next request on the same worker.
         $this->app->scoped(AuthorizationContextManager::class);
 
-        // Стратегия — конфигурируется в az-guard-context.php
+        // Strategy — configured in az-guard-context.php
         $this->app->bind(MergeStrategy::class, function (Application $app): MergeStrategy {
             $class = config('az-guard-context.merge_strategy', GlobalPlusContextStrategy::class);
 
             return $app->make($class);
         });
 
-        // Резолверы из конфига — тегируем для инжекции в middleware
+        // Resolvers from config — tagged for injection into the middleware
         $resolvers = config('az-guard-context.resolvers', []);
         foreach ($resolvers as $resolverClass) {
             $this->app->tag($resolverClass, ResolvesContext::class);
@@ -56,18 +56,18 @@ final class AzGuardContextServiceProvider extends ServiceProvider
             resolvers: $app->tagged(ResolvesContext::class),
         ));
 
-        // ContextPermissionLayer — scoped: применяет merge-стратегию к глобальному
-        // набору прав ПОСЛЕ агрегации всех источников в EffectivePermissionResolver,
-        // поэтому ContextOnly/DenyWithoutContext могут ограничивать, а не только
-        // добавлять. Держит scoped-менеджер — делит его per-request жизненный цикл.
+        // ContextPermissionLayer — scoped: applies the merge strategy to the global
+        // permission set AFTER all sources are aggregated in EffectivePermissionResolver,
+        // so ContextOnly/DenyWithoutContext can restrict, not only add.
+        // Holds the scoped manager — shares its per-request lifecycle.
         $this->app->scoped(PermissionLayer::class, fn (Application $app): ContextPermissionLayer => new ContextPermissionLayer(
             manager: $app->make(AuthorizationContextManager::class),
             strategy: $app->make(MergeStrategy::class),
         ));
 
-        // ContextGuard — реализация core-контракта для one-off контекстных проверок
+        // ContextGuard — implementation of the core contract for one-off context checks
         // ($user->hasPermissionIn(...) / hasPermission(..., $context)).
-        // Scoped — инжектит scoped-менеджер и резолвер, должен делить их инстансы.
+        // Scoped — injects the scoped manager and resolver, must share their instances.
         $this->app->scoped(ContextGuardContract::class, ContextGuard::class);
     }
 

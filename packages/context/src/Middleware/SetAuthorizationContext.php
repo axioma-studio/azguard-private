@@ -13,15 +13,15 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Middleware: azguard.context
  *
- * Перебирает зарегистрированные ResolvesContext-резолверы,
- * вызывает resolve($request) и устанавливает контекст в менеджер.
+ * Iterates over the registered ResolvesContext resolvers,
+ * calls resolve($request) and sets the context on the manager.
  *
- * Регистрация в bootstrap/app.php или RouteServiceProvider:
+ * Registration in bootstrap/app.php or a RouteServiceProvider:
  *   ->withMiddleware(function (Middleware $m) {
  *       $m->alias(['azguard.context' => SetAuthorizationContext::class]);
  *   })
  *
- * Применение на роуте:
+ * Applying it to a route:
  *   Route::middleware('azguard.context')->group(function () { ... });
  */
 final readonly class SetAuthorizationContext

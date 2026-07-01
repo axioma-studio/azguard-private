@@ -8,7 +8,7 @@ use AzGuard\Registry\Contracts\PermissionMeta;
 use Override;
 
 /**
- * Простая иммутабельная реализация PermissionMeta.
+ * Simple immutable implementation of PermissionMeta.
  */
 final readonly class SimplePermissionMeta implements PermissionMeta
 {

@@ -6,10 +6,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Создаёт таблицы для Phases 3 системы grants:
+ * Creates the tables for Phase 3 of the grants system:
  *
- * az_guard_role_permissions — пермиссии, назначенные DB-роли (не PHP-классы)
- * az_guard_direct_grants   — пермиссии напрямую пользователю (без роли), с TTL
+ * az_guard_role_permissions — permissions assigned to a DB role (not PHP classes)
+ * az_guard_direct_grants   — permissions granted directly to a user (without a role), with a TTL
  */
 return new class extends Migration
 {
@@ -17,7 +17,7 @@ return new class extends Migration
     {
         $t = config('az-guard.table_names');
 
-        // Пермиссии DB-ролей (роли без class_name, или custom DB-роли)
+        // DB role permissions (roles without a class_name, or custom DB roles)
         Schema::create($t['role_permissions'] ?? 'az_guard_role_permissions', function (Blueprint $table) use ($t) {
             $table->id();
             $table->foreignId('role_id')
@@ -31,13 +31,13 @@ return new class extends Migration
             $table->index(['panel_id', 'permission_key'], 'az_role_perm_lookup');
         });
 
-        // Прямые grants пользователю (без роли)
+        // Direct grants to a user (without a role)
         Schema::create($t['direct_grants'] ?? 'az_guard_direct_grants', function (Blueprint $table) {
             $table->id();
-            MorphColumns::add($table, 'grantable');  // пользователь (User или любая модель)
+            MorphColumns::add($table, 'grantable');  // the user (User or any model)
             $table->string('permission_key');       // resolved key
             $table->string('panel_id');             // "app"
-            $table->timestamp('expires_at')->nullable(); // null = бессрочно
+            $table->timestamp('expires_at')->nullable(); // null = never expires
             $table->timestamps();
 
             $table->unique(

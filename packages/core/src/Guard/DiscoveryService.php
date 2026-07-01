@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\File;
 class DiscoveryService
 {
     /**
-     * Сканирует директорию и возвращает массив имен классов, реализующих RoleInterface.
+     * Scans a directory and returns an array of class names implementing RoleInterface.
      */
     public function discoverRoles(string $path, string $namespace): array
     {

@@ -22,21 +22,21 @@ use Illuminate\Database\Eloquent\Model;
 use Override;
 
 /**
- * Relation Manager: права DB-роли.
+ * Relation Manager: DB role permissions.
  *
- * Права сгруппированы по группам из PermissionCatalog.
- * Для ролей с class_name права берутся из класса и недоступны для редактирования через UI.
+ * Permissions are grouped by the groups from the PermissionCatalog.
+ * For roles with a class_name, permissions come from the class and cannot be edited via the UI.
  */
 final class RolePermissionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'dbPermissions';
 
-    protected static ?string $title = 'Права';
+    protected static ?string $title = 'Permissions';
 
     #[Override]
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
-        // Для PHP-класс-ролей права определяет класс — скрываем вкладку.
+        // For PHP class roles the class defines the permissions — hide the tab.
         return $ownerRecord->class_name === null;
     }
 
@@ -44,8 +44,8 @@ final class RolePermissionsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('permission_key')->label('Право'),
-            TextInput::make('panel_id')->label('Панель'),
+            TextInput::make('permission_key')->label('Permission'),
+            TextInput::make('panel_id')->label('Panel'),
         ]);
     }
 
@@ -56,35 +56,35 @@ final class RolePermissionsRelationManager extends RelationManager
             ->recordTitleAttribute('permission_key')
             ->columns([
                 TextColumn::make('panel_id')
-                    ->label('Панель')
+                    ->label('Panel')
                     ->badge()
                     ->color('gray'),
 
                 TextColumn::make('permission_key')
-                    ->label('Ключ права')
+                    ->label('Permission key')
                     ->searchable(),
             ])
             ->headerActions([
                 Action::make('sync_permissions')
-                    ->label('Редактировать права')
+                    ->label('Edit permissions')
                     ->icon('heroicon-o-pencil-square')
                     ->form(fn (): array => $this->buildPermissionsForm())
                     ->fillForm(fn (): array => $this->currentPermissionsFormData())
                     ->action(fn (array $data) => $this->syncPermissions($data)),
             ])
             ->actions([
-                DeleteAction::make()->label('Отзыв'),
+                DeleteAction::make()->label('Revoke'),
             ])
             ->bulkActions([
-                DeleteBulkAction::make()->label('Отзыв выбранных'),
+                DeleteBulkAction::make()->label('Revoke selected'),
             ]);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
 
     /**
-     * Строит форму выбора прав: каждая панель — своя CheckboxList,
-     * сгруппированная по группам из каталога.
+     * Builds the permission selection form: each panel has its own CheckboxList,
+     * grouped by the groups from the catalog.
      */
     private function buildPermissionsForm(): array
     {
@@ -128,7 +128,7 @@ final class RolePermissionsRelationManager extends RelationManager
     }
 
     /**
-     * Заполняет форму текущими значениями.
+     * Fills the form with current values.
      */
     private function currentPermissionsFormData(): array
     {
@@ -163,7 +163,7 @@ final class RolePermissionsRelationManager extends RelationManager
     }
 
     /**
-     * Синхронизирует DB-права роли: удаляет старые, добавляет новые.
+     * Syncs the role's DB permissions: removes the old ones, adds the new ones.
      */
     private function syncPermissions(array $data): void
     {

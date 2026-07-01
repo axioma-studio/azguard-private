@@ -42,7 +42,7 @@ class ListScopedRolesCommand extends Command
             : $userModelClass::find($identifier);
 
         if ($user === null) {
-            $this->error("Пользователь [{$identifier}] не найден.");
+            $this->error("User [{$identifier}] not found.");
 
             return self::FAILURE;
         }
@@ -60,7 +60,7 @@ class ListScopedRolesCommand extends Command
         $scopes = $query->get();
 
         if ($scopes->isEmpty()) {
-            $this->warn("У пользователя [{$identifier}] нет scoped-ролей.");
+            $this->warn("User [{$identifier}] has no scoped roles.");
 
             return self::SUCCESS;
         }

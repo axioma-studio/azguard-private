@@ -6,19 +6,19 @@
         $errors    = $result['errors'];
     @endphp
 
-    {{-- ── Статус ──────────────────────────────────────────────── --}}
+    {{-- ── Status ──────────────────────────────────────────────── --}}
     <div class="mb-6">
         @if (count($errors) === 0 && count($warnings) === 0)
             <x-filament::badge color="success" class="text-sm px-3 py-1">
-                ✓ Все проверки пройдены успешно
+                ✓ All checks passed
             </x-filament::badge>
         @elseif (count($errors) > 0)
             <x-filament::badge color="danger" class="text-sm px-3 py-1">
-                ✗ {{ count($errors) }} {{ trans_choice('ошибка|ошибки|ошибок', count($errors)) }}, {{ count($warnings) }} {{ trans_choice('предупреждение|предупреждения|предупреждений', count($warnings)) }}
+                ✗ {{ count($errors) }} {{ trans_choice('error|errors', count($errors)) }}, {{ count($warnings) }} {{ trans_choice('warning|warnings', count($warnings)) }}
             </x-filament::badge>
         @else
             <x-filament::badge color="warning" class="text-sm px-3 py-1">
-                ⚠ {{ count($warnings) }} {{ trans_choice('предупреждение|предупреждения|предупреждений', count($warnings)) }}
+                ⚠ {{ count($warnings) }} {{ trans_choice('warning|warnings', count($warnings)) }}
             </x-filament::badge>
         @endif
     </div>
@@ -28,7 +28,7 @@
         <x-filament::section
             icon="heroicon-o-x-circle"
             icon-color="danger"
-            heading="Ошибки согласованности"
+            heading="Consistency errors"
             class="mb-4"
         >
             <ul class="space-y-1">
@@ -47,7 +47,7 @@
         <x-filament::section
             icon="heroicon-o-exclamation-triangle"
             icon-color="warning"
-            heading="Предупреждения"
+            heading="Warnings"
             class="mb-4"
         >
             <ul class="space-y-1">
@@ -65,18 +65,18 @@
     <x-filament::section
         icon="heroicon-o-shield-check"
         icon-color="primary"
-        heading="Зарегистрированные abilities ({{ count($abilities) }})"
+        heading="Registered abilities ({{ count($abilities) }})"
         collapsible
         :collapsed="count($abilities) > 20"
     >
         @if (count($abilities) === 0)
-            <p class="text-sm text-gray-500">Нет зарегистрированных abilities. Проверьте настройку basePath/namespace.</p>
+            <p class="text-sm text-gray-500">No registered abilities. Check the basePath/namespace configuration.</p>
         @else
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="py-2 pr-4 text-left font-medium text-gray-600 dark:text-gray-400">Панель</th>
+                            <th class="py-2 pr-4 text-left font-medium text-gray-600 dark:text-gray-400">Panel</th>
                             <th class="py-2 pr-4 text-left font-medium text-gray-600 dark:text-gray-400">Ability</th>
                             <th class="py-2 text-left font-medium text-gray-600 dark:text-gray-400">Policy::method</th>
                         </tr>

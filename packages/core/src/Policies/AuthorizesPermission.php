@@ -34,6 +34,6 @@ trait AuthorizesPermission
     protected function panel(): Panel
     {
         return AzGuard::panel(id: $this->panelId())
-            ?? throw new RuntimeException("Панель AzGuard [{$this->panelId()}] не зарегистрирована.");
+            ?? throw new RuntimeException("AzGuard panel [{$this->panelId()}] is not registered.");
     }
 }

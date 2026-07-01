@@ -8,20 +8,20 @@ use AzGuard\Facades\AzGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Gate-политика для проверки direct grants через Laravel Gate.
+ * Gate policy for checking direct grants via the Laravel Gate.
  *
- * Регистрируется автоматически сервис-провайдером:
+ * Registered automatically by the service provider:
  *   Gate::define('direct-grant', [DirectGrantPolicy::class, 'check']);
  *
- * Использование:
+ * Usage:
  *
- *   // Проверка с текущей панелью
+ *   // Check against the current panel
  *   Gate::allows('direct-grant', 'app.documents.export');
  *
- *   // Проверка с явной панелью
+ *   // Check against an explicit panel
  *   Gate::allows('direct-grant', ['app.documents.export', 'app']);
  *
- *   // В политике
+ *   // Inside a policy
  *   public function export(User $user, Document $document): bool
  *   {
  *       return Gate::allows('direct-grant', 'app.documents.export');
@@ -30,7 +30,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 final class DirectGrantPolicy
 {
     /**
-     * @param  string|array<mixed>  $arguments  Ключ или [ключ, панель]
+     * @param  string|array<mixed>  $arguments  Key or [key, panel]
      */
     public function check(Authenticatable $user, string|array $arguments): bool
     {
