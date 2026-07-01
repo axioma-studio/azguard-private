@@ -35,6 +35,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/ExtensionSwapTest.php',
         'Feature/FakeGrantSourceTest.php',
         'Feature/DoctorCommandTest.php',
+        'Feature/StructuredOutputCommandsTest.php',
         'Feature/GateIntegrationScopedTest.php',
         'Feature/GrantsCliColumnsTest.php',
         'Feature/GrantsFacadeDefaultPanelTest.php',
