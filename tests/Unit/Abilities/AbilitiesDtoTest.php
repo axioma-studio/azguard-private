@@ -36,6 +36,32 @@ final readonly class PostAbilitiesFixture extends AbilitiesDto
 }
 
 /**
+ * Subclass carrying an extra non-bool public property alongside the bool flags.
+ * toArray() must expose only the bool flags and never leak this label to the
+ * front-end (data-exfiltration guard, ARCHITECT_REVIEW §4.8 / F4).
+ */
+final readonly class LabeledAbilitiesFixture extends AbilitiesDto
+{
+    public function __construct(
+        public bool $viewAny,
+        public bool $view,
+        public string $secretLabel = 'do-not-leak',
+        public int $tenantId = 42,
+    ) {}
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function abilityMap(): array
+    {
+        return [
+            'viewAny' => 'fixture.labeled.viewAny',
+            'view' => 'fixture.labeled.view',
+        ];
+    }
+}
+
+/**
  * Define every fixture ability with the same guest-evaluable resolver.
  * A nullable user param makes Gate run the callback for a guest instead of
  * short-circuiting to false.
@@ -138,5 +164,27 @@ describe('AbilitiesDto::make()', function () {
         PostAbilitiesFixture::make($subject);
 
         expect($received)->toBe($subject);
+    });
+
+    it('omits non-bool public subclass properties from toArray()', function () {
+        Gate::define('fixture.labeled.viewAny', fn (?object $user): bool => true);
+        Gate::define('fixture.labeled.view', fn (?object $user): bool => false);
+
+        $abilities = LabeledAbilitiesFixture::make();
+
+        // Sanity: the non-bool props really are populated on the instance.
+        expect($abilities->secretLabel)->toBe('do-not-leak')
+            ->and($abilities->tenantId)->toBe(42);
+
+        $result = $abilities->toArray();
+
+        // Only the bool flags survive — no string/int properties leak out.
+        expect($result)->toBe([
+            'viewAny' => true,
+            'view' => false,
+        ])
+            ->and($result)->not->toHaveKey('secretLabel')
+            ->and($result)->not->toHaveKey('tenantId')
+            ->and(array_filter(array_map('is_bool', $result), fn (bool $isBool): bool => ! $isBool))->toBe([]);
     });
 });
