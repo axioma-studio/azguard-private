@@ -181,3 +181,21 @@ P3(F37)─▶ P8(F23 frontend-доки)
 - EN-доки актуальны, RU-зеркало не деградирует (CI parity).
 - CHANGELOG каждого пакета отражает все ломающие изменения (без deprecated-шимов — прямые правки).
 - Инварианты §6 не нарушены (проверено review-gate).
+
+---
+
+## Хвосты (residuals, доделать в конце плана)
+
+> Всплыли при реализации фаз, сознательно НЕ закрыты в своём срезе (не регрессии). Собраны здесь, чтобы добить единым проходом в конце. Помечать статус по мере закрытия.
+
+| ID | Sev | Источник | Что | Файл | Действие |
+|---|---|---|---|---|---|
+| T1 | 🟠 | Фаза 2 · F8 open-q + review | Eloquent global query-scope НЕ panel-aware — фильтрует по `scope_class` независимо от `panel_id`; scoped **query-filtering** может течь между панелями (permission-**check** путь уже изолирован F8) | `core/Concerns/HasScopedRoles.php` (`bootHasScopedRoles`) | Отдельный срез: пробросить активную панель в global scope, ИЛИ задокументировать, что query-scope не panel-bound. Тонко: у Eloquent global-scope нет «текущей панели» — нужен источник контекста. **Приоритет №1 среди хвостов (та же граница изоляции).** |
+| T2 | 🟡 | Фаза 2 · F8 review [MED] | `removeScopedRole($role,$entity, panelId=null)` сносит строки ВСЕХ панелей (асимметрия с `assignScopedRole`, где null = отдельная any-panel строка). Сейчас задокументировано в докблоке | `core/Concerns/HasScopedRoles.php:125-133` | Решить: менять семантику (null → только null-panel строка) vs оставить + документировано. |
+| T3 | ⚪ | Фаза 2 · F27 review [LOW] | `EnumPermissionCatalogBuilder` тихо `continue` на missing-классе БЕЗ `Log::warning`, тогда как policy-builder теперь логирует — несимметрия диагностики | `core/Registry/Builders/EnumPermissionCatalogBuilder.php:~60` | Добавить аналогичный `Log::warning` для паритета. |
+| T4 | ⚪ | Фаза 2 · F28 review [LOW] | wildcard-off: литеральный `*` в grant всё ещё матчит dynamic `{seg}` (docblock обещает «treated as unknown exact key»). Вред нулевой — ключ инертен при выключенном wildcard | `core/Registry/Resolver/EffectivePermissionResolver.php` | Опц.: в wildcard-off ветке дропать ключи с `WILDCARD` до dynamic-проверки. |
+| T5 | ⚪ | Фаза 2 · F48 review [LOW] + open-q | migration 000004 `down()` (`nullable(false)`) упадёт на MySQL/PG при наличии null-строк (уже задокументировано в докблоке миграции); нет explicit `migrate:rollback`-теста | `core/database/migrations/2026_01_01_000004_*` | Опц.: в `down()` бэкфилить/удалять null-строки перед `nullable(false)`; добавить rollback-тест. |
+| T6 | ⚪ | Фаза 2 · F30/F30-fix open-q | Epoch `add`+`increment` под реальным Redis (lost-increment гонки) и Octane cross-worker изоляция `$requestCache` НЕ покрыты (array-store — single-process); epoch растёт unbounded (нет reset) | `core/Registry/Resolver/PermissionCache.php` | Опц.: интеграционный тест на реальном redis; рассмотреть верхнюю границу/reset epoch. |
+| T7 | ℹ️ | Фаза 2 · F3 review [INFO] | `resolveFor` пересчитывает panel/enums per-role в цикле (in-memory, НЕ N+1/DB) | `core/Concerns/HasScopedRoles.php:~213` | YAGNI — не трогать без реальной нагрузки. |
+
+**Рекомендация:** T1 заслуживает собственного среза (та же граница изоляции панелей, что и F8) — не откладывать до самого конца, если планируется полагаться на scoped-query-filtering. T2 — продуктовое решение по семантике. T3–T7 — дешёвый батч чистки в конце.
