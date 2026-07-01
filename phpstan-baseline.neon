@@ -37,24 +37,6 @@ parameters:
 			path: packages/core/src/Commands/GrantCommand.php
 
 		-
-			message: '#^Access to an undefined property AzGuard\\Models\\DirectGrant\:\:\$model_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: packages/core/src/Commands/GrantsListCommand.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\DirectGrant\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: packages/core/src/Commands/GrantsListCommand.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,AzGuard\\Models\\DirectGrant\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: packages/core/src/Commands/GrantsListCommand.php
-
-		-
 			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1

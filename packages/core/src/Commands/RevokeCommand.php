@@ -57,8 +57,8 @@ final class RevokeCommand extends Command
             return self::FAILURE;
         }
 
-        $query = DirectGrant::where('model_type', $modelClass)
-            ->where('model_id', $userId);
+        $query = DirectGrant::where('grantable_type', $modelClass)
+            ->where('grantable_id', $userId);
 
         if ($revokeAll) {
             if ($panelId !== null) {
