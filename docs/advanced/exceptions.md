@@ -35,10 +35,24 @@ These exceptions are thrown during boot (or first request) if the configuration 
 |---|---|
 | `AzGuard\Exceptions\PanelNotFoundException` | A panel id is referenced that is not registered in `config/az-guard.php` |
 | `AzGuard\Exceptions\PanelNotSetException` | A permission check runs with no resolvable current panel |
+| `AzGuard\Exceptions\InvalidMorphTypeException` | `az-guard.column_names.morph_type` holds an unsupported value (not `int`/`ulid`/`uuid`) |
 | `AzGuard\Registry\Exceptions\InvalidPermissionKeyException` | A permission key cannot be resolved or is malformed |
 | `AzGuard\Registry\Exceptions\InvalidCatalogException` | The permission catalog is invalid (e.g. two enum cases resolve to the same full key) |
 
-All extend `AzGuard\Exceptions\AzGuardException`.
+Every one of these extends `AzGuard\Exceptions\AzGuardException`, so a single catch handles any AzGuard domain error regardless of sub-namespace:
+
+```php
+use AzGuard\Exceptions\AzGuardException;
+
+try {
+    AzGuard::permission('reports', ReportPermission::View);
+} catch (AzGuardException $e) {
+    // Catches PanelNotFoundException, PanelNotSetException,
+    // InvalidMorphTypeException, InvalidPermissionKeyException and
+    // InvalidCatalogException alike.
+    report($e);
+}
+```
 
 ## Handling authorization failures
 

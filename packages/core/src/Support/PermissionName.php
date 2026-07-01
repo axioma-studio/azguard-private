@@ -6,7 +6,7 @@ namespace AzGuard\Support;
 
 use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\Permission;
-use BackedEnum;
+use AzGuard\PermissionKey;
 use UnitEnum;
 
 /**
@@ -35,12 +35,8 @@ final class PermissionName
         }
 
         // Panel not registered — best-effort unscoped fallback.
-        if ($permission instanceof BackedEnum) {
-            return (string) $permission->value;
-        }
-
         if ($permission instanceof UnitEnum) {
-            return $permission->name;
+            return PermissionKey::normalize($permission);
         }
 
         /** @var class-string<Permission> $permission */

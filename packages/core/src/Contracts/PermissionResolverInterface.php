@@ -7,6 +7,7 @@ namespace AzGuard\Contracts;
 use AzGuard\Registry\Values\PermissionSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
+/** @api */
 interface PermissionResolverInterface
 {
     public function forUser(Authenticatable $user, string $panelId): PermissionSet;

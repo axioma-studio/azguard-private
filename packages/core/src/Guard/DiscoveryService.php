@@ -7,6 +7,7 @@ namespace AzGuard\Guard;
 use AzGuard\Contracts\RoleInterface;
 use Illuminate\Support\Facades\File;
 
+/** @internal */
 class DiscoveryService
 {
     /**

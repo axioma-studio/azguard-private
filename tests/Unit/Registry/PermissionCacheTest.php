@@ -17,6 +17,17 @@ describe('PermissionCache', function () {
             ->toBe('azguard.perms.uuid-123.admin.v1');
     });
 
+    it('uses a fixed internal key prefix — az-guard.cache.key is not a knob (F38)', function () {
+        $cache = new PermissionCache;
+
+        // The removed dead knob must have no effect: Laravel's own cache.prefix
+        // is the per-app isolation seam, not an AzGuard-specific config key.
+        config(['az-guard.cache.key' => 'tenant7.acl']);
+
+        expect($cache->keyFor(42, 'app'))->toBe('azguard.perms.42.app.v1')
+            ->and($cache->keyFor(42, 'app', 'ctx-9'))->toBe('azguard.perms.42.app.v1.ctx-9');
+    });
+
     it('remembers result for same user+panel', function () {
         $cache = new PermissionCache;
         $calls = 0;

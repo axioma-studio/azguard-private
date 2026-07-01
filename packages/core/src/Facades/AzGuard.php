@@ -41,6 +41,8 @@ use UnitEnum;
  * @method static Collection<int, DirectGrant> grants(Authenticatable $user, ?string $panelId = null)
  *
  * @see AzGuardManager
+ *
+ * @api
  */
 final class AzGuard extends Facade
 {

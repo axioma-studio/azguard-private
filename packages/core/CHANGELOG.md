@@ -93,6 +93,26 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - `PermissionCatalog::flush()` is now part of the contract, and panel IDs are
   resolved lazily (no longer frozen at boot) so a panel registered after boot is
   visible via `panels()`. (F40)
+- **`@api`/`@internal` SemVer boundary declared (F10).** Every published contract
+  (`Contracts/*`, `Registry/Contracts/*`, `Registry/Values/*`, `Support\Panel`,
+  `PermissionKey`, the `AzGuard` facade, `Testing/*`) now carries `@api`; resolvers,
+  caches, discovery and `RequestState` are `@internal`. A source-level test enforces
+  that every contract is `@api` and that no `@api` signature leaks an `@internal` type.
+- **All package exceptions now extend `AzGuardException` (F9).** `PanelNotFoundException`,
+  `PanelNotSetException`, `InvalidPermissionKeyException`, `InvalidCatalogException` and
+  the context package's `MissingAuthorizationContextException` were reparented from
+  `RuntimeException`, so a single `catch (AzGuardException)` handles any AzGuard domain
+  error. An arch test locks the invariant across every package sub-namespace.
+- **Unified enum→string key normalization (F34).** `PermissionKey::normalize(string|UnitEnum)`
+  is the single seam behind panel/resolver key coercion (previously reimplemented in four
+  places). Behaviour is unchanged.
+- Tighter static types: `class-string<…>` on `Config::scopeModel()` / `directGrantModel()`
+  (F36); `list<class-string<UnitEnum>>` on `Panel::permissionEnums()` and the enum catalog
+  builder, `list<class-string<BaseRole>>` on `Panel::roleClasses()` (F35).
+- **Honest static-analysis baseline (F18).** `reportUnmatchedIgnoredErrors` is enabled and
+  the two package-wide Builder/Model ignore regexes were removed — `GrantBuilder` is now
+  typed `Builder<DirectGrant>`, and the single Filament magic-property site is path-scoped —
+  so core `src` is fully type-checked and stale baseline entries were dropped.
 
 ### Added
 - `AbilitiesDto::make(...)` — the supported way to instantiate an abilities DTO:
@@ -100,6 +120,9 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   constructor as named arguments. The generated stub was updated to match. (F2)
 
 ### Removed
+- Dead `Config::cacheKey()` accessor and the `az-guard.cache.key` config entry — the
+  value was never read (the cache-key prefix is a fixed internal constant, and Laravel's
+  own `cache.prefix` already isolates entries per app on a shared store). (F38)
 - **Breaking:** the unregistered, unreachable `guard:revoke` command
   (`RevokeCommand`, a raw-column duplicate) was deleted. Use the
   production-wired `guard:revoke-grant` (`RevokeGrantCommand`), which revokes

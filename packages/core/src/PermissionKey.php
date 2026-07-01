@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AzGuard;
 
+use BackedEnum;
+use UnitEnum;
+
 /**
  * Public constants defining the AzGuard permission-key grammar.
  *
@@ -20,6 +23,8 @@ namespace AzGuard;
  *
  *   $role->permissions();                 // [PermissionKey::WILDCARD] for super-admin
  *   in_array(PermissionKey::WILDCARD, …); // "is this the wildcard?"
+ *
+ * @api
  */
 final class PermissionKey
 {
@@ -30,4 +35,21 @@ final class PermissionKey
     public const string SEPARATOR = '.';
 
     private function __construct() {}
+
+    /**
+     * Reduce a permission argument to its raw string form — the single seam for
+     * the enum→string coercion that every panel/resolver site would otherwise
+     * reimplement. A backed enum yields its `value`, a pure enum its `name`, and
+     * a string passes through unchanged. Panel scoping stays the caller's job:
+     * wrap this in `Panel::scope()`/`resolvePermission()` where a key needs a
+     * panel prefix.
+     */
+    public static function normalize(string|UnitEnum $permission): string
+    {
+        return match (true) {
+            $permission instanceof BackedEnum => (string) $permission->value,
+            $permission instanceof UnitEnum => $permission->name,
+            default => $permission,
+        };
+    }
 }

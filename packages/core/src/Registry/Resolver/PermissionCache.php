@@ -20,9 +20,18 @@ use Closure;
  * or one user's resolved permissions would bleed into the next request.
  * Concurrent in-process calls compute the value twice and last writer wins
  * in the array — harmless and far safer than any locking strategy.
+ *
+ * @internal
  */
 class PermissionCache
 {
+    /**
+     * Prefix for every durable cache entry (permission set + per-user epoch).
+     * A fixed internal namespace — Laravel's own `cache.prefix` already isolates
+     * AzGuard's entries per app on a shared store, so this is not a config knob.
+     */
+    private const string KEY_PREFIX = 'azguard.perms';
+
     /**
      * @var array<string, array<string, array<string, PermissionSet>>>
      *                                                                 userId => panelId => discriminator => PermissionSet
@@ -106,7 +115,7 @@ class PermissionCache
     public function keyFor(int|string $userId, string $panelId, string $discriminator = ''): string
     {
         $epoch = $this->currentEpoch($userId, $panelId);
-        $base = "azguard.perms.{$userId}.{$panelId}.v{$epoch}";
+        $base = self::KEY_PREFIX.".{$userId}.{$panelId}.v{$epoch}";
 
         return $discriminator === '' ? $base : "{$base}.{$discriminator}";
     }
@@ -129,7 +138,7 @@ class PermissionCache
 
     private function epochKey(int|string $userId, string $panelId): string
     {
-        return "azguard.perms.{$userId}.{$panelId}.epoch";
+        return self::KEY_PREFIX.".{$userId}.{$panelId}.epoch";
     }
 
     private function loadFromStore(string $cacheKey, string $store, Closure $callback): PermissionSet

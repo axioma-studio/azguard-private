@@ -7,6 +7,8 @@ namespace AzGuard\Registry\Contracts;
 /**
  * Builds the list of PermissionDefinition objects for a given panel.
  * Each builder covers one source: enum, #[GateAbility], or config.
+ *
+ * @api
  */
 interface PermissionCatalogBuilder
 {

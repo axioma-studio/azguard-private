@@ -15,6 +15,8 @@ use UnitEnum;
  * interface on your User model and `use` the trait to satisfy it with no extra
  * code. Type-hint this (or the composite {@see AzGuardUser}) instead of a trait,
  * which cannot be type-hinted.
+ *
+ * @api
  */
 interface HasPermissions
 {

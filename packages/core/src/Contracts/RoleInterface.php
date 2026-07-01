@@ -6,6 +6,7 @@ namespace AzGuard\Contracts;
 
 use UnitEnum;
 
+/** @api */
 interface RoleInterface
 {
     public function getName(): string;

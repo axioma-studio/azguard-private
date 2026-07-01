@@ -11,6 +11,8 @@ use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
  * `az-guard.features.validate_role_permissions`, default off = lenient) and
  * swappable (config `az-guard.role_permission_validator`), so an unlinted
  * wildcard or typo'd key can be rejected before it silently grants access.
+ *
+ * @api
  */
 interface RolePermissionValidator
 {

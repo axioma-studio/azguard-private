@@ -150,7 +150,6 @@ return [
     'cache' => [
         'store' => 'array',
         'expiration_time' => 3600,
-        'key' => 'azguard.permissions',
     ],
 
     /*

@@ -13,6 +13,8 @@ use Override;
  * Default {@see AbilitiesResolver}: resolves the user's permission set once and
  * evaluates only the requested keys against it. Short keys are scoped to the
  * panel; the returned map is keyed by the original requested keys.
+ *
+ * @internal
  */
 final readonly class DefaultAbilitiesResolver implements AbilitiesResolver
 {

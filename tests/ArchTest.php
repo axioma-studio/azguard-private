@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use AzGuard\Contracts\RoleInterface;
+use AzGuard\Exceptions\AzGuardException;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Facade;
@@ -48,3 +49,50 @@ arch('commands extend Illuminate Console Command')
     ->expect('AzGuard\\Commands')
     ->toExtend(Command::class)
     ->ignoring('AzGuard\\Commands\\Concerns');
+
+/**
+ * Every exception shipped by any AzGuard package must extend AzGuardException so
+ * a single `catch (AzGuardException)` handles the whole domain. Scans the source
+ * tree directly (not just autoloaded classes) so a new *Exception dropped into
+ * any sub-namespace is caught by CI, not discovered in production.
+ */
+test('every package exception extends AzGuardException', function (): void {
+    $roots = [
+        'AzGuard\\' => dirname(__DIR__).'/packages/core/src',
+        'AzGuard\\Context\\' => dirname(__DIR__).'/packages/context/src',
+        'AzGuard\\Filament\\' => dirname(__DIR__).'/packages/filament/src',
+    ];
+
+    $found = [];
+
+    foreach ($roots as $namespace => $dir) {
+        if (! is_dir($dir)) {
+            continue;
+        }
+
+        /** @var iterable<SplFileInfo> $files */
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
+
+        foreach ($files as $file) {
+            if (! str_ends_with($file->getFilename(), 'Exception.php')) {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($dir) + 1, -4);
+            $found[] = $namespace.str_replace('/', '\\', $relative);
+        }
+    }
+
+    expect($found)->not->toBeEmpty();
+
+    foreach ($found as $class) {
+        expect(class_exists($class))->toBeTrue("Exception class [{$class}] could not be autoloaded.");
+
+        if ($class === AzGuardException::class) {
+            continue;
+        }
+
+        expect(is_subclass_of($class, AzGuardException::class))
+            ->toBeTrue("Exception [{$class}] must extend ".AzGuardException::class.'.');
+    }
+});

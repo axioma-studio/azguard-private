@@ -8,6 +8,7 @@ use AzGuard\Contracts\RolePermissionValidator;
 use AzGuard\Support\Config;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Override;
 
 /**
@@ -17,6 +18,8 @@ use Override;
  * @property int $role_id
  * @property string $permission_key
  * @property string $panel_id
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class RolePermission extends Model
 {

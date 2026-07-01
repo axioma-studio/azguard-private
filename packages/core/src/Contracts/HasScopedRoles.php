@@ -18,6 +18,8 @@ use UnitEnum;
  * $entity is typed as an Eloquent Model — the idiomatic scope subject for a
  * Laravel package. Framework-agnostic integrators should adapt through their own
  * boundary rather than expect AzGuard to widen its public type.
+ *
+ * @api
  */
 interface HasScopedRoles
 {

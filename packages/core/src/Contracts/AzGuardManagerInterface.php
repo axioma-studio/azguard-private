@@ -18,6 +18,8 @@ use UnitEnum;
 /**
  * Contract for AzGuardManager.
  * Type-hint this interface for testability (mock/swap the manager).
+ *
+ * @api
  */
 interface AzGuardManagerInterface
 {

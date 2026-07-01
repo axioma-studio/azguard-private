@@ -32,6 +32,8 @@ use UnitEnum;
  * (those need Eloquent) — use a real Eloquent user with {@see HasAzGuard}
  * when you need role or scoped-role behavior. hasPermissionIn() always returns
  * false here (no context backend).
+ *
+ * @api
  */
 final class FakeAzGuardUser implements Authenticatable, HasPermissions
 {

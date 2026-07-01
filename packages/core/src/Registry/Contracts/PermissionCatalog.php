@@ -10,6 +10,8 @@ use AzGuard\Registry\Exceptions\InvalidPermissionKeyException;
  * Registry of all known permissions.
  * Single source of truth: no key reaches the database without
  * passing through catalog->assert().
+ *
+ * @api
  */
 interface PermissionCatalog
 {

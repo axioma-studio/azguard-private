@@ -44,14 +44,22 @@ final class Config
         return $model;
     }
 
+    /** @return class-string<ModelHasScope> */
     public static function scopeModel(): string
     {
-        return (string) config('az-guard.models.scope', ModelHasScope::class);
+        /** @var class-string<ModelHasScope> $model */
+        $model = config('az-guard.models.scope', ModelHasScope::class);
+
+        return $model;
     }
 
+    /** @return class-string<DirectGrant> */
     public static function directGrantModel(): string
     {
-        return (string) config('az-guard.models.direct_grant', DirectGrant::class);
+        /** @var class-string<DirectGrant> $model */
+        $model = config('az-guard.models.direct_grant', DirectGrant::class);
+
+        return $model;
     }
 
     public static function modelsNamespace(): string
@@ -167,11 +175,6 @@ final class Config
         $value = config('az-guard.cache.expiration_time', 3600);
 
         return $value !== null ? (int) $value : null;
-    }
-
-    public static function cacheKey(): string
-    {
-        return (string) config('az-guard.cache.key', 'azguard.permissions');
     }
 
     // ─── Middleware ─────────────────────────────────────────────────────────

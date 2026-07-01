@@ -24,6 +24,8 @@ use Throwable;
  * wildcard), applies the optional PermissionLayer (e.g. the context package),
  * filters the result through the PermissionCatalog (known keys only, or '*'),
  * and caches it per request via PermissionCache.
+ *
+ * @internal
  */
 final readonly class EffectivePermissionResolver implements PermissionResolverInterface
 {

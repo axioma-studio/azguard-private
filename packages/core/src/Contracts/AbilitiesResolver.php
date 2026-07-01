@@ -11,6 +11,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * shared props). Only the explicitly requested keys are evaluated and returned
  * — the full catalog is never dumped to the client. Swappable via
  * config('az-guard.abilities_resolver').
+ *
+ * @api
  */
 interface AbilitiesResolver
 {

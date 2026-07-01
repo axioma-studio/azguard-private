@@ -26,7 +26,7 @@ final readonly class EnumPermissionCatalogBuilder implements PermissionCatalogBu
 
     /**
      * @param  string|null  $panelId  When set, this builder only handles this panel.
-     * @param  list<class-string>  $enumClasses  Explicit enum class list (optional).
+     * @param  list<class-string<UnitEnum>>  $enumClasses  Explicit enum class list (optional).
      * @param  AzGuardManagerInterface|null  $manager  Injected manager (parity with GrantSource DI).
      *                                                 Falls back to the container when this builder
      *                                                 is constructed directly via `new` (PanelProvider).
@@ -90,7 +90,7 @@ final readonly class EnumPermissionCatalogBuilder implements PermissionCatalogBu
     }
 
     /**
-     * @return list<class-string>
+     * @return list<class-string<UnitEnum>>
      */
     private function discoverEnumClasses(string $basePath, string $baseNamespace): array
     {

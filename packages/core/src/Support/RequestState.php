@@ -11,6 +11,8 @@ namespace AzGuard\Support;
  * Used for "do this at most once per request" side effects (e.g. a diagnostic
  * warning) without the cross-request bleed a `static` flag would cause under
  * Octane (a static warns once per worker, never again).
+ *
+ * @internal
  */
 final class RequestState
 {

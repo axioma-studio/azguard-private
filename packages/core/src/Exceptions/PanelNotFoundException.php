@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AzGuard\Exceptions;
 
-use RuntimeException;
-
 /**
  * Thrown when an AzGuard panel ID is referenced but not registered.
  *
@@ -14,7 +12,7 @@ use RuntimeException;
  *     (typically in a ServiceProvider or AppServiceProvider::boot()).
  *   - Check for typos in the panel ID string.
  */
-final class PanelNotFoundException extends RuntimeException
+final class PanelNotFoundException extends AzGuardException
 {
     public function __construct(public readonly string $panelId)
     {

@@ -7,6 +7,7 @@ namespace AzGuard\Support;
 use AzGuard\Exceptions\PanelNotFoundException;
 use AzGuard\Exceptions\PanelNotSetException;
 use AzGuard\Facades\AzGuard;
+use AzGuard\PermissionKey;
 use BackedEnum;
 use Illuminate\Support\Facades\Log;
 
@@ -79,7 +80,7 @@ final class PanelResolver
      */
     public static function normalizeId(string|BackedEnum $panelId): string
     {
-        return $panelId instanceof BackedEnum ? (string) $panelId->value : $panelId;
+        return PermissionKey::normalize($panelId);
     }
 
     /**

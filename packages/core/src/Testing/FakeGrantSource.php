@@ -25,6 +25,8 @@ use UnitEnum;
  *   $user->hasPermission(DocumentsPermission::View);   // true
  *
  * Use ->wildcard() to grant everything (like a super-admin).
+ *
+ * @api
  */
 final class FakeGrantSource implements GrantSource
 {

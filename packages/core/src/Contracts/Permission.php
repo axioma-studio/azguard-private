@@ -25,6 +25,8 @@ namespace AzGuard\Contracts;
  *
  * The returned ability is the bare (unscoped) key; the owning panel prefixes it
  * just like an enum case value.
+ *
+ * @api
  */
 interface Permission
 {
