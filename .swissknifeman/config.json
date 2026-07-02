@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "mode": "vendor",
+  "agent": "claude",
+  "buckets": [
+    "system",
+    "oss-dev",
+    "php",
+    "php-packages",
+    "laravel-testing",
+    "quality",
+    "devops",
+    "architect",
+    "security",
+    "azguard",
+    "laravel-filament"
+  ],
+  "include": [],
+  "exclude": []
+}
