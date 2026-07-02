@@ -23,8 +23,14 @@ it('make() returns new instance each time', function () {
     expect($a)->not->toBe($b);
 });
 
-it('defaults panelId to app', function () {
-    expect(AzGuardPlugin::make()->getPanelId())->toBe('app');
+it('defaults panelId to config value (admin)', function () {
+    expect(AzGuardPlugin::make()->getPanelId())->toBe('admin');
+});
+
+it('defaults panelId to config value when explicitly set', function () {
+    config(['az-guard-filament.panel' => 'custom-panel']);
+
+    expect(AzGuardPlugin::make()->getPanelId())->toBe('custom-panel');
 });
 
 it('forPanel() sets panelId and returns same instance', function () {
