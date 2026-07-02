@@ -109,6 +109,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | User label column
+    |--------------------------------------------------------------------------
+    |
+    | Column name used to display user names in the Direct Grant and Role UIs.
+    | Customize this if your user model uses a different column (e.g., 'email'
+    | instead of 'name').
+    |
+    */
+    'user_label_column' => 'name',
+
+    /*
+    |--------------------------------------------------------------------------
     | Super admin
     |--------------------------------------------------------------------------
     |
