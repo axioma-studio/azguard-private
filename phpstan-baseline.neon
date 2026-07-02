@@ -163,6 +163,18 @@ parameters:
 			path: packages/core/src/Registry/Sources/ClassRoleGrantSource.php
 
 		-
+			message: '#^Trait AzGuard\\Filament\\Concerns\\HasAzGuardPage is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: packages/filament/src/Concerns/HasAzGuardPage.php
+
+		-
+			message: '#^Trait AzGuard\\Filament\\Concerns\\HasAzGuardWidget is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: packages/filament/src/Concerns/HasAzGuardWidget.php
+
+		-
 			message: '#^Method AzGuard\\Filament\\Pages\\DoctorPage\:\:getDiagnoseResult\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
