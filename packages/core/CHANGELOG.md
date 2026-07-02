@@ -178,6 +178,38 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   production-wired `guard:revoke-grant` (`RevokeGrantCommand`), which revokes
   through `GrantBuilder`. Note: `--all` on `guard:revoke-grant` is scoped to a
   single panel (the required `panel` argument), by design.
+- **Dead code — `Guard\PanelManager`, `Grants\PendingGrant`, `Guard\DiscoveryService`
+  (F31).** `PanelManager` had zero references and an unpopulated `$panels` collection;
+  `PendingGrant` documented a `GrantManager::for()->save()` flow that exists nowhere;
+  `DiscoveryService` was exercised only by its own test with a divergent-scanner framing.
+  All three were deleted along with their `phpstan-baseline.neon` entries and the
+  `DiscoveryTest`. No public API used them. (Invariant held: no `ClassScanner` was
+  introduced.)
+
+### Testing & tooling
+- **Per-package mutation testing (F50).** `infection.core.json5`,
+  `infection.filament.json5` and `infection.context.json5` replace the single root
+  config, mirroring the `tests.yml` source layout; `composer mutate:core|filament|context|all|diff`
+  and `.github/workflows/mutation.yml` run Infection per package — a diff-scoped
+  (`--git-diff-lines`) blocking gate on pull requests plus a full advisory run on
+  `main`. Fixed a latent scaffold defect: `testFramework: "pest"` was never a valid
+  Infection value (0.34 ships no Pest adapter — only `phpunit`/`phpspec`/`codeception`/`testo`)
+  and `logs.summary` must be a file path, not a boolean; both silently broken since
+  introduction, now `phpunit` (Pest tests compile to PHPUnit cases) with correct log
+  paths. `composer check` gained `check:coverage` and `mutate:all` steps that
+  honest-skip with a loud warning (`bin/coverage-gate.sh`, `bin/mutation-gate.sh`)
+  when no coverage driver (pcov/xdebug) is present locally — CI always has one, so
+  the gate is real where it matters.
+- **CLI feature-matrix coverage & `AbilitiesDto` unit suite (F19).** A feature test
+  matrix exercises the console command surface end-to-end, closing the previously
+  untested CLI paths; a dedicated unit suite pins `AbilitiesDto` (including the F4
+  non-boolean-property omission).
+- **Contract-parity arch test for the test doubles (F20).** An architecture test
+  pins `Testing\FakeAzGuardUser` and `FakeGrantSource` to their production contracts,
+  so a contract change that the fakes fail to mirror now fails the suite.
+- **Immutability arch ratchets (F49).** Architecture ratchets assert the immutability
+  invariants (value objects / DTOs stay `readonly`), locking the boundary against
+  regression.
 
 ## [0.1.0]
 
