@@ -32,6 +32,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/DiscoveryTest.php',
         'Feature/EnumPermissionArgumentTest.php',
         'Feature/EnumRolePermissionsTest.php',
+        'Feature/ExplainAbilitiesCommandTest.php',
         'Feature/ExtensionSwapTest.php',
         'Feature/FakeGrantSourceTest.php',
         'Feature/DoctorCommandTest.php',
