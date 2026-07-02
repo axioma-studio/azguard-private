@@ -10,6 +10,12 @@ parameters:
 			message: '#^Instanceof between Illuminate\\Routing\\Router and Illuminate\\Routing\\Router will always evaluate to true\.$#'
 			identifier: instanceof.alwaysTrue
 			count: 1
+			path: packages/context/src/AzGuardContextServiceProvider.php
+
+		-
+			message: '#^Instanceof between Illuminate\\Routing\\Router and Illuminate\\Routing\\Router will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
 			path: packages/core/src/AzGuardServiceProvider.php
 
 		-

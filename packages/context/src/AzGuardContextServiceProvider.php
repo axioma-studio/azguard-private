@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AzGuard\Context;
 
+use AzGuard\Context\Commands\ContextGrantCommand;
+use AzGuard\Context\Commands\ContextRevokeCommand;
 use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Context\Contracts\ResolvesContext;
 use AzGuard\Context\Middleware\SetAuthorizationContext;
@@ -11,6 +13,7 @@ use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
 use AzGuard\Contracts\ContextGuard as ContextGuardContract;
 use AzGuard\Contracts\PermissionLayer;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Override;
 
@@ -73,6 +76,8 @@ final class AzGuardContextServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->registerMiddlewareAlias();
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/az-guard-context.php' => config_path('az-guard-context.php'),
@@ -81,6 +86,28 @@ final class AzGuardContextServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../database/migrations/' => database_path('migrations'),
             ], 'azguard-context-migrations');
+
+            $this->commands([
+                ContextGrantCommand::class,
+                ContextRevokeCommand::class,
+            ]);
         }
+    }
+
+    /**
+     * Auto-register the 'azguard.context' middleware alias, so a route can
+     * do ->middleware('azguard.context') without the host app hand-wiring
+     * SetAuthorizationContext in bootstrap/app.php — the previous silent
+     * trap (F14): the alias existed only in a docblock example.
+     */
+    private function registerMiddlewareAlias(): void
+    {
+        $router = $this->app->make(Router::class);
+
+        if (! $router instanceof Router) {
+            return;
+        }
+
+        $router->aliasMiddleware('azguard.context', SetAuthorizationContext::class);
     }
 }
