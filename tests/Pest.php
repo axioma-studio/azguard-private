@@ -44,6 +44,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/IntegrationPolishTest.php',
         'Feature/ListScopedRolesCommandTest.php',
         'Feature/LoadAzGuardRolesMiddlewareTest.php',
+        'Feature/MakeGuardForceGenerationTest.php',
         'Feature/MakeGuardPanelCommandTest.php',
         'Feature/PanelEnumIdentityTest.php',
         'Feature/PanelPermissionResolverTest.php',
