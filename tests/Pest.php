@@ -77,6 +77,9 @@ uses(FilamentTestCase::class, RefreshDatabase::class)
 uses(MorphTypeTestCase::class, RefreshDatabase::class)
     ->in('Feature/MorphTypeTest.php');
 
+uses(TestCase::class, RefreshDatabase::class)
+    ->in('Feature/CliCommandMatrixTest.php');
+
 uses(RefreshDatabase::class)
     ->in('Unit');
 
