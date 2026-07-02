@@ -53,6 +53,7 @@ uses(TestCase::class, RefreshDatabase::class)
         'Feature/PolicyAttributeRegistrarTest.php',
         'Feature/RoleAssignmentCommandTest.php',
         'Feature/RoleClassResolutionTest.php',
+        'Feature/RolePermissionsCommandTest.php',
         'Feature/RolePermissionValidationTest.php',
         'Feature/ScopedPermissionEnumResolutionTest.php',
         'Feature/ScopedRolePanelIsolationTest.php',
