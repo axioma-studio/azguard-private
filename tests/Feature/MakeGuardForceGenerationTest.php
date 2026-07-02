@@ -16,7 +16,7 @@ beforeEach(function (): void {
     // The `test` panel provider lives in tests/Stubs; make:guard-role derives
     // the target from the provider's own directory (Reflection), so generated
     // roles land in tests/Stubs/Roles. Track them for cleanup.
-    $providerDir = dirname((new \ReflectionClass(TestGuardPanelProvider::class))->getFileName());
+    $providerDir = dirname((new ReflectionClass(TestGuardPanelProvider::class))->getFileName());
     $this->generatedRolePaths = [
         $providerDir.'/Roles/ForcedEditorRole.php',
         $providerDir.'/Roles/ArgDrivenRole.php',
@@ -41,7 +41,7 @@ it('generates a role non-interactively from panel and name arguments', function 
         'name' => 'ArgDriven',
     ])->assertSuccessful();
 
-    $providerDir = dirname((new \ReflectionClass(TestGuardPanelProvider::class))->getFileName());
+    $providerDir = dirname((new ReflectionClass(TestGuardPanelProvider::class))->getFileName());
     $rolePath = $providerDir.'/Roles/ArgDrivenRole.php';
 
     expect($rolePath)->toBeFile();
@@ -59,7 +59,7 @@ it('rejects an unregistered panel passed as an argument', function (): void {
 });
 
 it('refuses to overwrite an existing role without --force', function (): void {
-    $providerDir = dirname((new \ReflectionClass(TestGuardPanelProvider::class))->getFileName());
+    $providerDir = dirname((new ReflectionClass(TestGuardPanelProvider::class))->getFileName());
     $rolePath = $providerDir.'/Roles/ForcedEditorRole.php';
 
     File::ensureDirectoryExists(dirname($rolePath));
@@ -75,7 +75,7 @@ it('refuses to overwrite an existing role without --force', function (): void {
 });
 
 it('overwrites an existing role with --force', function (): void {
-    $providerDir = dirname((new \ReflectionClass(TestGuardPanelProvider::class))->getFileName());
+    $providerDir = dirname((new ReflectionClass(TestGuardPanelProvider::class))->getFileName());
     $rolePath = $providerDir.'/Roles/ForcedEditorRole.php';
 
     File::ensureDirectoryExists(dirname($rolePath));

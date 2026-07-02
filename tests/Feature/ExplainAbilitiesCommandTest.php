@@ -6,6 +6,7 @@ use AzGuard\Events\AccessDecision;
 use AzGuard\Tests\Stubs\User;
 use AzGuard\Tests\Stubs\UserWithDirectGrants;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 
 /**
  * F53: `guard:explain` / `guard:abilities` — off-hot-path inspection of
@@ -16,7 +17,6 @@ use Illuminate\Support\Facades\Artisan;
  *
  * AC: `guard:explain <user> <perm>` prints the source of the verdict.
  */
-
 describe('guard:explain', function (): void {
 
     it('prints the winning source when the ability is granted', function (): void {
@@ -109,7 +109,7 @@ describe('guard:explain', function (): void {
     });
 
     it('does not dispatch AccessDecision when audit_log is off', function (): void {
-        Illuminate\Support\Facades\Event::fake([AccessDecision::class]);
+        Event::fake([AccessDecision::class]);
 
         $user = $this->createUserWithDirectGrant('test.post.view', 'test');
 
@@ -119,7 +119,7 @@ describe('guard:explain', function (): void {
             '--model' => UserWithDirectGrants::class,
         ])->assertExitCode(0);
 
-        Illuminate\Support\Facades\Event::assertNotDispatched(AccessDecision::class);
+        Event::assertNotDispatched(AccessDecision::class);
     });
 });
 

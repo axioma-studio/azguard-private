@@ -48,7 +48,7 @@ final class RoleAssignmentCommand extends Command
 
         $user = $this->resolveUser();
 
-        if ($user === null) {
+        if (! $user instanceof HasRolesContract) {
             return self::FAILURE;
         }
 

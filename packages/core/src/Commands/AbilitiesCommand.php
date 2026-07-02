@@ -9,6 +9,7 @@ use AzGuard\Contracts\AzGuardManagerInterface;
 use AzGuard\Contracts\PermissionResolverInterface;
 use AzGuard\Registry\Values\PermissionSet;
 use AzGuard\Support\Config;
+use AzGuard\Support\Panel;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -92,7 +93,7 @@ final class AbilitiesCommand extends Command
 
         $current = $manager->currentPanel();
 
-        if ($current !== null) {
+        if ($current instanceof Panel) {
             return $current->getId();
         }
 

@@ -88,8 +88,47 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   - Opt-in `az-guard.strict_panels` (default off): resolving an explicit,
     unregistered panel throws `PanelNotFoundException` instead of best-effort
     lenient resolution. (F47)
+- **Console role lifecycle (F15).** `guard:role {assign|detach} {user} {role}`
+  is the first CLI writer for arbitrary user↔role links (previously only
+  `guard:super-admin` could attach, and only the super-admin role). It resolves
+  the user by id or email through `ResolvesUserModel`, resolves the role by
+  class-name or name through `Config::roleModel()`, and delegates to the existing
+  idempotent `HasRoles::assignRole()` / `removeRole()` (which still emit
+  `RoleAttached` / `RoleDetached`). Typed against the `HasRoles` contract.
+- **Authorization-inspection commands (F53).** Two off-hot-path opt-in commands
+  built on `Authorizer::explain()` (F16) and the effective-permission resolver;
+  neither touches the hot `check()` path:
+  - `guard:explain {user} {ability} [--panel] [--json]` — re-runs a single
+    decision and prints the `AccessDecision` (panel, allowed, reason code,
+    winning source).
+  - `guard:abilities {user} [--panel] [--json]` — prints the user's fully
+    resolved `PermissionSet` for a panel (wildcard flag + key list).
+- **Structured, CI-parseable command output (F52).** A shared `OutputsStructured`
+  concern adds a `--json` flag and a single `{errors, warnings, abilities}`
+  payload to the CI-gate commands `guard:doctor` and `guard:catalog:validate`,
+  both of which now also return a non-zero exit code on failure.
+- **Non-interactive scaffolding (F33).** `make:guard-role` is now argument-driven
+  (`make:guard-role app Editor` — no prompt), and `make:guard-panel`,
+  `make:guard-permission`, `make:guard-policy` and `make:guard-abilities` accept
+  `--force` for idempotent overwrite via the shared `SupportsForcefulGeneration`
+  trait. All generators return an `int` exit code.
 
 ### Changed
+- **CLI commands honor configured models & validate keys (F32).** Eight commands
+  (`guard:role-permissions`, `guard:role`, `guard:super-admin`, `guard:sync-roles`,
+  `guard:grants`, `guard:prune-grants`, `guard:list-scoped-roles`) hardcoded the
+  Role / RolePermission / DirectGrant / ModelHasScope classes instead of routing
+  through `Config::*Model()`, so custom model subclasses configured via
+  `az-guard.models.*` were silently ignored on the CLI path. A new
+  `Config::rolePermissionModel()` (config key `models.role_permission`) and
+  `Role::dbPermissions()` back the fix. `guard:role-permissions add|sync` now
+  always validates keys against the `PermissionCatalog` and reports an unknown
+  key with a non-zero exit code — CLI input validation independent of the opt-in
+  `features.validate_role_permissions` model guard (F46).
+- **Fixed: `guard:catalog:validate` called the non-existent `AzGuard::getPanel()`
+  (F52).** The facade method is `panel()`; the command fatally errored on every
+  invocation. The corresponding `phpstan-baseline` entry (a honest-baseline record
+  masking the bug) was removed rather than kept.
 - **Breaking: unified CLI prefix to `guard:` (F51).** `azguard:install` and
   `azguard:super-admin` are renamed to `guard:install` and `guard:super-admin`.
   The package is pre-1.0 and not yet in production, so the rename ships
