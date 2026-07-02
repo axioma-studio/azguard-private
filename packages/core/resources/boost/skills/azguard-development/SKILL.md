@@ -22,7 +22,7 @@ classes**, never magic strings. Authorization is refactor-safe and reviewable.
 ## Setup (do this first)
 
 1. `composer require axioma-studio/azguard-core`
-2. `php artisan azguard:install` (publishes config + migrates)
+2. `php artisan guard:install` (publishes config + migrates)
 3. Add `use AzGuard\Concerns\HasAzGuard;` to the `User` model.
 4. `php artisan make:guard-panel App Documents` — scaffolds a panel (provider +
    permission enum + policy + role) and auto-registers it in config.
@@ -72,7 +72,7 @@ AzGuard::forUser($user)->on('app')->revoke(DocumentsPermission::Create);
 
 ## Super-admin
 
-`php artisan azguard:super-admin --user=1` grants the wildcard role that
+`php artisan guard:super-admin --user=1` grants the wildcard role that
 short-circuits every check via `Gate::before()`.
 
 ## Rules

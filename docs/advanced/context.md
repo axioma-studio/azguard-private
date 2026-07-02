@@ -58,14 +58,11 @@ final class WorkspaceContextResolver implements ResolvesContext
 ],
 ```
 
-### 3. Подключите middleware
+### 3. Примените middleware к маршруту
 
-```php
-// bootstrap/app.php
-->withMiddleware(function (Middleware $m) {
-    $m->alias(['azguard.context' => \AzGuard\Context\Middleware\SetAuthorizationContext::class]);
-})
-```
+Алиас `azguard.context` регистрируется автоматически в
+`AzGuardContextServiceProvider::boot()` — ручного подключения в
+`bootstrap/app.php` не требуется.
 
 ```php
 // routes/web.php
@@ -126,32 +123,51 @@ $user->checkPermission('app.posts.edit', 'app', new AuthorizationContext(
 
 ## Выдача контекстных прав
 
-Права хранятся в таблице `az_guard_context_roles`.
-
-Заполняйте вручную или через свой сервис:
+Права хранятся в таблице `az_guard_context_roles`. Пишите их через
+`ContextGrantBuilder` (fluent write-API, аналог `AzGuard\Grants\GrantBuilder`
+для панельных direct grants) либо через CLI:
 
 ```php
-use Illuminate\Support\Facades\DB;
+use AzGuard\Context\ContextGrantBuilder;
 
-DB::table('az_guard_context_roles')->insert([
-    'model_type'     => get_class($user),
-    'model_id'       => $user->id,
-    'context_type'   => 'workspace',
-    'context_id'     => (string) $workspaceId,
-    'panel_id'       => 'app',
-    'permission_key' => 'app.posts.edit',
-    'created_at'     => now(),
-    'updated_at'     => now(),
-]);
+(new ContextGrantBuilder($user))
+    ->on('app')
+    ->inContext('workspace', $workspaceId)
+    ->grant('app.posts.edit');
+
+// Отозвать конкретное право
+(new ContextGrantBuilder($user))
+    ->on('app')
+    ->inContext('workspace', $workspaceId)
+    ->revoke('app.posts.edit');
+
+// Отозвать все права пользователя в этом контексте+панели
+(new ContextGrantBuilder($user))
+    ->on('app')
+    ->inContext('workspace', $workspaceId)
+    ->revokeAll();
 ```
 
 Wildcard (`*`) — полный доступ в контексте:
 
 ```php
-DB::table('az_guard_context_roles')->insert([
-    ...
-    'permission_key' => '*',
-]);
+(new ContextGrantBuilder($user))
+    ->on('app')
+    ->inContext('workspace', $workspaceId)
+    ->grant('*');
+```
+
+### CLI
+
+```bash
+# выдать контекстное право
+php artisan guard:context:grant 42 app.posts.edit app workspace 7
+
+# отозвать конкретное право
+php artisan guard:context:revoke 42 app.posts.edit app workspace 7
+
+# отозвать все права пользователя в этом контексте+панели
+php artisan guard:context:revoke 42 -- app workspace 7 --all
 ```
 
 ## Стратегии объединения прав

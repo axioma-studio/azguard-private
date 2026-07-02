@@ -134,11 +134,11 @@
 
 | ID | Sev | Действие | Файлы | AC / тест |
 |---|---|---|---|---|
-| F31 | 🟡 | Удалить мёртвый код: `core/Guard/PanelManager.php`, `core/Grants/PendingGrant.php` (ссылается на несуществующий `GrantManager`); решить судьбу `core/Guard/DiscoveryService.php` | core src | Классы удалены; `composer check` зелёный; нет ссылок |
+| F31 | ✅ | Удалить мёртвый код: `core/Guard/PanelManager.php`, `core/Grants/PendingGrant.php` (ссылается на несуществующий `GrantManager`); решить судьбу `core/Guard/DiscoveryService.php` | core src | Классы удалены; `composer check` зелёный; нет ссылок |
 | F19 | 🟠 | Feature-матрица на непокрытые CLI-команды (~15); юнит-сьют `AbilitiesDto` (после F2) | `tests/Feature/**`, `tests/Unit/Abilities/**` | Каждая команда имеет CLI-тест; abilities покрыт |
 | F20 | 🟡 | Contract-parity arch-тест на `FakeAzGuardUser`/`FakeGrantSource` | `tests/Unit/Contracts/ContractTraitParityTest.php` | Fakes проверяются на паритет с контрактами |
 | F49 | ⚪ | Arch-рэтчеты `toBeFinal()->toBeReadonly()`; параметризовать матрицы датасетами | `tests/ArchTest.php`, `tests/Unit/Filament/FilamentArchTest.php` | Arch-инварианты активны |
-| F50 | 🟡 | Infection per-package + diff-scoped PR-гейт; добавить coverage/mutation в `composer check` | `infection.json5`, `composer.json`, CI | `composer check` включает coverage/mutation-гейт |
+| F50 | 🟡🔸 | Infection per-package + diff-scoped PR-гейт; добавить coverage/mutation в `composer check` — реализовано; фактический прогон **deferred** (окружение без pcov/xdebug), гейт honest-skip локально, реален в CI | `infection.core/filament/context.json5`, `composer.json`, `bin/*-gate.sh`, `.github/workflows/mutation.yml` | `composer check` включает coverage/mutation-шаги (honest-skip без драйвера); CI (`mutation.yml`) реально гейтит PR diff-scoped + main advisory |
 
 **Commit:** `chore(core): remove dead code, close CLI/abilities test gaps, tighten arch & mutation gates`
 
