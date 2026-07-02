@@ -27,10 +27,22 @@ it('defaults panelId to config value (admin)', function () {
     expect(AzGuardPlugin::make()->getPanelId())->toBe('admin');
 });
 
-it('defaults panelId to config value when explicitly set', function () {
-    config(['az-guard-filament.panel' => 'custom-panel']);
+it('reads default panelId from the az-guard-filament.panel config key', function () {
+    // Canary: a non-default sentinel proves getPanelId() genuinely resolves
+    // the config value rather than falling back to the hardcoded 'admin'
+    // (which would mask a config that never loaded — the vendor-shadow trap).
+    config(['az-guard-filament.panel' => 'canary-panel']);
 
-    expect(AzGuardPlugin::make()->getPanelId())->toBe('custom-panel');
+    expect(AzGuardPlugin::make()->getPanelId())->toBe('canary-panel');
+});
+
+it('forPanel() overrides the config default panel', function () {
+    // Explicit forPanel() must win over the config default, regardless of
+    // what the config key holds.
+    config(['az-guard-filament.panel' => 'config-panel']);
+
+    expect(AzGuardPlugin::make()->forPanel('explicit-panel')->getPanelId())
+        ->toBe('explicit-panel');
 });
 
 it('forPanel() sets panelId and returns same instance', function () {
