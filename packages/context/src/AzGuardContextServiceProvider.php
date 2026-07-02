@@ -8,12 +8,16 @@ use AzGuard\Context\Commands\ContextGrantCommand;
 use AzGuard\Context\Commands\ContextRevokeCommand;
 use AzGuard\Context\Contracts\MergeStrategy;
 use AzGuard\Context\Contracts\ResolvesContext;
+use AzGuard\Context\Events\ContextGrantGiven;
+use AzGuard\Context\Events\ContextGrantRevoked;
 use AzGuard\Context\Middleware\SetAuthorizationContext;
 use AzGuard\Context\Strategies\GlobalPlusContextStrategy;
 use AzGuard\Contracts\ContextGuard as ContextGuardContract;
 use AzGuard\Contracts\PermissionLayer;
+use AzGuard\Contracts\PermissionResolverInterface;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Override;
 
@@ -77,6 +81,7 @@ final class AzGuardContextServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerMiddlewareAlias();
+        $this->registerCacheInvalidation();
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -92,6 +97,25 @@ final class AzGuardContextServiceProvider extends ServiceProvider
                 ContextRevokeCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Flush the permission cache whenever a context grant is written or revoked
+     * through ANY path — the fluent ContextGrantBuilder, the console commands,
+     * or any code that dispatches these events. ContextRole::booted() covers
+     * only single-row model events; revoke()/revokeAll() use a mass-delete that
+     * fires no model event, so without this listener a revoked context grant
+     * would stay live until TTL on a persistent cache store. Mirrors core's
+     * AzGuardServiceProvider::registerCacheInvalidation().
+     */
+    private function registerCacheInvalidation(): void
+    {
+        Event::listen(
+            [ContextGrantGiven::class, ContextGrantRevoked::class],
+            static function (ContextGrantGiven|ContextGrantRevoked $event): void {
+                app(PermissionResolverInterface::class)->forgetForUser($event->user, $event->panelId);
+            },
+        );
     }
 
     /**

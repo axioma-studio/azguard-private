@@ -17,7 +17,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
  *   php artisan guard:context:revoke 42 app.documents.export app workspace 7
  *
  *   # revoke every context grant for this panel+context
- *   php artisan guard:context:revoke 42 -- app workspace 7 --all
+ *   # (the permission argument is required but ignored with --all)
+ *   php artisan guard:context:revoke 42 ignored app workspace 7 --all
  */
 final class ContextRevokeCommand extends Command
 {
