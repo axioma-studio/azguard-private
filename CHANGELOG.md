@@ -6,6 +6,15 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Removed
+
+- **Dead code** — `Guard\PanelManager` (zero references, unpopulated `$panels`
+  collection), `Grants\PendingGrant` (documented a `GrantManager::for()->save()`
+  flow that exists nowhere), and `Guard\DiscoveryService` (exercised only by its
+  own test, divergent-scanner framing) have been deleted along with their
+  `phpstan-baseline.neon` entries and the `DiscoveryTest`. No public API used
+  these classes. (F31)
+
 ## [0.2.0]
 
 Integration-polish & flexibility pass. Sharpens the consumer-facing surface for
