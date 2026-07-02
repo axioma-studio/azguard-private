@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace AzGuard\Filament\Permissions;
 
-use AzGuard\Filament\AzGuardFilamentServiceProvider;
 use AzGuard\Filament\AzGuardPlugin;
-use AzGuard\Filament\Concerns\HasAzGuardPage;
-use AzGuard\Filament\Concerns\HasAzGuardWidget;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Throwable;
@@ -32,10 +29,10 @@ use Throwable;
  * escape hatches {@see AzGuardFilamentServiceProvider} already grants
  * {@see ResourceGate}.
  */
-final class PageWidgetAccessEvaluator
+final readonly class PageWidgetAccessEvaluator
 {
     public function __construct(
-        private readonly PermissionSchema $schema,
+        private PermissionSchema $schema,
     ) {}
 
     public function authorize(string $subjectClass, string $ability): bool

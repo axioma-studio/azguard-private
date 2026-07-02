@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AzGuard\Filament\Concerns;
 
 use AzGuard\Filament\Permissions\PageWidgetAccessEvaluator;
-use Filament\Pages\Page;
 
 /**
  * Opt-in enforcement for custom Filament Pages.
